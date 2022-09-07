@@ -6,6 +6,9 @@ include(Utility)
 include(Codegen)
 include(LLVM)
 
+####################################################################
+# See: https://cmake.org/cmake/help/latest/command/find_package.html
+####################################################################
 find_package(LLVM REQUIRED CONFIG)
 list(APPEND CMAKE_MODULE_PATH ${LLVM_DIR})
 

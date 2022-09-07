@@ -8,4 +8,4 @@ You should have successfully gotten the calculator example to build and run. I h
 
 ## Setting up
 
-You need to copy files from the calculator example that works on your platform into this project
+You need to copy some files from the working calculator example that on your platform into this project
