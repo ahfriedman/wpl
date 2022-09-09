@@ -3,5 +3,9 @@
     "cppds",
     "stmgr"
   ],
-  "C_Cpp.errorSquiggles": "Disabled"
+  "C_Cpp.errorSquiggles": "Disabled",
+  "files.associations": {
+    "any": "cpp",
+    "optional": "cpp"
+  }
 }
