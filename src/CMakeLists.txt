@@ -10,7 +10,7 @@ include (ANTLR)
 # include(Semantic)
 # include(Symbol)
 # include(Codegen)
-# include(LLVM)
+include(LLVM)
 # include(Runtime)
 
 ####################################################################
@@ -58,6 +58,7 @@ target_include_directories(wplc PUBLIC
 target_link_libraries(wplc 
   PRIVATE
   ${ANTLR_RUNTIME_LIB}
+  parser_lib
   lexparse_lib
   # sym_lib
   # semantic_lib
