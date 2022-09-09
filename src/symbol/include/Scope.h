@@ -13,7 +13,7 @@
 #include "Symbol.h"
 #include <map>
 #include <optional>
-#include <assert.h>
+// #include <assert.h>
 
 
 class Scope {
@@ -28,8 +28,8 @@ class Scope {
          * @param p The parent to the current scope
          */
         Scope(std::optional<Scope*> p) {
-            assert(p->has_value());  //Ensure we have a value. //FIXME: should probably do this better
-            parent = p->get();
+            // assert(p->has_value());  //Ensure we have a value. //FIXME: should probably do this better
+            parent = p;
         }
         //FIXME: destructors? 
 
@@ -38,7 +38,7 @@ class Scope {
         
         std::optional<Scope*> getParent() { return parent; }
         void setId(int id) { scopeId = id; }
-        int getId() {return scopeId; }
+        int getId() { return scopeId; }
         std::string toString() const; 
 
 

@@ -6,6 +6,32 @@
   "C_Cpp.errorSquiggles": "Disabled",
   "files.associations": {
     "any": "cpp",
-    "optional": "cpp"
+    "optional": "cpp",
+    "*.tcc": "cpp",
+    "deque": "cpp",
+    "list": "cpp",
+    "string": "cpp",
+    "unordered_map": "cpp",
+    "unordered_set": "cpp",
+    "vector": "cpp",
+    "functional": "cpp",
+    "map": "cpp",
+    "set": "cpp",
+    "array": "cpp",
+    "string_view": "cpp",
+    "initializer_list": "cpp",
+    "regex": "cpp",
+    "__bit_reference": "cpp",
+    "__hash_table": "cpp",
+    "__split_buffer": "cpp",
+    "__tree": "cpp",
+    "memory": "cpp",
+    "future": "cpp",
+    "istream": "cpp",
+    "tuple": "cpp",
+    "utility": "cpp",
+    "variant": "cpp",
+    "locale": "cpp",
+    "thread": "cpp"
   }
 }
