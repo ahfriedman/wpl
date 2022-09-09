@@ -1,5 +1,8 @@
 # symbol listfile
 #
+##############################################
+# Modify for your implementation.
+##############################################
 include(Symbol)
 
 add_library(sym_lib OBJECT

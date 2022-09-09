@@ -1,11 +1,13 @@
 # utility listfile
 #
-include(Utility)
+# Use this if it fits your design.
 
-add_library(utility_lib OBJECT
-  ${UTILITY_SOURCES}
-)
-include_directories(utility_lib
-  ${UTILITY_INCLUDE}
-  ${ANTLR_INCLUDE}
-)
+# include(Utility)
+
+# add_library(utility_lib OBJECT
+#   ${UTILITY_SOURCES}
+# )
+# include_directories(utility_lib
+#   ${UTILITY_INCLUDE}
+#   ${ANTLR_INCLUDE}
+# )

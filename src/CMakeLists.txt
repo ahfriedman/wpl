@@ -1,12 +1,21 @@
 # src listfile
+########################################################
+# Initially you do not need all of these, but it doesn't
+# hurt if you keep them in. I have commented these out and
+# you can add them as your development progresses. I assume
+# that you will start with the scanner and parser.
+########################################################
 include (ANTLR)
-include (Utility)
-include(Semantic)
-include(Symbol)
-include(Codegen)
-include(LLVM)
-include(Runtime)
+# include (Utility)
+# include(Semantic)
+# include(Symbol)
+# include(Codegen)
+# include(LLVM)
+# include(Runtime)
 
+####################################################################
+# See: https://cmake.org/cmake/help/latest/command/find_package.html
+####################################################################
 find_package(LLVM REQUIRED CONFIG)
 list(APPEND CMAKE_MODULE_PATH ${LLVM_DIR})
 include(AddLLVM)
@@ -46,10 +55,10 @@ target_include_directories(wplc PUBLIC
   ${LLVM_INCLUDE_DIR}
 )
 
-target_link_libraries(calculator 
+target_link_libraries(wplc 
   PRIVATE
-  # ${ANTLR_RUNTIME_LIB}
-  # lexparse_lib
+  ${ANTLR_RUNTIME_LIB}
+  lexparse_lib
   # sym_lib
   # semantic_lib
   # utility_lib
