@@ -31,7 +31,7 @@ TEST_CASE("Scanner operator tests", "[front-end]") {
   CHECK(lexer.nextToken()->getType() == lexer.MULTIPLY);
   CHECK(lexer.nextToken()->getType() == lexer.NOT);
   CHECK(lexer.nextToken()->getType() == lexer.PLUS);
-  CHECK(lexer.nextToken()->getType() == lexer.UNEQUAL);
+  CHECK(lexer.nextToken()->getType() == lexer.NOT_EQUAL);
 }
 
 TEST_CASE("Scanner punctuation tests", "[front-end") {

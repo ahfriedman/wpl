@@ -22,3 +22,7 @@ set (CMAKE_INSTALL_PREFIX ${PROJECT_SOURCE_DIR})
 #   DESTINATION install
 # )
 # include(Install)
+
+### Testing with CTEST
+enable_testing()
+add_subdirectory(test)

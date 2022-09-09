@@ -6,7 +6,7 @@ include(ANTLR)
 #include(Semantic)
 #include(Utility)
 #include(Codegen)
-#include(LLVM)
+include(LLVM)
 
 find_package(LLVM REQUIRED CONFIG)
 list(APPEND CMAKE_MODULE_PATH ${LLVM_DIR})
@@ -17,7 +17,7 @@ include(AddLLVM)
 include(HandleLLVMOptions)
 
 include(cmake/LexParseTests.cmake)
-include(cmake/SymbolTests.cmake)
+# include(cmake/SymbolTests.cmake)
 #include(cmake/SemanticTests.cmake)
 #include(cmake/CodegenTests.cmake)
 
@@ -51,6 +51,7 @@ target_include_directories(tests PUBLIC
 target_link_libraries(tests 
   PRIVATE
   ${ANTLR_RUNTIME_LIB}
+  parser_lib
   lexparse_lib
 #   sym_lib
 #   semantic_lib
