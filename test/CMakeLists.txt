@@ -2,7 +2,7 @@
 #
 include(Testing)
 include(ANTLR)
-#include(Symbol)
+include(Symbol)
 #include(Semantic)
 #include(Utility)
 #include(Codegen)
@@ -17,7 +17,7 @@ include(AddLLVM)
 include(HandleLLVMOptions)
 
 include(cmake/LexParseTests.cmake)
-# include(cmake/SymbolTests.cmake)
+include(cmake/SymbolTests.cmake)
 #include(cmake/SemanticTests.cmake)
 #include(cmake/CodegenTests.cmake)
 
@@ -25,7 +25,7 @@ include(cmake/LexParseTests.cmake)
 add_executable(
   tests
   ${LEXPARSE_TESTS}
-#  ${SYMBOL_TESTS}
+  ${SYMBOL_TESTS}
 #  ${SEMANTIC_TESTS}
 #  ${CODEGEN_TESTS}
 )
@@ -40,7 +40,7 @@ add_executable(
 
 target_include_directories(tests PUBLIC 
   ${ANTLR_INCLUDE} ${ANTLR_GENERATED_DIR}
-#   ${SYMBOL_INCLUDE} 
+  ${SYMBOL_INCLUDE} 
 #   ${SEMANTIC_INCLUDE}
 #   ${UTILITY_INCLUDE}
 #   ${CODEGEN_INCLUDE}
@@ -53,7 +53,7 @@ target_link_libraries(tests
   ${ANTLR_RUNTIME_LIB}
   parser_lib
   lexparse_lib
-#   sym_lib
+  sym_lib
 #   semantic_lib
 #   utility_lib
 #   codegen_lib

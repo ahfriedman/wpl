@@ -13,6 +13,7 @@ invocation          :  VARIABLE '(' (args+=expression (',' args+=expression)* )?
 arrayAccess         : var=VARIABLE '[' index=expression ']'; 
 arrayOrVar          : var=VARIABLE | array=arrayAccess  ;
 
+//FIXME: program block required, variadic functions
 
 /*
  * Expressions return values. These can be: 
@@ -78,6 +79,7 @@ selectAlternative   : check=expression ':' eval=statement ;
  */
 parameterList          : params+=parameter (',' params+=parameter)* ;
 parameter           :  ty=type name=VARIABLE ;
+VariadicParam : ',' '...'; //TODO: could probably make this work better
 
 /*
  * Assignment fragment: this contains the information about variables
@@ -104,7 +106,7 @@ assignment : v+=VARIABLE (',' v+=VARIABLE)* (ASSIGN ex=expression)? ;
  * 10. Return statements
  * 11. Block statements. 
  */
-statement           : EXTERN (ty=type FUNC | PROC) name=VARIABLE '(' (paramList=parameterList)? ')' ';' # ExternStatement
+statement           : EXTERN (ty=type FUNC | PROC) name=VARIABLE '(' (paramList=parameterList variadic=VariadicParam?)? ')' ';' # ExternStatement
                     | ty=type FUNC name=VARIABLE '(' (paramList=parameterList)? ')' block   # FuncDef 
                     | PROC name=VARIABLE '(' (paramList=parameterList)? ')' block           # ProcDef
                     | <assoc=right> to=arrayOrVar ASSIGN ex=expression ';'                     # AssignStatement 
