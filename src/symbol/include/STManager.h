@@ -1,4 +1,5 @@
 #pragma once
+
 /**
  * @file STManager.h
  * @author Alex Friedman (ahfriedman.com)
@@ -27,7 +28,7 @@ class STManager {
     std::optional<Symbol*> findSymbol(std::string id);
 
     // Miscellaneous (useful for testing)
-    Scope& getCurrentScope() { return *currentScope; }
+    // Scope& getCurrentScope() { return *currentScope; }
     int scopeCount() { return scopes.size(); }
     std::string toString() const;
 

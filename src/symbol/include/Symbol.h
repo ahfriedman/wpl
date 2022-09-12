@@ -25,7 +25,7 @@ enum SymbolType {
     BOT,       // Bottom type--never possible. Unsure if needed yet
 };
 
-const std::string getStringFor(SymbolType symbol) 
+const static std::string getStringFor(SymbolType symbol) 
 {
     switch(symbol) {
         case INT: 
