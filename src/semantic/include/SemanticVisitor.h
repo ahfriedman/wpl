@@ -7,97 +7,98 @@
 
 class SemanticVisitor : WPLBaseVisitor
 {
-private: 
-    STManager* stmgr;
-    PropertyManager* bindings; 
-    WPLErrorHandler errorHandler; 
 
-public: 
-    SemanticVisitor(STManager* s, PropertyManager* p) {
+public:
+    SemanticVisitor(STManager *s, PropertyManager *p)
+    {
         stmgr = s;
-        bindings = p; 
+        bindings = p;
     }
 
-    std::string getErrors() { return errors.errorList(); }
-    STManager* getSTManager() { return stmgr; }
-    PropertyManager* getBindings() { return bindings; }
-    bool hasErrors() { return errors.hasErrors(); }
+    std::string getErrors() { return errorHandler.errorList(); }
+    STManager *getSTManager() { return stmgr; }
+    PropertyManager *getBindings() { return bindings; }
+    bool hasErrors() { return errorHandler.hasErrors(); }
 
+    // public:
+    std::any visitCompilationUnit(WPLParser::CompilationUnitContext *ctx) override;
 
-// public:
-//     std::any visitCompilationUnit(WPLParser::CompilationUnitContext *ctx);
+    //     std::any visitInvocation(WPLParser::InvocationContext *ctx) override;
 
-//     std::any visitInvocation(WPLParser::InvocationContext *ctx);
+    //     std::any visitArrayAccess(WPLParser::ArrayAccessContext *ctx) override;
 
-//     std::any visitArrayAccess(WPLParser::ArrayAccessContext *ctx);
+    //     std::any visitArrayOrVar(WPLParser::ArrayOrVarContext *ctx) override;
 
-//     std::any visitArrayOrVar(WPLParser::ArrayOrVarContext *ctx);
+    //     std::any visitIConstExpr(WPLParser::IConstExprContext *ctx) override;
 
-//     std::any visitIConstExpr(WPLParser::IConstExprContext *ctx);
+    //     std::any visitArrayAccessExpr(WPLParser::ArrayAccessExprContext *ctx) override;
 
-//     std::any visitArrayAccessExpr(WPLParser::ArrayAccessExprContext *ctx);
+    //     std::any visitSConstExpr(WPLParser::SConstExprContext *ctx) override;
 
-//     std::any visitSConstExpr(WPLParser::SConstExprContext *ctx);
+    //     std::any visitUnaryExpr(WPLParser::UnaryExprContext *ctx) override;
 
-//     std::any visitUnaryExpr(WPLParser::UnaryExprContext *ctx);
+    //     std::any visitBinaryArithExpr(WPLParser::BinaryArithExprContext *ctx) override;
 
-//     std::any visitBinaryArithExpr(WPLParser::BinaryArithExprContext *ctx);
+    //     std::any visitEqExpr(WPLParser::EqExprContext *ctx) override;
 
-//     std::any visitEqExpr(WPLParser::EqExprContext *ctx);
+    //     std::any visitLogAndExpr(WPLParser::LogAndExprContext *ctx) override;
 
-//     std::any visitLogAndExpr(WPLParser::LogAndExprContext *ctx);
+    //     std::any visitLogOrExpr(WPLParser::LogOrExprContext *ctx) override;
 
-//     std::any visitLogOrExpr(WPLParser::LogOrExprContext *ctx);
+    //     std::any visitCallExpr(WPLParser::CallExprContext *ctx) override;
 
-//     std::any visitCallExpr(WPLParser::CallExprContext *ctx);
+    //     std::any visitVariableExpr(WPLParser::VariableExprContext *ctx) override;
 
-//     std::any visitVariableExpr(WPLParser::VariableExprContext *ctx);
+    //     std::any visitFieldAccessExpr(WPLParser::FieldAccessExprContext *ctx) override;
 
-//     std::any visitFieldAccessExpr(WPLParser::FieldAccessExprContext *ctx);
+    //     std::any visitParenExpr(WPLParser::ParenExprContext *ctx) override;
 
-//     std::any visitParenExpr(WPLParser::ParenExprContext *ctx);
+    //     std::any visitBinaryRelExpr(WPLParser::BinaryRelExprContext *ctx) override;
 
-//     std::any visitBinaryRelExpr(WPLParser::BinaryRelExprContext *ctx);
+    //     std::any visitBConstExpr(WPLParser::BConstExprContext *ctx) override;
 
-//     std::any visitBConstExpr(WPLParser::BConstExprContext *ctx);
+    //     std::any visitBlock(WPLParser::BlockContext *ctx) override;
 
-//     std::any visitBlock(WPLParser::BlockContext *ctx);
+    //     std::any visitCondition(WPLParser::ConditionContext *ctx) override;
 
-//     std::any visitCondition(WPLParser::ConditionContext *ctx);
+    //     std::any visitSelectAlternative(WPLParser::SelectAlternativeContext *ctx) override;
 
-//     std::any visitSelectAlternative(WPLParser::SelectAlternativeContext *ctx);
+    //     std::any visitParameterList(WPLParser::ParameterListContext *ctx) override;
 
-//     std::any visitParameterList(WPLParser::ParameterListContext *ctx);
+    //     std::any visitParameter(WPLParser::ParameterContext *ctx) override;
 
-//     std::any visitParameter(WPLParser::ParameterContext *ctx);
+    //     std::any visitAssignment(WPLParser::AssignmentContext *ctx) override;
 
-//     std::any visitAssignment(WPLParser::AssignmentContext *ctx);
+    //     std::any visitExternStatement(WPLParser::ExternStatementContext *ctx) override;
 
-//     std::any visitExternStatement(WPLParser::ExternStatementContext *ctx);
+    //     std::any visitFuncDef(WPLParser::FuncDefContext *ctx) override;
 
-//     std::any visitFuncDef(WPLParser::FuncDefContext *ctx);
+    //     std::any visitProcDef(WPLParser::ProcDefContext *ctx) override;
 
-//     std::any visitProcDef(WPLParser::ProcDefContext *ctx);
+    //     std::any visitAssignStatement(WPLParser::AssignStatementContext *ctx) override;
 
-//     std::any visitAssignStatement(WPLParser::AssignStatementContext *ctx);
+    //     std::any visitVarDeclStatement(WPLParser::VarDeclStatementContext *ctx) override;
 
-//     std::any visitVarDeclStatement(WPLParser::VarDeclStatementContext *ctx);
+    //     std::any visitLoopStatement(WPLParser::LoopStatementContext *ctx) override;
 
-//     std::any visitLoopStatement(WPLParser::LoopStatementContext *ctx);
+    //     std::any visitConditionalStatement(WPLParser::ConditionalStatementContext *ctx) override;
 
-//     std::any visitConditionalStatement(WPLParser::ConditionalStatementContext *ctx);
+    //     std::any visitSelectStatement(WPLParser::SelectStatementContext *ctx) override;
 
-//     std::any visitSelectStatement(WPLParser::SelectStatementContext *ctx);
+    //     std::any visitCallStatement(WPLParser::CallStatementContext *ctx) override;
 
-//     std::any visitCallStatement(WPLParser::CallStatementContext *ctx);
+    //     std::any visitReturnStatement(WPLParser::ReturnStatementContext *ctx) override;
 
-//     std::any visitReturnStatement(WPLParser::ReturnStatementContext *ctx);
+    //     std::any visitBlockStatement(WPLParser::BlockStatementContext *ctx) override;
 
-//     std::any visitBlockStatement(WPLParser::BlockStatementContext *ctx);
+    //     std::any visitTypeOrVar(WPLParser::TypeOrVarContext *ctx) override;
 
-//     std::any visitTypeOrVar(WPLParser::TypeOrVarContext *ctx);
+    //     std::any visitType(WPLParser::TypeContext *ctx) override;
 
-//     std::any visitType(WPLParser::TypeContext *ctx);
+    //     std::any visitBooleanConst(WPLParser::BooleanConstContext *ctx) override;
 
-//     std::any visitBooleanConst(WPLParser::BooleanConstContext *ctx);
+private:
+    STManager *stmgr;
+    PropertyManager *bindings;
+    WPLErrorHandler errorHandler;
 };

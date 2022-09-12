@@ -16,7 +16,7 @@
 #include "antlr4-runtime.h"
 #include "WPLLexer.h"
 #include "WPLParser.h"
-// #include "CalcErrorHandler.h"
+// #include "WPLErrorHandler.h"
 // #include "SemanticVisitor.h"
 // #include "CodegenVisitor.h"
 #include "llvm/Support/raw_ostream.h"

@@ -1,4 +1,4 @@
-# Top-level CMake file for this the Calculator example
+# Top-level CMake file for WPL
 
 cmake_minimum_required(VERSION 3.20.0)
 project(WPL_COMPILER 

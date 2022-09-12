@@ -1,3 +1,4 @@
+#pragma once
 #include "antlr4-runtime.h"
 #include <string>
 #include <vector>
@@ -5,7 +6,7 @@
 
 enum ErrType {SEMANTIC};
 
-struct CalcError {
+struct WPLError {
   ErrType type;
   antlr4::Token* token;
   std::string message;
@@ -18,21 +19,21 @@ struct CalcError {
   }
 };
 
-class CalcErrorHandler {
+class WPLErrorHandler {
   public:
     void addSemanticError(antlr4::Token* t, std::string msg) {
-      CalcError* e = new CalcError();
+      WPLError* e = new WPLError();
       e->type = SEMANTIC;
       e->token = t;
       e->message = msg;
       errors.push_back(e);
     }
 
-    std::vector<CalcError*>& getErrors() { return errors; }
+    std::vector<WPLError*>& getErrors() { return errors; }
 
     std::string errorList() {
       std::ostringstream errList;
-      for (CalcError* e : errors) {
+      for (WPLError* e : errors) {
         errList << e->toString() << std::endl;
       }
       return errList.str();
@@ -40,5 +41,5 @@ class CalcErrorHandler {
 
     bool hasErrors() { return !errors.empty(); }
   private:
-    std::vector<CalcError*> errors;
+    std::vector<WPLError*> errors;
 };
