@@ -2,9 +2,27 @@
 #include "antlr4-runtime.h"
 #include "WPLBaseVisitor.h"
 #include "STManager.h"
+#include "PropertyManager.h"
+#include "WPLErrorHandler.h"
 
 class SemanticVisitor : WPLBaseVisitor
 {
+private: 
+    STManager* stmgr;
+    PropertyManager* bindings; 
+    WPLErrorHandler errorHandler; 
+
+public: 
+    SemanticVisitor(STManager* s, PropertyManager* p) {
+        stmgr = s;
+        bindings = p; 
+    }
+
+    std::string getErrors() { return errors.errorList(); }
+    STManager* getSTManager() { return stmgr; }
+    PropertyManager* getBindings() { return bindings; }
+    bool hasErrors() { return errors.hasErrors(); }
+
 
 // public:
 //     std::any visitCompilationUnit(WPLParser::CompilationUnitContext *ctx);

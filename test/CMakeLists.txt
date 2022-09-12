@@ -4,7 +4,7 @@ include(Testing)
 include(ANTLR)
 include(Symbol)
 include(Semantic)
-#include(Utility)
+include(Utility)
 #include(Codegen)
 include(LLVM)
 
@@ -34,7 +34,7 @@ add_dependencies(tests
   parser_lib 
   sym_lib 
   semantic_lib
-#   utility_lib
+  utility_lib
 #   codegen_lib
   )
 
@@ -42,7 +42,7 @@ target_include_directories(tests PUBLIC
   ${ANTLR_INCLUDE} ${ANTLR_GENERATED_DIR}
   ${SYMBOL_INCLUDE} 
   ${SEMANTIC_INCLUDE}
-#   ${UTILITY_INCLUDE}
+  ${UTILITY_INCLUDE}
 #   ${CODEGEN_INCLUDE}
   ${LLVM_BINARY_DIR}/include
   ${LLVM_INCLUDE_DIR}
@@ -55,7 +55,7 @@ target_link_libraries(tests
   lexparse_lib
   sym_lib
   semantic_lib
-#   utility_lib
+  utility_lib
 #   codegen_lib
   ${LLVM_LIBS}
   Catch2::Catch2WithMain
