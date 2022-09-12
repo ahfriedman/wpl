@@ -27,33 +27,117 @@ std::any SemanticVisitor::visitSConstExpr(WPLParser::SConstExprContext *ctx)
     return SymbolType::STR;
 }
 
-std::any SemanticVisitor::visitUnaryExpr(WPLParser::UnaryExprContext *ctx) {
-    SymbolType innerType = std::any_cast<SymbolType>(ctx->ex->accept(this)); 
+std::any SemanticVisitor::visitUnaryExpr(WPLParser::UnaryExprContext *ctx)
+{
+    SymbolType innerType = std::any_cast<SymbolType>(ctx->ex->accept(this));
 
-    switch (ctx->op->getType()) {
-        case WPLParser::MINUS:
-            if(innerType != SymbolType::INT) {
-                errorHandler.addSemanticError(ctx->getStart(), "INT expected in unary minus, but got " + Symbol::getStringFor(innerType));
-                return SymbolType::UNDEFINED;
-            }
-            break; 
-        case WPLParser::NOT:
-            if(innerType != SymbolType::BOOL) {
-                errorHandler.addSemanticError(ctx->getStart(), "BOOL expected in unary not, but got " + Symbol::getStringFor(innerType));
-                return SymbolType::UNDEFINED;
-            }
-            break; 
+    switch (ctx->op->getType())
+    {
+    case WPLParser::MINUS:
+        if (innerType != SymbolType::INT)
+        {
+            errorHandler.addSemanticError(ctx->getStart(), "INT expected in unary minus, but got " + Symbol::getStringFor(innerType));
+            return SymbolType::UNDEFINED;
+        }
+        break;
+    case WPLParser::NOT:
+        if (innerType != SymbolType::BOOL)
+        {
+            errorHandler.addSemanticError(ctx->getStart(), "BOOL expected in unary not, but got " + Symbol::getStringFor(innerType));
+            return SymbolType::UNDEFINED;
+        }
+        break;
     }
 
-    return innerType; 
-
+    return innerType;
 }
-//     std::any visitBinaryArithExpr(WPLParser::BinaryArithExprContext *ctx) override;
-//     std::any visitEqExpr(WPLParser::EqExprContext *ctx) override;
-//     std::any visitLogAndExpr(WPLParser::LogAndExprContext *ctx) override;
-//     std::any visitLogOrExpr(WPLParser::LogOrExprContext *ctx) override;
+
+std::any SemanticVisitor::visitBinaryArithExpr(WPLParser::BinaryArithExprContext *ctx)
+{
+    // Based on starter
+    SymbolType type = INT;
+    auto left = std::any_cast<SymbolType>(ctx->left->accept(this));
+    if (left != SymbolType::INT)
+    {
+        errorHandler.addSemanticError(ctx->getStart(), "INT left expression expected, but was " + Symbol::getStringFor(left));
+        type = SymbolType::UNDEFINED;
+    }
+    auto right = std::any_cast<SymbolType>(ctx->right->accept(this));
+    if (right != SymbolType::INT)
+    {
+        errorHandler.addSemanticError(ctx->getStart(), "INT right expression expected, but was " + Symbol::getStringFor(right));
+        type = SymbolType::UNDEFINED;
+    }
+    return type;
+}
+
+std::any SemanticVisitor::visitEqExpr(WPLParser::EqExprContext *ctx)
+{
+    // FIXME: do better!
+    SymbolType result = SymbolType::BOOL;
+    auto right = std::any_cast<SymbolType>(ctx->right->accept(this));
+    auto left = std::any_cast<SymbolType>(ctx->left->accept(this));
+    if (right != left)
+    {
+        errorHandler.addSemanticError(ctx->getStart(), "Both sides of '=' must have the same type");
+        result = SymbolType::UNDEFINED;
+    }
+    return result;
+}
+std::any SemanticVisitor::visitLogAndExpr(WPLParser::LogAndExprContext *ctx)
+{
+    // Based on starter //FIXME: do better!
+    SymbolType type = BOOL;
+    auto left = std::any_cast<SymbolType>(ctx->left->accept(this));
+    if (left != SymbolType::BOOL)
+    {
+        errorHandler.addSemanticError(ctx->getStart(), "BOOL left expression expected, but was " + Symbol::getStringFor(left));
+        type = SymbolType::UNDEFINED;
+    }
+    auto right = std::any_cast<SymbolType>(ctx->right->accept(this));
+    if (right != SymbolType::BOOL)
+    {
+        errorHandler.addSemanticError(ctx->getStart(), "BOOL right expression expected, but was " + Symbol::getStringFor(right));
+        type = SymbolType::UNDEFINED;
+    }
+    return type;
+}
+std::any SemanticVisitor::visitLogOrExpr(WPLParser::LogOrExprContext *ctx)
+{
+    // Based on starter //FIXME: do better!
+    SymbolType type = BOOL;
+    auto left = std::any_cast<SymbolType>(ctx->left->accept(this));
+    if (left != SymbolType::BOOL)
+    {
+        errorHandler.addSemanticError(ctx->getStart(), "BOOL left expression expected, but was " + Symbol::getStringFor(left));
+        type = SymbolType::UNDEFINED;
+    }
+    auto right = std::any_cast<SymbolType>(ctx->right->accept(this));
+    if (right != SymbolType::BOOL)
+    {
+        errorHandler.addSemanticError(ctx->getStart(), "BOOL right expression expected, but was " + Symbol::getStringFor(right));
+        type = SymbolType::UNDEFINED;
+    }
+    return type;
+}
 //     std::any visitCallExpr(WPLParser::CallExprContext *ctx) override;
-//     std::any visitVariableExpr(WPLParser::VariableExprContext *ctx) override;
+std::any SemanticVisitor::visitVariableExpr(WPLParser::VariableExprContext *ctx)
+{
+    // Based on starter
+    std::string id = ctx->v->getText(); 
+
+    std::optional<Symbol*> opt =   stmgr->lookup(id);
+
+    if(!opt) {
+        errorHandler.addSemanticError(ctx->getStart(), "Undefined variable in expression: " + id);
+        return SymbolType::UNDEFINED;
+    }
+
+    Symbol* symbol = opt.value(); 
+
+    bindings->bind(ctx, symbol);
+    return symbol->type; 
+}
 //     std::any visitFieldAccessExpr(WPLParser::FieldAccessExprContext *ctx) override;
 std::any SemanticVisitor::visitParenExpr(WPLParser::ParenExprContext *ctx)
 {
