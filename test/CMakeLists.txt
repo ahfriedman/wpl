@@ -53,7 +53,7 @@ target_link_libraries(tests
   ${ANTLR_RUNTIME_LIB}
   parser_lib
   lexparse_lib
-#   sym_lib
+  sym_lib
 #   semantic_lib
 #   utility_lib
 #   codegen_lib

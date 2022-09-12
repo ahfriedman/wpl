@@ -18,7 +18,7 @@
 /****************** Positive tests ******************/
 
 TEST_CASE("Scanner operator tests", "[front-end]") {
-  antlr4::ANTLRInputStream input(":= / = > < - * ~ + ~=");
+  antlr4::ANTLRInputStream input("<- / = > < - * ~ + ~=");
   WPLLexer lexer(&input);
   lexer.removeErrorListeners();
   lexer.addErrorListener(new TestErrorListener());
@@ -61,7 +61,7 @@ TEST_CASE("Boolean constants, variables, integers, and white space", "[front-end
 /****************** Negative tests ******************/
 
 TEST_CASE("Invalid lexemes", "[front-end]") {
-  antlr4::ANTLRInputStream input("{");
+  antlr4::ANTLRInputStream input("`");
   WPLLexer lexer(&input);
   lexer.removeErrorListeners();
   lexer.addErrorListener(new TestErrorListener());

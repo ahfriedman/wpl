@@ -12,12 +12,12 @@ Scope &STManager::enterScope()
     return *next;
 }
 
-std::optional<const Scope *> STManager::exitScope()
+std::optional<Scope *> STManager::exitScope()
 {
     // FIXME: Potential memory leak
     if (!currentScope)
     {
-        return std::optional<const Scope *>{};
+        return {};
     }
 
     Scope *last = currentScope.value();
@@ -25,7 +25,7 @@ std::optional<const Scope *> STManager::exitScope()
     currentScope = last->getParent();
     // scopes.pop_back(); //Delete last element in vector //FIXME: why doesn't example do this?
 
-    return std::optional<const Scope *>{last};
+    return std::optional<Scope *>{last};
 }
 
 bool STManager::addSymbol(Symbol *symbol)

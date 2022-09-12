@@ -13,7 +13,7 @@ TEST_CASE("add a scope", "[symbol]") {
   CHECK(mgr.scopeCount() == 0);
   Scope& s = mgr.enterScope();
   CHECK(mgr.scopeCount() == 1);
-  const Scope* s1 = mgr.getCurrentScope().value();
+  Scope* s1 = mgr.getCurrentScope().value();
   CHECK(&s == s1);
   CHECK(0 == s1->getId());
 }
@@ -27,8 +27,8 @@ TEST_CASE("multiple scopes", "[symbol]") {
   CHECK(0 == s2.getParent().value()->getId());
   Scope &s3 = mgr.enterScope();
   CHECK(1 == s3.getParent().value()->getId());
-  Scope &temp = mgr.exitScope();
-  CHECK(s3.getId() == temp.getId());
+  Scope* temp = mgr.exitScope().value();
+  CHECK(s3.getId() == temp->getId());
   Scope &s4 = mgr.enterScope();
   CHECK(1 == s4.getParent().value()->getId());
   CHECK(3 == s4.getId());
