@@ -20,15 +20,18 @@ class STManager {
   public:
     STManager(){};
     Scope& enterScope();
-    Scope& exitScope();
+    std::optional<const Scope*> exitScope();
 
     // Pass through methods
-    Symbol* addSymbol(Symbol& symbol);
+    bool addSymbol(Symbol* symbol);
     // Symbol* addSymbol(std::string id, SymType t);
-    std::optional<Symbol*> findSymbol(std::string id);
+    std::optional<Symbol*> lookup(std::string id);
 
     // Miscellaneous (useful for testing)
-    // Scope& getCurrentScope() { return *currentScope; }
+    std::optional<const Scope*> getCurrentScope() { 
+      if(currentScope) return std::optional<const Scope*> {currentScope.value()};
+      return std::optional<const Scope*>{}; 
+    }
     int scopeCount() { return scopes.size(); }
     std::string toString() const;
 

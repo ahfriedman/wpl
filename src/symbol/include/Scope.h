@@ -33,6 +33,7 @@ class Scope {
         }
         //FIXME: destructors? 
 
+        bool addSymbol(Symbol* symbol);
         bool addSymbol(std::string id, SymbolType t); 
         std::optional<Symbol*>  lookup(std::string id);
         
