@@ -112,7 +112,7 @@ statement           : EXTERN (ty=type FUNC | PROC) name=VARIABLE '(' (paramList=
                     | <assoc=right> to=arrayOrVar ASSIGN ex=expression ';'                     # AssignStatement 
                     | <assoc=right> ty=typeOrVar assignments+=assignment (',' assignments+=assignment)* ';'   # VarDeclStatement
                     | WHILE check=condition DO block                                # LoopStatement 
-                    | IF check=condition THEN? trueBlk=block (ELSE falseBlk=block)? # ConditionalStatement
+                    | IF check=condition IF_THEN? trueBlk=block (ELSE falseBlk=block)? # ConditionalStatement
                     | SELECT '{' (cases+=selectAlternative)+ '}'  # SelectStatement  
                     | call=invocation  ';'?    # CallStatement 
                     | RETURN expression? ';'  # ReturnStatement 
@@ -163,7 +163,7 @@ TYPE_STR        :   'str' ;
 FUNC            :   'func'  ;
 PROC            :   'proc'  ;
 IF              :   'if'    ;
-THEN            :   'then'  ;
+IF_THEN            :   'then'  ;
 ELSE            :   'else'  ;
 WHILE           :   'while' ;
 RETURN          :   'return';
