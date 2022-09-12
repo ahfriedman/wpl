@@ -20,10 +20,10 @@ add_dependencies(semantic_lib
 ##############################################
 # Modify for your implementation.
 ##############################################
-# include_directories(semantic_lib
-#   ${ANTLR_INCLUDE}
-#   ${ANTLR_GENERATED_DIR}
-#   ${SYMBOL_INCLUDE}
-#   ${SEMANTIC_INCLUDE}
+include_directories(semantic_lib
+  ${ANTLR_INCLUDE}
+  ${ANTLR_GENERATED_DIR}
+  ${SYMBOL_INCLUDE}
+  ${SEMANTIC_INCLUDE}
 #   ${UTILITY_INCLUDE}
-# )
+)
