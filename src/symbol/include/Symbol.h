@@ -17,7 +17,8 @@
 // FIXME: we may need arrays, functions & procedures.
 
 // The possible types of symbols in the language
-enum SymbolType {
+enum SymbolType
+{
     INT,       // Integers
     BOOL,      // Booleans
     STR,       // Strings
@@ -25,29 +26,12 @@ enum SymbolType {
     BOT,       // Bottom type--never possible. Unsure if needed yet
 };
 
-const static std::string getStringFor(SymbolType symbol) 
-{
-    switch(symbol) {
-        case INT: 
-            return "INT";
-        case BOOL: 
-            return "BOOL";
-        case STR: 
-            return "STR";
-        case UNDEFINED: 
-            return "UNDEFINED"; 
-        case BOT: 
-            return "BOTTOM";
-    }
-}
-
-
 struct Symbol
 {
     std::string identifier; // Mostly needed for our tostring function
     SymbolType type;        // Keeps track of the symbol's type
 
-    //Constructs a symbol from an ID and symbol type. 
+    // Constructs a symbol from an ID and symbol type.
     Symbol(std::string id, SymbolType t)
     {
         identifier = id;
@@ -60,5 +44,22 @@ struct Symbol
         std::string typeName = getStringFor(type);
         description << '[' << identifier << ", " << typeName << ']';
         return description.str();
+    }
+
+    const static std::string getStringFor(SymbolType symbol)
+    {
+        switch (symbol)
+        {
+        case INT:
+            return "INT";
+        case BOOL:
+            return "BOOL";
+        case STR:
+            return "STR";
+        case UNDEFINED:
+            return "UNDEFINED";
+        case BOT:
+            return "BOTTOM";
+        }
     }
 };

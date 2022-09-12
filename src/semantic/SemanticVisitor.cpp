@@ -19,12 +19,35 @@ std::any SemanticVisitor::visitIConstExpr(WPLParser::IConstExprContext *ctx)
 {
     return SymbolType::INT;
 }
-//     std::any visitArrayAccessExpr(WPLParser::ArrayAccessExprContext *ctx) override;
+
+std::any SemanticVisitor::visitArrayAccessExpr(WPLParser::ArrayAccessExprContext *ctx) { return ctx->arrayAccess()->accept(this); }
+
 std::any SemanticVisitor::visitSConstExpr(WPLParser::SConstExprContext *ctx)
 {
     return SymbolType::STR;
 }
-//     std::any visitUnaryExpr(WPLParser::UnaryExprContext *ctx) override;
+
+std::any SemanticVisitor::visitUnaryExpr(WPLParser::UnaryExprContext *ctx) {
+    SymbolType innerType = std::any_cast<SymbolType>(ctx->ex->accept(this)); 
+
+    switch (ctx->op->getType()) {
+        case WPLParser::MINUS:
+            if(innerType != SymbolType::INT) {
+                errorHandler.addSemanticError(ctx->getStart(), "INT expected in unary minus, but got " + Symbol::getStringFor(innerType));
+                return SymbolType::UNDEFINED;
+            }
+            break; 
+        case WPLParser::NOT:
+            if(innerType != SymbolType::BOOL) {
+                errorHandler.addSemanticError(ctx->getStart(), "BOOL expected in unary not, but got " + Symbol::getStringFor(innerType));
+                return SymbolType::UNDEFINED;
+            }
+            break; 
+    }
+
+    return innerType; 
+
+}
 //     std::any visitBinaryArithExpr(WPLParser::BinaryArithExprContext *ctx) override;
 //     std::any visitEqExpr(WPLParser::EqExprContext *ctx) override;
 //     std::any visitLogAndExpr(WPLParser::LogAndExprContext *ctx) override;

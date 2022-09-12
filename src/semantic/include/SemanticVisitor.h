@@ -24,10 +24,10 @@ public:
     //     std::any visitInvocation(WPLParser::InvocationContext *ctx) override;
     //     std::any visitArrayAccess(WPLParser::ArrayAccessContext *ctx) override;
     //     std::any visitArrayOrVar(WPLParser::ArrayOrVarContext *ctx) override;
-        std::any visitIConstExpr(WPLParser::IConstExprContext *ctx) override;
-    //     std::any visitArrayAccessExpr(WPLParser::ArrayAccessExprContext *ctx) override;
+    std::any visitIConstExpr(WPLParser::IConstExprContext *ctx) override;
+    std::any visitArrayAccessExpr(WPLParser::ArrayAccessExprContext *ctx) override;
     std::any visitSConstExpr(WPLParser::SConstExprContext *ctx) override;
-    //     std::any visitUnaryExpr(WPLParser::UnaryExprContext *ctx) override;
+    std::any visitUnaryExpr(WPLParser::UnaryExprContext *ctx) override;
     //     std::any visitBinaryArithExpr(WPLParser::BinaryArithExprContext *ctx) override;
     //     std::any visitEqExpr(WPLParser::EqExprContext *ctx) override;
     //     std::any visitLogAndExpr(WPLParser::LogAndExprContext *ctx) override;
