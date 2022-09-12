@@ -120,7 +120,11 @@ std::any SemanticVisitor::visitLogOrExpr(WPLParser::LogOrExprContext *ctx)
     }
     return type;
 }
-//     std::any visitCallExpr(WPLParser::CallExprContext *ctx) override;
+
+std::any SemanticVisitor::visitCallExpr(WPLParser::CallExprContext *ctx) {
+    return ctx->call->accept(this); 
+}
+
 std::any SemanticVisitor::visitVariableExpr(WPLParser::VariableExprContext *ctx)
 {
     // Based on starter
@@ -143,7 +147,24 @@ std::any SemanticVisitor::visitParenExpr(WPLParser::ParenExprContext *ctx)
 {
     return ctx->ex->accept(this);
 }
-//     std::any visitBinaryRelExpr(WPLParser::BinaryRelExprContext *ctx) override;
+
+std::any SemanticVisitor::visitBinaryRelExpr(WPLParser::BinaryRelExprContext *ctx) {
+    // Based on starter //FIXME: do better!
+    SymbolType type = BOOL;
+    auto left = std::any_cast<SymbolType>(ctx->left->accept(this));
+    if (left != SymbolType::INT)
+    {
+        errorHandler.addSemanticError(ctx->getStart(), "INT left expression expected, but was " + Symbol::getStringFor(left));
+        type = SymbolType::UNDEFINED;
+    }
+    auto right = std::any_cast<SymbolType>(ctx->right->accept(this));
+    if (right != SymbolType::INT)
+    {
+        errorHandler.addSemanticError(ctx->getStart(), "INT right expression expected, but was " + Symbol::getStringFor(right));
+        type = SymbolType::UNDEFINED;
+    }
+    return type;
+}
 
 std::any SemanticVisitor::visitBConstExpr(WPLParser::BConstExprContext *ctx)
 {
@@ -177,7 +198,9 @@ std::any SemanticVisitor::visitBlock(WPLParser::BlockContext *ctx)
 //     std::any visitLoopStatement(WPLParser::LoopStatementContext *ctx) override;
 //     std::any visitConditionalStatement(WPLParser::ConditionalStatementContext *ctx) override;
 //     std::any visitSelectStatement(WPLParser::SelectStatementContext *ctx) override;
-//     std::any visitCallStatement(WPLParser::CallStatementContext *ctx) override;
+std::any SemanticVisitor::visitCallStatement(WPLParser::CallStatementContext *ctx) {
+    return ctx->call->accept(this); 
+}
 //     std::any visitReturnStatement(WPLParser::ReturnStatementContext *ctx) override;
 
 std::any SemanticVisitor::visitBlockStatement(WPLParser::BlockStatementContext *ctx)
