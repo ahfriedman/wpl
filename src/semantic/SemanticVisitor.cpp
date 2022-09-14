@@ -188,7 +188,17 @@ std::any SemanticVisitor::visitBlock(WPLParser::BlockContext *ctx)
 
     return SymbolType::UNDEFINED;
 }
-//     std::any visitCondition(WPLParser::ConditionContext *ctx) override;
+std::any SemanticVisitor::visitCondition(WPLParser::ConditionContext *ctx)
+{
+    SymbolType conditionType = std::any_cast<SymbolType>(ctx->ex);
+
+    if(conditionType != SymbolType::BOOL)
+    {
+        errorHandler.addSemanticError(ctx->getStart(), "Condition expected BOOL, but was given " + Symbol::getStringFor(conditionType));
+    }
+
+    return UNDEFINED; 
+}
 //     std::any visitSelectAlternative(WPLParser::SelectAlternativeContext *ctx) override;
 //     std::any visitParameterList(WPLParser::ParameterListContext *ctx) override;
 //     std::any visitParameter(WPLParser::ParameterContext *ctx) override;
@@ -224,7 +234,13 @@ std::any SemanticVisitor::visitAssignStatement(WPLParser::AssignStatementContext
     return UNDEFINED; // FIXME: VERIFY
 }
 //     std::any visitVarDeclStatement(WPLParser::VarDeclStatementContext *ctx) override;
-//     std::any visitLoopStatement(WPLParser::LoopStatementContext *ctx) override;
+std::any SemanticVisitor::visitLoopStatement(WPLParser::LoopStatementContext *ctx)
+{
+    ctx->check->accept(this);
+    ctx->block()->accept(this);
+
+    return SymbolType::UNDEFINED;
+}
 //     std::any visitConditionalStatement(WPLParser::ConditionalStatementContext *ctx) override;
 //     std::any visitSelectStatement(WPLParser::SelectStatementContext *ctx) override;
 std::any SemanticVisitor::visitCallStatement(WPLParser::CallStatementContext *ctx)
@@ -238,19 +254,20 @@ std::any SemanticVisitor::visitBlockStatement(WPLParser::BlockStatementContext *
     return ctx->block()->accept(this);
 }
 //     std::any visitTypeOrVar(WPLParser::TypeOrVarContext *ctx) override;
-std::any SemanticVisitor::visitType(WPLParser::TypeContext *ctx) 
+std::any SemanticVisitor::visitType(WPLParser::TypeContext *ctx)
 {
-    if(ctx->len) {
-        //FIXME: HANDLE BETTER
+    if (ctx->len)
+    {
+        // FIXME: HANDLE BETTER
         errorHandler.addSemanticError(ctx->getStart(), "Arrays currently not supported");
-        return  UNDEFINED; 
+        return UNDEFINED;
     }
 
-    if(ctx->TYPE_INT())
+    if (ctx->TYPE_INT())
         return SymbolType::INT;
-    if(ctx->TYPE_BOOL())
+    if (ctx->TYPE_BOOL())
         return SymbolType::BOOL;
-    if(ctx->TYPE_STR())
+    if (ctx->TYPE_STR())
         return SymbolType::STR;
 
     errorHandler.addSemanticError(ctx->getStart(), "Unknown type: " + ctx->getText());
