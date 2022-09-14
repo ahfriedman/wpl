@@ -196,32 +196,32 @@ std::any SemanticVisitor::visitBlock(WPLParser::BlockContext *ctx)
 //     std::any visitExternStatement(WPLParser::ExternStatementContext *ctx) override;
 //     std::any visitFuncDef(WPLParser::FuncDefContext *ctx) override;
 //     std::any visitProcDef(WPLParser::ProcDefContext *ctx) override;
-std::any SemanticVisitor::visitAssignStatement(WPLParser::AssignStatementContext *ctx) 
+std::any SemanticVisitor::visitAssignStatement(WPLParser::AssignStatementContext *ctx)
 {
-    //This one is the update one! 
+    // This one is the update one!
     SymbolType exprType = std::any_cast<SymbolType>(ctx->ex->accept(this));
 
-    //FIXME: DO BETTER W/ Type Inference & such 
-    if(exprType == UNDEFINED) {
+    // FIXME: DO BETTER W/ Type Inference & such
+    if (exprType == UNDEFINED)
+    {
         errorHandler.addSemanticError(ctx->getStart(), "Expression evaluates to an UNDEFINED type");
     }
 
-    
-    std::string varId = ctx->to->getText(); 
+    std::string varId = ctx->to->getText();
 
-    std::optional<Symbol*> opt = stmgr->lookup(varId);
+    std::optional<Symbol *> opt = stmgr->lookup(varId);
 
-    if(opt) {
-        Symbol* symbol = opt.value(); 
+    if (opt)
+    {
+        Symbol *symbol = opt.value();
 
-        if(symbol->type != exprType) 
+        if (symbol->type != exprType)
         {
             errorHandler.addSemanticError(ctx->getStart(), "Assignment statement expected " + Symbol::getStringFor(symbol->type) + " but got " + Symbol::getStringFor(exprType));
         }
     }
 
-
-    return UNDEFINED; //FIXME: VERIFY
+    return UNDEFINED; // FIXME: VERIFY
 }
 //     std::any visitVarDeclStatement(WPLParser::VarDeclStatementContext *ctx) override;
 //     std::any visitLoopStatement(WPLParser::LoopStatementContext *ctx) override;
@@ -238,7 +238,24 @@ std::any SemanticVisitor::visitBlockStatement(WPLParser::BlockStatementContext *
     return ctx->block()->accept(this);
 }
 //     std::any visitTypeOrVar(WPLParser::TypeOrVarContext *ctx) override;
-//     std::any visitType(WPLParser::TypeContext *ctx) override;
+std::any SemanticVisitor::visitType(WPLParser::TypeContext *ctx) 
+{
+    if(ctx->len) {
+        //FIXME: HANDLE BETTER
+        errorHandler.addSemanticError(ctx->getStart(), "Arrays currently not supported");
+        return  UNDEFINED; 
+    }
+
+    if(ctx->TYPE_INT())
+        return SymbolType::INT;
+    if(ctx->TYPE_BOOL())
+        return SymbolType::BOOL;
+    if(ctx->TYPE_STR())
+        return SymbolType::STR;
+
+    errorHandler.addSemanticError(ctx->getStart(), "Unknown type: " + ctx->getText());
+    return SymbolType::UNDEFINED;
+}
 
 std::any SemanticVisitor::visitBooleanConst(WPLParser::BooleanConstContext *ctx)
 {

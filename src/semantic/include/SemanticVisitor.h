@@ -56,7 +56,7 @@ public:
     //     std::any visitReturnStatement(WPLParser::ReturnStatementContext *ctx) override;
     std::any visitBlockStatement(WPLParser::BlockStatementContext *ctx) override;
     //     std::any visitTypeOrVar(WPLParser::TypeOrVarContext *ctx) override;
-    //     std::any visitType(WPLParser::TypeContext *ctx) override;
+    std::any visitType(WPLParser::TypeContext *ctx) override;
     std::any visitBooleanConst(WPLParser::BooleanConstContext *ctx) override;
 
 private:
