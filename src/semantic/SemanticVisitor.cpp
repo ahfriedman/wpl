@@ -233,7 +233,42 @@ std::any SemanticVisitor::visitAssignStatement(WPLParser::AssignStatementContext
 
     return UNDEFINED; // FIXME: VERIFY
 }
-//     std::any visitVarDeclStatement(WPLParser::VarDeclStatementContext *ctx) override;
+
+std::any SemanticVisitor::visitVarDeclStatement(WPLParser::VarDeclStatementContext *ctx)
+{
+    //FIXME: need lookup in current scope!!!
+    
+    //FIXME: make sure this lookup checks undefined!!!
+    SymbolType assignType = std::any_cast<SymbolType>(ctx->typeOrVar());
+
+    for(auto e : ctx->assignments) {
+        SymbolType exprType = std::any_cast<SymbolType>(e->ex->accept(this));
+
+        if(assignType != exprType)
+        {
+            errorHandler.addSemanticError(e->getStart(), "Expression of type " + Symbol::getStringFor(exprType) + " cannot be assigned to " + Symbol::getStringFor(assignType));
+        }
+
+        for(auto var : e->v) 
+        {
+            std::string id = var->getText(); 
+
+            std::optional<Symbol*> symOpt = stmgr->lookup(id);
+
+            if(symOpt) {
+                errorHandler.addSemanticError(e->getStart(), "Redeclaration of " + id);
+            }
+            else {
+                Symbol* symbol = new Symbol(id, exprType); //Done with exprType for later inferencing purposes
+                stmgr->addSymbol(symbol);
+                // bindings->bind() //FIXME: What to do about bindings????
+            }
+        }
+    }
+
+    return SymbolType::UNDEFINED;
+}
+
 std::any SemanticVisitor::visitLoopStatement(WPLParser::LoopStatementContext *ctx)
 {
     ctx->check->accept(this);
