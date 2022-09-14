@@ -121,26 +121,28 @@ std::any SemanticVisitor::visitLogOrExpr(WPLParser::LogOrExprContext *ctx)
     return type;
 }
 
-std::any SemanticVisitor::visitCallExpr(WPLParser::CallExprContext *ctx) {
-    return ctx->call->accept(this); 
+std::any SemanticVisitor::visitCallExpr(WPLParser::CallExprContext *ctx)
+{
+    return ctx->call->accept(this);
 }
 
 std::any SemanticVisitor::visitVariableExpr(WPLParser::VariableExprContext *ctx)
 {
     // Based on starter
-    std::string id = ctx->v->getText(); 
+    std::string id = ctx->v->getText();
 
-    std::optional<Symbol*> opt =   stmgr->lookup(id);
+    std::optional<Symbol *> opt = stmgr->lookup(id);
 
-    if(!opt) {
+    if (!opt)
+    {
         errorHandler.addSemanticError(ctx->getStart(), "Undefined variable in expression: " + id);
         return SymbolType::UNDEFINED;
     }
 
-    Symbol* symbol = opt.value(); 
+    Symbol *symbol = opt.value();
 
     bindings->bind(ctx, symbol);
-    return symbol->type; 
+    return symbol->type;
 }
 //     std::any visitFieldAccessExpr(WPLParser::FieldAccessExprContext *ctx) override;
 std::any SemanticVisitor::visitParenExpr(WPLParser::ParenExprContext *ctx)
@@ -148,7 +150,8 @@ std::any SemanticVisitor::visitParenExpr(WPLParser::ParenExprContext *ctx)
     return ctx->ex->accept(this);
 }
 
-std::any SemanticVisitor::visitBinaryRelExpr(WPLParser::BinaryRelExprContext *ctx) {
+std::any SemanticVisitor::visitBinaryRelExpr(WPLParser::BinaryRelExprContext *ctx)
+{
     // Based on starter //FIXME: do better!
     SymbolType type = BOOL;
     auto left = std::any_cast<SymbolType>(ctx->left->accept(this));
@@ -193,13 +196,40 @@ std::any SemanticVisitor::visitBlock(WPLParser::BlockContext *ctx)
 //     std::any visitExternStatement(WPLParser::ExternStatementContext *ctx) override;
 //     std::any visitFuncDef(WPLParser::FuncDefContext *ctx) override;
 //     std::any visitProcDef(WPLParser::ProcDefContext *ctx) override;
-//     std::any visitAssignStatement(WPLParser::AssignStatementContext *ctx) override;
+std::any SemanticVisitor::visitAssignStatement(WPLParser::AssignStatementContext *ctx) 
+{
+    //This one is the update one! 
+    SymbolType exprType = std::any_cast<SymbolType>(ctx->ex->accept(this));
+
+    //FIXME: DO BETTER W/ Type Inference & such 
+    if(exprType == UNDEFINED) {
+        errorHandler.addSemanticError(ctx->getStart(), "Expression evaluates to an UNDEFINED type");
+    }
+
+    
+    std::string varId = ctx->to->getText(); 
+
+    std::optional<Symbol*> opt = stmgr->lookup(varId);
+
+    if(opt) {
+        Symbol* symbol = opt.value(); 
+
+        if(symbol->type != exprType) 
+        {
+            errorHandler.addSemanticError(ctx->getStart(), "Assignment statement expected " + Symbol::getStringFor(symbol->type) + " but got " + Symbol::getStringFor(exprType));
+        }
+    }
+
+
+    return UNDEFINED; //FIXME: VERIFY
+}
 //     std::any visitVarDeclStatement(WPLParser::VarDeclStatementContext *ctx) override;
 //     std::any visitLoopStatement(WPLParser::LoopStatementContext *ctx) override;
 //     std::any visitConditionalStatement(WPLParser::ConditionalStatementContext *ctx) override;
 //     std::any visitSelectStatement(WPLParser::SelectStatementContext *ctx) override;
-std::any SemanticVisitor::visitCallStatement(WPLParser::CallStatementContext *ctx) {
-    return ctx->call->accept(this); 
+std::any SemanticVisitor::visitCallStatement(WPLParser::CallStatementContext *ctx)
+{
+    return ctx->call->accept(this);
 }
 //     std::any visitReturnStatement(WPLParser::ReturnStatementContext *ctx) override;
 

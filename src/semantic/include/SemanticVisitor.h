@@ -47,7 +47,7 @@ public:
     //     std::any visitExternStatement(WPLParser::ExternStatementContext *ctx) override;
     //     std::any visitFuncDef(WPLParser::FuncDefContext *ctx) override;
     //     std::any visitProcDef(WPLParser::ProcDefContext *ctx) override;
-    //     std::any visitAssignStatement(WPLParser::AssignStatementContext *ctx) override;
+    std::any visitAssignStatement(WPLParser::AssignStatementContext *ctx) override;
     //     std::any visitVarDeclStatement(WPLParser::VarDeclStatementContext *ctx) override;
     //     std::any visitLoopStatement(WPLParser::LoopStatementContext *ctx) override;
     //     std::any visitConditionalStatement(WPLParser::ConditionalStatementContext *ctx) override;
