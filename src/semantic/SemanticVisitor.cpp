@@ -253,7 +253,18 @@ std::any SemanticVisitor::visitBlockStatement(WPLParser::BlockStatementContext *
 {
     return ctx->block()->accept(this);
 }
-//     std::any visitTypeOrVar(WPLParser::TypeOrVarContext *ctx) override;
+
+std::any SemanticVisitor::visitTypeOrVar(WPLParser::TypeOrVarContext *ctx) 
+{
+    if(!(ctx->type()))
+    {
+        errorHandler.addSemanticError(ctx->getStart(), "UNIMPLEMENTED: var"); //FIXME: TYPE INFERENC
+        return SymbolType::UNDEFINED;    
+    }
+
+    return ctx->type()->accept(this); 
+}
+
 std::any SemanticVisitor::visitType(WPLParser::TypeContext *ctx)
 {
     if (ctx->len)
