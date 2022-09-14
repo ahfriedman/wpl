@@ -192,12 +192,12 @@ std::any SemanticVisitor::visitCondition(WPLParser::ConditionContext *ctx)
 {
     SymbolType conditionType = std::any_cast<SymbolType>(ctx->ex);
 
-    if(conditionType != SymbolType::BOOL)
+    if (conditionType != SymbolType::BOOL)
     {
         errorHandler.addSemanticError(ctx->getStart(), "Condition expected BOOL, but was given " + Symbol::getStringFor(conditionType));
     }
 
-    return UNDEFINED; 
+    return UNDEFINED;
 }
 //     std::any visitSelectAlternative(WPLParser::SelectAlternativeContext *ctx) override;
 //     std::any visitParameterList(WPLParser::ParameterListContext *ctx) override;
@@ -241,7 +241,21 @@ std::any SemanticVisitor::visitLoopStatement(WPLParser::LoopStatementContext *ct
 
     return SymbolType::UNDEFINED;
 }
-//     std::any visitConditionalStatement(WPLParser::ConditionalStatementContext *ctx) override;
+
+std::any SemanticVisitor::visitConditionalStatement(WPLParser::ConditionalStatementContext *ctx)
+{
+    //FIXME:Type inference!!!
+    ctx->check->accept(this); 
+
+    ctx->trueBlk->accept(this); 
+
+    if(ctx->falseBlk) {
+        ctx->falseBlk->accept(this); 
+    }
+
+    return SymbolType::UNDEFINED; 
+}
+
 //     std::any visitSelectStatement(WPLParser::SelectStatementContext *ctx) override;
 std::any SemanticVisitor::visitCallStatement(WPLParser::CallStatementContext *ctx)
 {
@@ -254,15 +268,15 @@ std::any SemanticVisitor::visitBlockStatement(WPLParser::BlockStatementContext *
     return ctx->block()->accept(this);
 }
 
-std::any SemanticVisitor::visitTypeOrVar(WPLParser::TypeOrVarContext *ctx) 
+std::any SemanticVisitor::visitTypeOrVar(WPLParser::TypeOrVarContext *ctx)
 {
-    if(!(ctx->type()))
+    if (!(ctx->type()))
     {
-        errorHandler.addSemanticError(ctx->getStart(), "UNIMPLEMENTED: var"); //FIXME: TYPE INFERENC
-        return SymbolType::UNDEFINED;    
+        errorHandler.addSemanticError(ctx->getStart(), "UNIMPLEMENTED: var"); // FIXME: TYPE INFERENC
+        return SymbolType::UNDEFINED;
     }
 
-    return ctx->type()->accept(this); 
+    return ctx->type()->accept(this);
 }
 
 std::any SemanticVisitor::visitType(WPLParser::TypeContext *ctx)

@@ -50,7 +50,7 @@ public:
     std::any visitAssignStatement(WPLParser::AssignStatementContext *ctx) override;
     //     std::any visitVarDeclStatement(WPLParser::VarDeclStatementContext *ctx) override;
     std::any visitLoopStatement(WPLParser::LoopStatementContext *ctx) override;
-    //     std::any visitConditionalStatement(WPLParser::ConditionalStatementContext *ctx) override;
+    std::any visitConditionalStatement(WPLParser::ConditionalStatementContext *ctx) override;
     //     std::any visitSelectStatement(WPLParser::SelectStatementContext *ctx) override;
     std::any visitCallStatement(WPLParser::CallStatementContext *ctx) override;
     //     std::any visitReturnStatement(WPLParser::ReturnStatementContext *ctx) override;
