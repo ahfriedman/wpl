@@ -88,17 +88,18 @@ TEST_CASE("Test Type Equality", "[semantic]")
 {
   Type* TOP =  new Type();
   Type* INT = new TypeInt();
+
   // Type BOOL = TypeBool();
   // Type STR = TypeStr();
   // Type BOT = TypeBot();
 
-  // SECTION("Top Type tests")
-  // {
-  //   REQUIRE((TOP == TOP));
-  //   REQUIRE_FALSE((TOP != TOP));
+  SECTION("Top Type tests")
+  {
+    REQUIRE(TOP->is(TOP));
+    REQUIRE_FALSE(TOP->isNot(TOP));
 
-  //   REQUIRE((TOP == INT));
-  //   REQUIRE_FALSE((TOP != INT));
+    REQUIRE(TOP->is(INT));
+    REQUIRE_FALSE(TOP->isNot(INT));
 
   //   REQUIRE((TOP == BOOL));
   //   REQUIRE_FALSE((TOP != BOOL));
@@ -108,12 +109,15 @@ TEST_CASE("Test Type Equality", "[semantic]")
 
   //   REQUIRE((TOP == BOT));
   //   REQUIRE_FALSE((TOP != BOT));
-  // }
+  }
 
 
   SECTION("Int Type tests") {
-    // REQUIRE((INT != TOP));
-    REQUIRE_FALSE((INT == TOP));
+    // REQUIRE(INT->isNot(*TOP));
+    // REQUIRE_FALSE(INT->is(*TOP));
+
+    REQUIRE(INT->is(INT));
+    // REQUIRE(INT->is(TypeInt()));
   }
   // Why is PL easier to read in mono fonts?
 }

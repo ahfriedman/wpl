@@ -50,12 +50,11 @@ public:
 
     virtual std::string toString() { return "TOP"; }
 
-    bool operator==(Type* rhs) { return this->equals(rhs); }
-
-    bool operator!=(Type* rhs) {return !(this->equals(rhs)); }
+    virtual bool is(const Type * other) { return this->equals(other); }
+    virtual bool isNot(const Type * other) { return !(this->equals(other)); }    
 
 protected:
-    virtual bool equals(Type* other) const { return true; }
+    virtual bool equals(const Type * other) const { return true; }
 };
 
 
@@ -65,11 +64,13 @@ public:
     std::string toString() override { return "INT"; }
     
 protected: 
-    bool equals(Type* other) const override {
-        if(TypeInt* v = dynamic_cast<TypeInt*>(other)) {
-            return true; 
-        }
-        return false; 
+    bool equals(const Type * other) const override {
+        std::cout << "INT" << std::endl; 
+        return dynamic_cast<const TypeInt*>(other);
+        // if(TypeInt* v = dynamic_cast<TypeInt*>(other)) {
+            // return true; 
+        // }
+        // return false; 
     }
 };
 
