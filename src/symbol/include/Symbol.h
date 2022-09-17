@@ -14,7 +14,86 @@
 #include <string>  //Includes strings
 #include <sstream> //Used for string streams
 
+//Needed for anycasts
+#include <any>
+#include <utility>
+
 // FIXME: we may need arrays, functions & procedures.
+
+// class Type 
+// {
+
+// public: 
+//     // enum BaseTypes {
+//     //     INT,        // Integers
+//     //     BOOL,       // Booleans
+//     //     STR,        // Strings
+//     //     BOT,        // Bottom - Should be impossible
+//     //     TOP,        // Top    - Universal Type - Shouldn't be used
+//     // };
+
+// protected:
+//     //Used to print the name of the type
+//     virtual void toString() const = 0;
+//     virtual bool operator==(Type other); 
+//     virtual bool operator!=(Type other);
+// };
+
+
+class Type {
+public: 
+    std::string toString() { return "TOP"; }
+    bool operator==(Type other) { return true; }
+    bool operator!=(Type other) { return false; }
+};
+
+class TypeBot : public Type {
+public: 
+    std::string toString() { return "BOT"; }
+    bool operator==(Type other) { return false; }
+    bool operator!=(Type other) { return true; }
+};
+
+class TypeInt : public Type {
+public: 
+    std::string toString() { return "INT"; }
+    bool operator==(TypeInt other) { 
+        return true; 
+        // if(TypeInt t = std::any_cast<TypeInt>(other)) return true; 
+        // return false; 
+     }
+
+    bool operator==(Type other) {
+        return false; 
+    }
+};
+
+class TypeBool : public Type {
+public: 
+    std::string toString() { return "BOOL"; }
+    bool operator==(TypeBool other) { 
+        return true; 
+     }
+
+    bool operator==(Type other) {
+        return false; 
+    }
+};
+
+class TypeStr : public Type {
+public: 
+    std::string toString() { return "STR"; }
+    bool operator==(TypeStr other) { 
+        return true; 
+     }
+
+    bool operator==(Type other) {
+        return false; 
+    }
+};
+
+
+
 
 // The possible types of symbols in the language
 enum SymbolType

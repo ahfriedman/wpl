@@ -80,3 +80,31 @@ TEST_CASE("visitType Tests", "[semantic]") {
 
   // CHECK_FALSE(true);//sv->hasErrors());
 }
+
+TEST_CASE("Test Type Equality", "[semantic]") {
+  Type TOP = Type(); 
+  Type INT = TypeInt(); 
+  Type BOOL = TypeBool(); 
+  Type STR = TypeStr(); 
+  Type BOT = TypeBot(); 
+
+  REQUIRE(TOP == TOP);
+  REQUIRE_FALSE(TOP != TOP);
+
+  // REQUIRE(TOP == INT);
+  // REQUIRE_FALSE(TOP != INT);
+
+  // REQUIRE(TOP == BOOL);
+  // REQUIRE_FALSE(TOP != BOOL);
+
+  // REQUIRE(TOP == STR); 
+  // REQUIRE_FALSE(TOP != STR); 
+
+  // REQUIRE(TOP == BOT);
+  // REQUIRE_FALSE(TOP != BOT);
+
+
+
+  //Why is PL easier to read in mono fonts? 
+
+}
