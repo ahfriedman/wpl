@@ -18,6 +18,9 @@
 #include <any>
 #include <utility>
 
+//cout 
+#include <iostream>
+
 // FIXME: we may need arrays, functions & procedures.
 
 // class Type 
@@ -42,52 +45,33 @@
 
 class Type {
 public: 
-    std::string toString() { return "TOP"; }
-    bool operator==(Type other) { return true; }
-    bool operator!=(Type other) { return false; }
+    virtual ~Type() = default;
+
+    virtual std::string toString() { return "TOP"; }
+    // friend bool operator==(Type rhs) { return this.equals(rhs); }
+    bool operator==(Type* rhs) {
+        std::cout << "LHS IS " << this->toString() << std::endl; 
+        std::cout << "RHS IS " << rhs->toString() << std::endl; 
+        return this->equals(rhs); 
+    }
+    // bool operator!=(Type other) { std::cout << "47" << std::endl; return false; }
+
+protected:
+    virtual bool equals(Type* other) const {
+        std::cout << "TOP CALLED" << std::endl; 
+        return true;
+    }
 };
 
-class TypeBot : public Type {
-public: 
-    std::string toString() { return "BOT"; }
-    bool operator==(Type other) { return false; }
-    bool operator!=(Type other) { return true; }
-};
+
 
 class TypeInt : public Type {
 public: 
-    std::string toString() { return "INT"; }
-    bool operator==(TypeInt other) { 
-        return true; 
-        // if(TypeInt t = std::any_cast<TypeInt>(other)) return true; 
-        // return false; 
-     }
-
-    bool operator==(Type other) {
-        return false; 
-    }
-};
-
-class TypeBool : public Type {
-public: 
-    std::string toString() { return "BOOL"; }
-    bool operator==(TypeBool other) { 
-        return true; 
-     }
-
-    bool operator==(Type other) {
-        return false; 
-    }
-};
-
-class TypeStr : public Type {
-public: 
-    std::string toString() { return "STR"; }
-    bool operator==(TypeStr other) { 
-        return true; 
-     }
-
-    bool operator==(Type other) {
+    std::string toString() override { return "INT"; }
+    
+protected: 
+    bool equals(Type* other) const override {
+        std::cout << "INT CALLED" << std::endl; 
         return false; 
     }
 };
