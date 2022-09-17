@@ -14,19 +14,19 @@
 #include <string>  //Includes strings
 #include <sstream> //Used for string streams
 
-//Needed for anycasts
+// Needed for anycasts
 #include <any>
 #include <utility>
 
-//cout 
+// cout
 #include <iostream>
 
 // FIXME: we may need arrays, functions & procedures.
 
-// class Type 
+// class Type
 // {
 
-// public: 
+// public:
 //     // enum BaseTypes {
 //     //     INT,        // Integers
 //     //     BOOL,       // Booleans
@@ -38,87 +38,88 @@
 // protected:
 //     //Used to print the name of the type
 //     virtual void toString() const = 0;
-//     virtual bool operator==(Type other); 
+//     virtual bool operator==(Type other);
 //     virtual bool operator!=(Type other);
 // };
 
-
-//Object slicing is NOT fun 
-class Type {
-public: 
+// Object slicing is NOT fun
+class Type
+{
+public:
     virtual ~Type() = default;
 
-    virtual std::string toString() { return "TOP"; }
+    virtual std::string toString() const { return "TOP"; }
 
-    virtual bool is(const Type * other) { return this->equals(other); }
-    virtual bool isNot(const Type * other) { return !(this->equals(other)); }    
+    virtual bool is(const Type *other) const { return this->equals(other); }
+    virtual bool isNot(const Type *other) const { return !(this->equals(other)); }
 
 protected:
-    virtual bool equals(const Type * other) const { return true; }
+    virtual bool equals(const Type *other) const { return true; }
 };
 
-
-
-class TypeInt : public Type {
-public: 
-    std::string toString() override { return "INT"; }
-    
-protected: 
-    bool equals(const Type * other) const override {
-        return dynamic_cast<const TypeInt*>(other);
-    }
-};
-
-class TypeBool : public Type {
-public: 
-    std::string toString() override { return "BOOL"; }
-    
-protected: 
-    bool equals(const Type * other) const override {
-        return dynamic_cast<const TypeBool*>(other);
-    }
-};
-
-class TypeStr : public Type {
-public: 
-    std::string toString() override { return "STR"; }
-    
-protected: 
-    bool equals(const Type * other) const override {
-        return dynamic_cast<const TypeStr*>(other);
-    }
-};
-
-class TypeBot : public Type {
-public: 
-    std::string toString() override { return "BOT"; }
-    
-protected: 
-    bool equals(const Type * other) const override {
-        return false; 
-    }
-};
-
-
-
-
-// The possible types of symbols in the language
-enum SymbolType
+class TypeInt : public Type
 {
-    INT,       // Integers
-    BOOL,      // Booleans
-    STR,       // Strings
-    UNDEFINED, // Used for errors & the such
-    BOT,       // Bottom type--never possible. Unsure if needed yet
+public:
+    std::string toString() const override { return "INT"; }
+
+protected:
+    bool equals(const Type *other) const override
+    {
+        return dynamic_cast<const TypeInt *>(other);
+    }
+};
+
+class TypeBool : public Type
+{
+public:
+    std::string toString() const override { return "BOOL"; }
+
+protected:
+    bool equals(const Type *other) const override
+    {
+        return dynamic_cast<const TypeBool *>(other);
+    }
+};
+
+class TypeStr : public Type
+{
+public:
+    std::string toString() const override { return "STR"; }
+
+protected:
+    bool equals(const Type *other) const override
+    {
+        return dynamic_cast<const TypeStr *>(other);
+    }
+};
+
+class TypeBot : public Type
+{
+public:
+    std::string toString() const override { return "BOT"; }
+
+protected:
+    bool equals(const Type *other) const override
+    {
+        return false;
+    }
+};
+
+namespace Types
+{
+    inline const Type *INT = new TypeInt();
+    inline const Type *BOOL = new TypeBool();
+    inline const Type *STR = new TypeStr();
+    inline const Type *UNDEFINED = new TypeBot();
 };
 
 struct Symbol
 {
     std::string identifier; // Mostly needed for our tostring function
-    SymbolType type;        // Keeps track of the symbol's type
+    const Type *type;             // Keeps track of the symbol's type
 
     // Constructs a symbol from an ID and symbol type.
-    Symbol(std::string id, SymbolType t)
+    Symbol(std::string id, const Type *t)
     {
         identifier = id;
         type = t;
@@ -127,25 +128,8 @@ struct Symbol
     std::string toString() const
     {
         std::ostringstream description;
-        std::string typeName = getStringFor(type);
+        std::string typeName = type->toString(); // getStringFor(type);
         description << '[' << identifier << ", " << typeName << ']';
         return description.str();
-    }
-
-    const static std::string getStringFor(SymbolType symbol)
-    {
-        switch (symbol)
-        {
-        case INT:
-            return "INT";
-        case BOOL:
-            return "BOOL";
-        case STR:
-            return "STR";
-        case UNDEFINED:
-            return "UNDEFINED";
-        case BOT:
-            return "BOTTOM";
-        }
     }
 };
