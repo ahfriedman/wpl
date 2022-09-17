@@ -88,10 +88,9 @@ TEST_CASE("Test Type Equality", "[semantic]")
 {
   Type* TOP =  new Type();
   Type* INT = new TypeInt();
-
-  // Type BOOL = TypeBool();
-  // Type STR = TypeStr();
-  // Type BOT = TypeBot();
+  Type* BOOL = new TypeBool();
+  Type* STR = new TypeStr();
+  Type* BOT = new TypeBot();
 
   SECTION("Top Type tests")
   {
@@ -101,23 +100,51 @@ TEST_CASE("Test Type Equality", "[semantic]")
     REQUIRE(TOP->is(INT));
     REQUIRE_FALSE(TOP->isNot(INT));
 
-  //   REQUIRE((TOP == BOOL));
-  //   REQUIRE_FALSE((TOP != BOOL));
+    REQUIRE(TOP->is(BOOL));
+    REQUIRE_FALSE(TOP->isNot(BOOL));
 
-  //   REQUIRE((TOP == STR));
-  //   REQUIRE_FALSE((TOP != STR));
-
-  //   REQUIRE((TOP == BOT));
-  //   REQUIRE_FALSE((TOP != BOT));
+    REQUIRE(TOP->is(STR));
+    
+    REQUIRE(TOP->is(BOT));
   }
 
 
   SECTION("Int Type tests") {
-    // REQUIRE(INT->isNot(*TOP));
-    // REQUIRE_FALSE(INT->is(*TOP));
+    REQUIRE(INT->isNot(TOP));
+    REQUIRE_FALSE(INT->is(TOP));
 
     REQUIRE(INT->is(INT));
     // REQUIRE(INT->is(TypeInt()));
+
+    REQUIRE(INT->isNot(BOOL));
+
+    REQUIRE(INT->isNot(STR));
+
+    REQUIRE(INT->isNot(BOT));
+  }
+
+  SECTION("Bool Type Tests") {
+    REQUIRE(BOOL->isNot(TOP));
+    REQUIRE(BOOL->isNot(INT));
+    REQUIRE(BOOL->isNot(STR));
+    REQUIRE(BOOL->is(BOOL));
+    REQUIRE(BOOL->isNot(BOT));
+  }
+
+  SECTION("Str Type Tests") {
+    REQUIRE(STR->isNot(TOP));
+    REQUIRE(STR->isNot(INT));
+    REQUIRE(STR->is(STR));
+    REQUIRE(STR->isNot(BOOL));
+    REQUIRE(STR->isNot(BOT));
+  }
+
+  SECTION("Bot Type Tests") {
+    REQUIRE(BOT->isNot(TOP));
+    REQUIRE(BOT->isNot(INT));
+    REQUIRE(BOT->isNot(STR));
+    REQUIRE(BOT->isNot(BOOL));
+    REQUIRE(BOT->isNot(BOT));
   }
   // Why is PL easier to read in mono fonts?
 }

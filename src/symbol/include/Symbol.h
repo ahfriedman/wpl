@@ -65,12 +65,37 @@ public:
     
 protected: 
     bool equals(const Type * other) const override {
-        std::cout << "INT" << std::endl; 
         return dynamic_cast<const TypeInt*>(other);
-        // if(TypeInt* v = dynamic_cast<TypeInt*>(other)) {
-            // return true; 
-        // }
-        // return false; 
+    }
+};
+
+class TypeBool : public Type {
+public: 
+    std::string toString() override { return "BOOL"; }
+    
+protected: 
+    bool equals(const Type * other) const override {
+        return dynamic_cast<const TypeBool*>(other);
+    }
+};
+
+class TypeStr : public Type {
+public: 
+    std::string toString() override { return "STR"; }
+    
+protected: 
+    bool equals(const Type * other) const override {
+        return dynamic_cast<const TypeStr*>(other);
+    }
+};
+
+class TypeBot : public Type {
+public: 
+    std::string toString() override { return "BOT"; }
+    
+protected: 
+    bool equals(const Type * other) const override {
+        return false; 
     }
 };
 
