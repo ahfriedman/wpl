@@ -24,6 +24,9 @@
 // Vectors
 #include <vector>
 
+//Optional
+#include <optional>
+
 // FIXME: we may need arrays, functions & procedures.
 
 // class Type
@@ -108,40 +111,57 @@ protected:
     }
 };
 
-class TypeProc : public Type
+class TypeInvoke : public Type
 {
 private:
     std::vector<const Type *> paramTypes;
+    std::optional<const Type*> retType; 
 
 public:
-    TypeProc(std::vector<const Type *> p)
+    TypeInvoke(std::vector<const Type *> p)
     {
         paramTypes = p;
+        retType = {}; 
+    }
+
+    TypeInvoke(std::vector<const Type *> p, const Type* r)
+    {
+        paramTypes = p; 
+        retType = r; 
     }
 
     // FIXME: do better
     std::string toString() const override
     {
+        bool isProc = !retType.has_value();
+
         std::ostringstream description;
-        description << "PROC ";
+        description << (isProc ? "PROC " : "FUNC");
         for (auto param : paramTypes)
         {
             description << param->toString() << " ";
         }
-        description << " -> BOT"; 
+        description << (isProc ? " -> BOT" : (" -> " + retType.value()->toString())); 
         return description.str();
     }
 
 protected:
     bool equals(const Type *other) const override
     {
-        if(const TypeProc* p = dynamic_cast<const TypeProc *>(other)) {
+        if(const TypeInvoke* p = dynamic_cast<const TypeInvoke *>(other)) {
             if(p->paramTypes.size() != this->paramTypes.size()) return false; 
 
             //FIXME: ensure good enough!
             for(unsigned int i = 0; i < this->paramTypes.size(); i++) {
                 if(this->paramTypes.at(i)->isNot(p->paramTypes.at(i)))
                     return false; 
+            }
+
+            //check returnh types 
+            if((this->retType.has_value() ^ p->retType.has_value())) return false; 
+            if(this->retType.has_value())
+            {
+                return this->retType.value()->is(p->retType.value());
             }
 
             return true; 
