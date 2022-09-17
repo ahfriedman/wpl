@@ -43,24 +43,19 @@
 // };
 
 
+//Object slicing is NOT fun 
 class Type {
 public: 
     virtual ~Type() = default;
 
     virtual std::string toString() { return "TOP"; }
-    // friend bool operator==(Type rhs) { return this.equals(rhs); }
-    bool operator==(Type* rhs) {
-        std::cout << "LHS IS " << this->toString() << std::endl; 
-        std::cout << "RHS IS " << rhs->toString() << std::endl; 
-        return this->equals(rhs); 
-    }
-    // bool operator!=(Type other) { std::cout << "47" << std::endl; return false; }
+
+    bool operator==(Type* rhs) { return this->equals(rhs); }
+
+    bool operator!=(Type* rhs) {return !(this->equals(rhs)); }
 
 protected:
-    virtual bool equals(Type* other) const {
-        std::cout << "TOP CALLED" << std::endl; 
-        return true;
-    }
+    virtual bool equals(Type* other) const { return true; }
 };
 
 
@@ -71,7 +66,9 @@ public:
     
 protected: 
     bool equals(Type* other) const override {
-        std::cout << "INT CALLED" << std::endl; 
+        if(TypeInt* v = dynamic_cast<TypeInt*>(other)) {
+            return true; 
+        }
         return false; 
     }
 };
