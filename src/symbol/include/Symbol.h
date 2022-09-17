@@ -21,6 +21,9 @@
 // cout
 #include <iostream>
 
+// Vectors
+#include <vector>
+
 // FIXME: we may need arrays, functions & procedures.
 
 // class Type
@@ -105,6 +108,48 @@ protected:
     }
 };
 
+class TypeProc : public Type
+{
+private:
+    std::vector<const Type *> paramTypes;
+
+public:
+    TypeProc(std::vector<const Type *> p)
+    {
+        paramTypes = p;
+    }
+
+    // FIXME: do better
+    std::string toString() const override
+    {
+        std::ostringstream description;
+        description << "PROC ";
+        for (auto param : paramTypes)
+        {
+            description << param->toString() << " ";
+        }
+        description << " -> BOT"; 
+        return description.str();
+    }
+
+protected:
+    bool equals(const Type *other) const override
+    {
+        if(const TypeProc* p = dynamic_cast<const TypeProc *>(other)) {
+            if(p->paramTypes.size() != this->paramTypes.size()) return false; 
+
+            //FIXME: ensure good enough!
+            for(unsigned int i = 0; i < this->paramTypes.size(); i++) {
+                if(this->paramTypes.at(i)->isNot(p->paramTypes.at(i)))
+                    return false; 
+            }
+
+            return true; 
+        }
+        return false;
+    }
+};
+
 namespace Types
 {
     inline const Type *INT = new TypeInt();
@@ -116,7 +161,7 @@ namespace Types
 struct Symbol
 {
     std::string identifier; // Mostly needed for our tostring function
-    const Type *type;             // Keeps track of the symbol's type
+    const Type *type;       // Keeps track of the symbol's type
 
     // Constructs a symbol from an ID and symbol type.
     Symbol(std::string id, const Type *t)
