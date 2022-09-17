@@ -46,17 +46,37 @@ TEST_CASE("visitType Tests", "[semantic]") {
   antlr4::CommonTokenStream tokens(&lexer);
   WPLParser parser(&tokens); 
   parser.removeErrorListeners();
-  WPLParser::CompilationUnitContext* tree = NULL; 
   
-  REQUIRE_NOTHROW(tree = parser.compilationUnit());
-  REQUIRE(tree != NULL); 
+  
 
-  STManager* stmgr = new STManager(); 
-  SemanticVisitor* sv = new SemanticVisitor(stmgr, new PropertyManager());
-  sv->visitCompilationUnit(tree); 
+  SECTION("Visiting Compilation Unit Context") {
+    WPLParser::CompilationUnitContext* tree = NULL; 
+    REQUIRE_NOTHROW(tree = parser.compilationUnit());
+    REQUIRE(tree != NULL);
 
-  std::cout << stmgr->toString() << std::endl;
-  std::cout << tree->getText() << std::endl;  
+    //Any errors should be syntax errors. 
+    //FIXME: Should probably confirm the above statement through testing for syntax errors
+    REQUIRE(tree->getText() == "");
+  }
 
-  CHECK_FALSE(true);//sv->hasErrors());
+  SECTION("Visiting Type Context") {
+    WPLParser::TypeContext* tree = NULL; 
+
+    REQUIRE_NOTHROW(tree = parser.type());
+    REQUIRE(tree != NULL); 
+
+    REQUIRE(tree->getText() != "");
+  }
+  // REQUIRE_NOTHROW(tree = parser.type());
+  // REQUIRE(tree != NULL); 
+  // REQUIRE(tree->getText() != "");
+
+  // STManager* stmgr = new STManager(); 
+  // SemanticVisitor* sv = new SemanticVisitor(stmgr, new PropertyManager());
+  // sv->visitType(tree);//visitCompilationUnit(tree); 
+
+  // std::cout << stmgr->toString() << std::endl;
+  // std::cout << tree->getText() << std::endl;  
+
+  // CHECK_FALSE(true);//sv->hasErrors());
 }
