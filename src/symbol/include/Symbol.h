@@ -150,6 +150,9 @@ public:
         return description.str();
     }
 
+    std::vector<const Type*> getParamTypes() const { return paramTypes; }
+    std::optional<const Type *> getReturnType() const { return retType; }
+
 protected:
     bool equals(const Type *other) const override
     {

@@ -12,7 +12,56 @@ std::any SemanticVisitor::visitCompilationUnit(WPLParser::CompilationUnitContext
 
     return Types::UNDEFINED;
 }
-//     std::any visitInvocation(WPLParser::InvocationContext *ctx) override;
+
+std::any SemanticVisitor::visitInvocation(WPLParser::InvocationContext *ctx)
+{
+    //FIXME: should probably make it so that InvokableTypes use BOT instead of optionals...
+    //FIXME: Implemented variadic fns
+
+    std::string name = ctx->VARIABLE()->getText(); 
+
+    std::optional<Symbol*>  opt = stmgr->lookup(name);
+
+    if(!opt)
+    {
+        errorHandler.addSemanticError(ctx->getStart(), "Cannot invoke undefined function: " + name);
+        return Types::UNDEFINED;
+    }
+
+    Symbol* sym = opt.value(); 
+
+    if(const TypeInvoke* invokeable = dynamic_cast<const TypeInvoke*>(sym->type))
+    {
+        std::vector<const Type*> fnParams = invokeable->getParamTypes(); 
+
+        if(fnParams.size() != ctx->args.size())
+        {
+            std::ostringstream errorMsg; 
+            errorMsg << "Invocation of " << name << " expected " << fnParams.size() << " argument(s), but got " << ctx->args.size();
+            errorHandler.addSemanticError(ctx->getStart(), errorMsg.str());
+            return Types::UNDEFINED;
+        }
+
+        for(unsigned int i = 0; i < fnParams.size(); i++)
+        {
+            const Type* providedType = std::any_cast<const Type*>(ctx->args.at(i)->accept(this));
+            const Type* expectedType = fnParams.at(i); 
+
+            if(providedType->isNot(expectedType))
+            {
+                std::ostringstream errorMsg; 
+                errorMsg << "Argument " << i << " provided to " << name << " expected " << expectedType->toString() << " but got " << providedType->toString();
+
+                errorHandler.addSemanticError(ctx->getStart(), errorMsg.str());
+            }
+        }
+
+        return invokeable->getReturnType().has_value() ? invokeable->getReturnType().value() : Types::UNDEFINED;
+    }
+
+    errorHandler.addSemanticError(ctx->getStart(), "Can only invoke PROC and FUNC, not " + name + " : " + sym->type->toString());
+    return Types::UNDEFINED;
+}
 //     std::any visitArrayAccess(WPLParser::ArrayAccessContext *ctx) override;
 //     std::any visitArrayOrVar(WPLParser::ArrayOrVarContext *ctx) override;
 std::any SemanticVisitor::visitIConstExpr(WPLParser::IConstExprContext *ctx)
@@ -202,7 +251,7 @@ std::any SemanticVisitor::visitCondition(WPLParser::ConditionContext *ctx)
 //     std::any visitSelectAlternative(WPLParser::SelectAlternativeContext *ctx) override;
 std::any SemanticVisitor::visitParameterList(WPLParser::ParameterListContext *ctx)
 {
-    std::cout << "STAR PARAMLIST" << std::endl; 
+    std::cout << "STAR PARAMLIST" << std::endl;
     std::vector<const Type *> params;
 
     for (auto param : ctx->params)
@@ -210,10 +259,10 @@ std::any SemanticVisitor::visitParameterList(WPLParser::ParameterListContext *ct
         const Type *type = std::any_cast<const Type *>(param->accept(this));
         params.push_back(type);
     }
-    
-    std::cout << "END PARAMLIST" << std::endl; 
 
-    const Type* type = new TypeInvoke(params);  //Needs to be two separate lines for sake of const?
+    std::cout << "END PARAMLIST" << std::endl;
+
+    const Type *type = new TypeInvoke(params); // Needs to be two separate lines for sake of const?
     return type;
 }
 
@@ -240,11 +289,11 @@ std::any SemanticVisitor::visitProcDef(WPLParser::ProcDefContext *ctx)
     }
 
     // FIXME: test breaking params somehow!! like using something thats not a type!!!!
-    std::cout << "239" << std::endl; 
-    std::cout << typeid(ctx->paramList->accept(this)).name() << std::endl; 
+    std::cout << "239" << std::endl;
+    std::cout << typeid(ctx->paramList->accept(this)).name() << std::endl;
     const Type *procType = (ctx->paramList) ? std::any_cast<const Type *>(ctx->paramList->accept(this))
                                             : new TypeInvoke();
-    std::cout << "242" << std::endl; 
+    std::cout << "242" << std::endl;
     Symbol *procSymbol = new Symbol(procId, procType);
 
     stmgr->addSymbol(procSymbol);
