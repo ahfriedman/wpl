@@ -24,7 +24,7 @@
 // Vectors
 #include <vector>
 
-//Optional
+// Optional
 #include <optional>
 
 // FIXME: we may need arrays, functions & procedures.
@@ -111,28 +111,60 @@ protected:
     }
 };
 
+class TypeArray : public Type
+{
+private:
+    const Type *valueType;
+    // int
+    // FIXME: should we have a length defined in here?
+
+public:
+    TypeArray(const Type *v)
+    {
+        valueType = v;
+    }
+
+    std::string toString() const override
+    {
+        // FIXME: DO BETTER
+        return valueType->toString() + "[]";
+    }
+
+protected:
+    bool equals(const Type *other) const override
+    {
+        //FIXME: do better!
+        if (const TypeArray *p = dynamic_cast<const TypeArray *>(other))
+        {
+            return valueType->is(p->valueType);
+        }
+
+        return false; 
+    }
+};
+
 class TypeInvoke : public Type
 {
 private:
     std::vector<const Type *> paramTypes;
-    std::optional<const Type*> retType; 
+    std::optional<const Type *> retType;
 
 public:
     TypeInvoke()
     {
-        retType = {}; 
+        retType = {};
     }
 
     TypeInvoke(std::vector<const Type *> p)
     {
         paramTypes = p;
-        retType = {}; 
+        retType = {};
     }
 
-    TypeInvoke(std::vector<const Type *> p, const Type* r)
+    TypeInvoke(std::vector<const Type *> p, const Type *r)
     {
-        paramTypes = p; 
-        retType = r; 
+        paramTypes = p;
+        retType = r;
     }
 
     // FIXME: do better
@@ -146,33 +178,37 @@ public:
         {
             description << param->toString() << " ";
         }
-        description << (isProc ? " -> BOT" : (" -> " + retType.value()->toString())); 
+        description << (isProc ? " -> BOT" : (" -> " + retType.value()->toString()));
         return description.str();
     }
 
-    std::vector<const Type*> getParamTypes() const { return paramTypes; }
+    std::vector<const Type *> getParamTypes() const { return paramTypes; }
     std::optional<const Type *> getReturnType() const { return retType; }
 
 protected:
     bool equals(const Type *other) const override
     {
-        if(const TypeInvoke* p = dynamic_cast<const TypeInvoke *>(other)) {
-            if(p->paramTypes.size() != this->paramTypes.size()) return false; 
+        if (const TypeInvoke *p = dynamic_cast<const TypeInvoke *>(other))
+        {
+            if (p->paramTypes.size() != this->paramTypes.size())
+                return false;
 
-            //FIXME: ensure good enough!
-            for(unsigned int i = 0; i < this->paramTypes.size(); i++) {
-                if(this->paramTypes.at(i)->isNot(p->paramTypes.at(i)))
-                    return false; 
+            // FIXME: ensure good enough!
+            for (unsigned int i = 0; i < this->paramTypes.size(); i++)
+            {
+                if (this->paramTypes.at(i)->isNot(p->paramTypes.at(i)))
+                    return false;
             }
 
-            //check returnh types 
-            if((this->retType.has_value() ^ p->retType.has_value())) return false; 
-            if(this->retType.has_value())
+            // check returnh types
+            if ((this->retType.has_value() ^ p->retType.has_value()))
+                return false;
+            if (this->retType.has_value())
             {
                 return this->retType.value()->is(p->retType.value());
             }
 
-            return true; 
+            return true;
         }
         return false;
     }
