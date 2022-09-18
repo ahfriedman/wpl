@@ -130,6 +130,8 @@ public:
         return valueType->toString() + "[]";
     }
 
+    const Type* getValueType() const { return valueType; }
+
 protected:
     bool equals(const Type *other) const override
     {

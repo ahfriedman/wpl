@@ -15,41 +15,41 @@ std::any SemanticVisitor::visitCompilationUnit(WPLParser::CompilationUnitContext
 
 std::any SemanticVisitor::visitInvocation(WPLParser::InvocationContext *ctx)
 {
-    //FIXME: should probably make it so that InvokableTypes use BOT instead of optionals...
-    //FIXME: Implemented variadic fns
+    // FIXME: should probably make it so that InvokableTypes use BOT instead of optionals...
+    // FIXME: Implemented variadic fns
 
-    std::string name = ctx->VARIABLE()->getText(); 
+    std::string name = ctx->VARIABLE()->getText();
 
-    std::optional<Symbol*>  opt = stmgr->lookup(name);
+    std::optional<Symbol *> opt = stmgr->lookup(name);
 
-    if(!opt)
+    if (!opt)
     {
         errorHandler.addSemanticError(ctx->getStart(), "Cannot invoke undefined function: " + name);
         return Types::UNDEFINED;
     }
 
-    Symbol* sym = opt.value(); 
+    Symbol *sym = opt.value();
 
-    if(const TypeInvoke* invokeable = dynamic_cast<const TypeInvoke*>(sym->type))
+    if (const TypeInvoke *invokeable = dynamic_cast<const TypeInvoke *>(sym->type))
     {
-        std::vector<const Type*> fnParams = invokeable->getParamTypes(); 
+        std::vector<const Type *> fnParams = invokeable->getParamTypes();
 
-        if(fnParams.size() != ctx->args.size())
+        if (fnParams.size() != ctx->args.size())
         {
-            std::ostringstream errorMsg; 
+            std::ostringstream errorMsg;
             errorMsg << "Invocation of " << name << " expected " << fnParams.size() << " argument(s), but got " << ctx->args.size();
             errorHandler.addSemanticError(ctx->getStart(), errorMsg.str());
             return Types::UNDEFINED;
         }
 
-        for(unsigned int i = 0; i < fnParams.size(); i++)
+        for (unsigned int i = 0; i < fnParams.size(); i++)
         {
-            const Type* providedType = std::any_cast<const Type*>(ctx->args.at(i)->accept(this));
-            const Type* expectedType = fnParams.at(i); 
+            const Type *providedType = std::any_cast<const Type *>(ctx->args.at(i)->accept(this));
+            const Type *expectedType = fnParams.at(i);
 
-            if(providedType->isNot(expectedType))
+            if (providedType->isNot(expectedType))
             {
-                std::ostringstream errorMsg; 
+                std::ostringstream errorMsg;
                 errorMsg << "Argument " << i << " provided to " << name << " expected " << expectedType->toString() << " but got " << providedType->toString();
 
                 errorHandler.addSemanticError(ctx->getStart(), errorMsg.str());
@@ -62,7 +62,41 @@ std::any SemanticVisitor::visitInvocation(WPLParser::InvocationContext *ctx)
     errorHandler.addSemanticError(ctx->getStart(), "Can only invoke PROC and FUNC, not " + name + " : " + sym->type->toString());
     return Types::UNDEFINED;
 }
-//     std::any visitArrayAccess(WPLParser::ArrayAccessContext *ctx) override;
+
+std::any SemanticVisitor::visitArrayAccess(WPLParser::ArrayAccessContext *ctx)
+{
+    std::string name = ctx->var->toString();
+
+    const Type *exprType = std::any_cast<const Type *>(ctx->index->accept(this));
+    if (exprType->isNot(Types::INT)) // FIXME: maybe have to flip these..... after all, this would allow a TOP through!
+    {
+        errorHandler.addSemanticError(ctx->getStart(), "Array access index expected type INT but got " + exprType->toString());
+    }
+
+    std::optional<Symbol *> opt = stmgr->lookup(name);
+
+    if (!opt)
+    {
+        errorHandler.addSemanticError(ctx->getStart(), "Cannot access value from undefined array: " + name);
+    }
+    else
+    {
+        Symbol *sym = opt.value();
+
+        if (const TypeArray *arr = dynamic_cast<const TypeArray *>(sym->type))
+        {
+            return arr->getValueType(); 
+        }
+        else
+        {
+            errorHandler.addSemanticError(ctx->getStart(), "Cannot use array access on non-array expression " + name + " : " + sym->type->toString());
+        }
+    }
+    // FIXME: when should and shouldn't we return the wrong type intenionally?
+
+    return Types::UNDEFINED;
+}
+
 //     std::any visitArrayOrVar(WPLParser::ArrayOrVarContext *ctx) override;
 std::any SemanticVisitor::visitIConstExpr(WPLParser::IConstExprContext *ctx)
 {
