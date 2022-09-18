@@ -41,12 +41,12 @@ public:
     std::any visitBlock(WPLParser::BlockContext *ctx) override;
     std::any visitCondition(WPLParser::ConditionContext *ctx) override;
     //     std::any visitSelectAlternative(WPLParser::SelectAlternativeContext *ctx) override;
-    //     std::any visitParameterList(WPLParser::ParameterListContext *ctx) override;
-    //     std::any visitParameter(WPLParser::ParameterContext *ctx) override;
+    std::any visitParameterList(WPLParser::ParameterListContext *ctx) override;
+    std::any visitParameter(WPLParser::ParameterContext *ctx) override;
     //     std::any visitAssignment(WPLParser::AssignmentContext *ctx) override;
     //     std::any visitExternStatement(WPLParser::ExternStatementContext *ctx) override;
     //     std::any visitFuncDef(WPLParser::FuncDefContext *ctx) override;
-    //     std::any visitProcDef(WPLParser::ProcDefContext *ctx) override;
+    std::any visitProcDef(WPLParser::ProcDefContext *ctx) override;
     std::any visitAssignStatement(WPLParser::AssignStatementContext *ctx) override;
     std::any visitVarDeclStatement(WPLParser::VarDeclStatementContext *ctx) override;
     std::any visitLoopStatement(WPLParser::LoopStatementContext *ctx) override;

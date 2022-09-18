@@ -118,6 +118,11 @@ private:
     std::optional<const Type*> retType; 
 
 public:
+    TypeInvoke()
+    {
+        retType = {}; 
+    }
+
     TypeInvoke(std::vector<const Type *> p)
     {
         paramTypes = p;

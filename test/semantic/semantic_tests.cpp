@@ -86,11 +86,11 @@ TEST_CASE("visitType Tests", "[semantic]")
 
 TEST_CASE("Test Type Equality", "[semantic]")
 {
-  Type* TOP =  new Type();
-  Type* INT = new TypeInt();
-  Type* BOOL = new TypeBool();
-  Type* STR = new TypeStr();
-  Type* BOT = new TypeBot();
+  Type *TOP = new Type();
+  Type *INT = new TypeInt();
+  Type *BOOL = new TypeBool();
+  Type *STR = new TypeStr();
+  Type *BOT = new TypeBot();
 
   SECTION("Top Type tests")
   {
@@ -104,12 +104,12 @@ TEST_CASE("Test Type Equality", "[semantic]")
     REQUIRE_FALSE(TOP->isNot(BOOL));
 
     REQUIRE(TOP->is(STR));
-    
+
     REQUIRE(TOP->is(BOT));
   }
 
-
-  SECTION("Int Type tests") {
+  SECTION("Int Type tests")
+  {
     REQUIRE(INT->isNot(TOP));
     REQUIRE_FALSE(INT->is(TOP));
 
@@ -123,7 +123,8 @@ TEST_CASE("Test Type Equality", "[semantic]")
     REQUIRE(INT->isNot(BOT));
   }
 
-  SECTION("Bool Type Tests") {
+  SECTION("Bool Type Tests")
+  {
     REQUIRE(BOOL->isNot(TOP));
     REQUIRE(BOOL->isNot(INT));
     REQUIRE(BOOL->isNot(STR));
@@ -131,7 +132,8 @@ TEST_CASE("Test Type Equality", "[semantic]")
     REQUIRE(BOOL->isNot(BOT));
   }
 
-  SECTION("Str Type Tests") {
+  SECTION("Str Type Tests")
+  {
     REQUIRE(STR->isNot(TOP));
     REQUIRE(STR->isNot(INT));
     REQUIRE(STR->is(STR));
@@ -139,7 +141,8 @@ TEST_CASE("Test Type Equality", "[semantic]")
     REQUIRE(STR->isNot(BOT));
   }
 
-  SECTION("Bot Type Tests") {
+  SECTION("Bot Type Tests")
+  {
     REQUIRE(BOT->isNot(TOP));
     REQUIRE(BOT->isNot(INT));
     REQUIRE(BOT->isNot(STR));
@@ -147,4 +150,33 @@ TEST_CASE("Test Type Equality", "[semantic]")
     REQUIRE(BOT->isNot(BOT));
   }
   // Why is PL easier to read in mono fonts?
+}
+
+// FIXME: REQUIRE END IN RETURN
+
+TEST_CASE("visitbasicProc", "[semantic]")
+{
+  antlr4::ANTLRInputStream input("proc program () {}"); // FIXME: We get filtered out, don't we
+  WPLLexer lexer(&input);
+  antlr4::CommonTokenStream tokens(&lexer);
+  WPLParser parser(&tokens);
+  parser.removeErrorListeners();
+
+  WPLParser::CompilationUnitContext *tree = NULL;
+  REQUIRE_NOTHROW(tree = parser.compilationUnit());
+  REQUIRE(tree != NULL);
+
+  // Any errors should be syntax errors.
+  // FIXME: Should probably confirm the above statement through testing for syntax errors
+  REQUIRE(tree->getText() != "");
+
+  STManager* stmgr = new STManager();
+  SemanticVisitor* sv = new SemanticVisitor(stmgr, new PropertyManager());
+
+  sv->visitCompilationUnit(tree);
+
+  std::cout << stmgr->toString() << std::endl;
+  std::cout << tree->getText() << std::endl;
+
+  CHECK_FALSE(sv->hasErrors());
 }
