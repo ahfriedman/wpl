@@ -156,27 +156,60 @@ TEST_CASE("Test Type Equality", "[semantic]")
 
 TEST_CASE("visitbasicProc", "[semantic]")
 {
-  antlr4::ANTLRInputStream input("proc program () {}"); // FIXME: We get filtered out, don't we
-  WPLLexer lexer(&input);
-  antlr4::CommonTokenStream tokens(&lexer);
-  WPLParser parser(&tokens);
-  parser.removeErrorListeners();
+  SECTION("No arguments & empty")
+  {
+    antlr4::ANTLRInputStream input("proc program () {}");
+    WPLLexer lexer(&input);
+    antlr4::CommonTokenStream tokens(&lexer);
+    WPLParser parser(&tokens);
+    parser.removeErrorListeners();
 
-  WPLParser::CompilationUnitContext *tree = NULL;
-  REQUIRE_NOTHROW(tree = parser.compilationUnit());
-  REQUIRE(tree != NULL);
+    WPLParser::CompilationUnitContext *tree = NULL;
+    REQUIRE_NOTHROW(tree = parser.compilationUnit());
+    REQUIRE(tree != NULL);
 
-  // Any errors should be syntax errors.
-  // FIXME: Should probably confirm the above statement through testing for syntax errors
-  REQUIRE(tree->getText() != "");
+    // Any errors should be syntax errors.
+    // FIXME: Should probably confirm the above statement through testing for syntax errors
+    REQUIRE(tree->getText() != "");
 
-  STManager* stmgr = new STManager();
-  SemanticVisitor* sv = new SemanticVisitor(stmgr, new PropertyManager());
+    STManager *stmgr = new STManager();
+    SemanticVisitor *sv = new SemanticVisitor(stmgr, new PropertyManager());
 
-  sv->visitCompilationUnit(tree);
+    sv->visitCompilationUnit(tree);
 
-  std::cout << stmgr->toString() << std::endl;
-  std::cout << tree->getText() << std::endl;
+    std::cout << stmgr->toString() << std::endl;
+    std::cout << tree->getText() << std::endl;
 
-  CHECK_FALSE(sv->hasErrors());
+    CHECK_FALSE(sv->hasErrors());
+  }
+
+  //FIXME: test recursion
+
+  SECTION("1 arg & empty")
+  {
+    antlr4::ANTLRInputStream input("proc program (int a) {}");
+    WPLLexer lexer(&input);
+    antlr4::CommonTokenStream tokens(&lexer);
+    WPLParser parser(&tokens);
+    parser.removeErrorListeners();
+
+    WPLParser::CompilationUnitContext *tree = NULL;
+    REQUIRE_NOTHROW(tree = parser.compilationUnit());
+    REQUIRE(tree != NULL);
+
+    std::cout << "PAST" << std::endl; 
+    // Any errors should be syntax errors.
+    // FIXME: Should probably confirm the above statement through testing for syntax errors
+    REQUIRE(tree->getText() != "");
+
+    STManager *stmgr = new STManager();
+    SemanticVisitor *sv = new SemanticVisitor(stmgr, new PropertyManager());
+
+    sv->visitCompilationUnit(tree);
+
+    std::cout << stmgr->toString() << std::endl;
+    std::cout << tree->getText() << std::endl;
+
+    CHECK_FALSE(sv->hasErrors());
+  }
 }

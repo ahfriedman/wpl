@@ -29,7 +29,7 @@ std::any SemanticVisitor::visitSConstExpr(WPLParser::SConstExprContext *ctx)
 
 std::any SemanticVisitor::visitUnaryExpr(WPLParser::UnaryExprContext *ctx)
 {
-    Type *innerType = std::any_cast<Type *>(ctx->ex->accept(this));
+    const Type *innerType = std::any_cast<const Type *>(ctx->ex->accept(this));
 
     switch (ctx->op->getType())
     {
@@ -56,13 +56,13 @@ std::any SemanticVisitor::visitBinaryArithExpr(WPLParser::BinaryArithExprContext
 {
     // Based on starter
     bool valid = true;
-    auto left = std::any_cast<Type *>(ctx->left->accept(this));
+    auto left = std::any_cast<const Type *>(ctx->left->accept(this));
     if (left->isNot(Types::INT))
     {
         errorHandler.addSemanticError(ctx->getStart(), "INT left expression expected, but was " + left->toString());
         valid = false;
     }
-    auto right = std::any_cast<Type *>(ctx->right->accept(this));
+    auto right = std::any_cast<const Type *>(ctx->right->accept(this));
     if (right->isNot(Types::INT))
     {
         errorHandler.addSemanticError(ctx->getStart(), "INT right expression expected, but was " + right->toString());
@@ -74,8 +74,8 @@ std::any SemanticVisitor::visitBinaryArithExpr(WPLParser::BinaryArithExprContext
 std::any SemanticVisitor::visitEqExpr(WPLParser::EqExprContext *ctx)
 {
     // FIXME: do better!
-    auto right = std::any_cast<Type *>(ctx->right->accept(this));
-    auto left = std::any_cast<Type *>(ctx->left->accept(this));
+    auto right = std::any_cast<const Type *>(ctx->right->accept(this));
+    auto left = std::any_cast<const Type *>(ctx->left->accept(this));
     if (right->isNot(left))
     {
         errorHandler.addSemanticError(ctx->getStart(), "Both sides of '=' must have the same type");
@@ -87,13 +87,13 @@ std::any SemanticVisitor::visitLogAndExpr(WPLParser::LogAndExprContext *ctx)
 {
     // Based on starter //FIXME: do better!
     bool valid = true;
-    auto left = std::any_cast<Type *>(ctx->left->accept(this));
+    auto left = std::any_cast<const Type *>(ctx->left->accept(this));
     if (left->isNot(Types::BOOL))
     {
         errorHandler.addSemanticError(ctx->getStart(), "BOOL left expression expected, but was " + left->toString());
         valid = false;
     }
-    auto right = std::any_cast<Type *>(ctx->right->accept(this));
+    auto right = std::any_cast<const Type *>(ctx->right->accept(this));
     if (right->isNot(Types::BOOL))
     {
         errorHandler.addSemanticError(ctx->getStart(), "BOOL right expression expected, but was " + right->toString());
@@ -106,13 +106,13 @@ std::any SemanticVisitor::visitLogOrExpr(WPLParser::LogOrExprContext *ctx)
     // Based on starter //FIXME: do better!
     bool valid = true;
 
-    auto left = std::any_cast<Type *>(ctx->left->accept(this));
+    auto left = std::any_cast<const Type *>(ctx->left->accept(this));
     if (left->isNot(Types::BOOL))
     {
         errorHandler.addSemanticError(ctx->getStart(), "BOOL left expression expected, but was " + left->toString());
         valid = false;
     }
-    auto right = std::any_cast<Type *>(ctx->right->accept(this));
+    auto right = std::any_cast<const Type *>(ctx->right->accept(this));
     if (right->isNot(Types::BOOL))
     {
         errorHandler.addSemanticError(ctx->getStart(), "BOOL right expression expected, but was " + right->toString());
@@ -154,13 +154,13 @@ std::any SemanticVisitor::visitBinaryRelExpr(WPLParser::BinaryRelExprContext *ct
 {
     // Based on starter //FIXME: do better!
     bool valid = true;
-    auto left = std::any_cast<Type *>(ctx->left->accept(this));
+    auto left = std::any_cast<const Type *>(ctx->left->accept(this));
     if (left->isNot(Types::INT))
     {
         errorHandler.addSemanticError(ctx->getStart(), "INT left expression expected, but was " + left->toString());
         valid = false;
     }
-    auto right = std::any_cast<Type *>(ctx->right->accept(this));
+    auto right = std::any_cast<const Type *>(ctx->right->accept(this));
     if (right->isNot(Types::INT))
     {
         errorHandler.addSemanticError(ctx->getStart(), "INT right expression expected, but was " + right->toString());
@@ -190,7 +190,7 @@ std::any SemanticVisitor::visitBlock(WPLParser::BlockContext *ctx)
 }
 std::any SemanticVisitor::visitCondition(WPLParser::ConditionContext *ctx)
 {
-    auto conditionType = std::any_cast<Type *>(ctx->ex);
+    auto conditionType = std::any_cast<const Type *>(ctx->ex);
 
     if (conditionType->isNot(Types::BOOL))
     {
@@ -202,15 +202,19 @@ std::any SemanticVisitor::visitCondition(WPLParser::ConditionContext *ctx)
 //     std::any visitSelectAlternative(WPLParser::SelectAlternativeContext *ctx) override;
 std::any SemanticVisitor::visitParameterList(WPLParser::ParameterListContext *ctx)
 {
+    std::cout << "STAR PARAMLIST" << std::endl; 
     std::vector<const Type *> params;
 
     for (auto param : ctx->params)
     {
-        const Type *type = std::any_cast<Type *>(param->accept(this));
+        const Type *type = std::any_cast<const Type *>(param->accept(this));
         params.push_back(type);
     }
     
-    return new TypeInvoke(params);
+    std::cout << "END PARAMLIST" << std::endl; 
+
+    const Type* type = new TypeInvoke(params);  //Needs to be two separate lines for sake of const?
+    return type;
 }
 
 std::any SemanticVisitor::visitParameter(WPLParser::ParameterContext *ctx)
@@ -236,10 +240,11 @@ std::any SemanticVisitor::visitProcDef(WPLParser::ProcDefContext *ctx)
     }
 
     // FIXME: test breaking params somehow!! like using something thats not a type!!!!
-
+    std::cout << "239" << std::endl; 
+    std::cout << typeid(ctx->paramList->accept(this)).name() << std::endl; 
     const Type *procType = (ctx->paramList) ? std::any_cast<const Type *>(ctx->paramList->accept(this))
                                             : new TypeInvoke();
-
+    std::cout << "242" << std::endl; 
     Symbol *procSymbol = new Symbol(procId, procType);
 
     stmgr->addSymbol(procSymbol);
@@ -269,7 +274,7 @@ std::any SemanticVisitor::visitProcDef(WPLParser::ProcDefContext *ctx)
 std::any SemanticVisitor::visitAssignStatement(WPLParser::AssignStatementContext *ctx)
 {
     // This one is the update one!
-    auto exprType = std::any_cast<Type *>(ctx->ex->accept(this));
+    auto exprType = std::any_cast<const Type *>(ctx->ex->accept(this));
 
     // FIXME: DO BETTER W/ Type Inference & such
     // if (exprType == Types::UNDEFINED)
@@ -304,11 +309,11 @@ std::any SemanticVisitor::visitVarDeclStatement(WPLParser::VarDeclStatementConte
     // FIXME: need lookup in current scope!!!
 
     // FIXME: make sure this lookup checks undefined!!!
-    auto assignType = std::any_cast<Type *>(ctx->typeOrVar());
+    auto assignType = std::any_cast<const Type *>(ctx->typeOrVar());
 
     for (auto e : ctx->assignments)
     {
-        auto exprType = std::any_cast<Type *>(e->ex->accept(this));
+        auto exprType = std::any_cast<const Type *>(e->ex->accept(this));
 
         if (assignType->isNot(exprType))
         {
