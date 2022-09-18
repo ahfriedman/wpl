@@ -56,6 +56,7 @@ public:
 
     virtual std::string toString() const { return "TOP"; }
 
+    //FIXME: change to is(Not) Subtype? no... still not quite right... hmmm....
     virtual bool is(const Type *other) const { return this->equals(other); }
     virtual bool isNot(const Type *other) const { return !(this->equals(other)); }
 
