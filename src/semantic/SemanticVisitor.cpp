@@ -273,7 +273,7 @@ std::any SemanticVisitor::visitBlock(WPLParser::BlockContext *ctx)
 }
 std::any SemanticVisitor::visitCondition(WPLParser::ConditionContext *ctx)
 {
-    auto conditionType = std::any_cast<const Type *>(ctx->ex);
+    auto conditionType = std::any_cast<const Type *>(ctx->ex->accept(this));
 
     if (conditionType->isNot(Types::BOOL))
     {
