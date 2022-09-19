@@ -97,17 +97,16 @@ std::any SemanticVisitor::visitArrayAccess(WPLParser::ArrayAccessContext *ctx)
     return Types::UNDEFINED;
 }
 
-std::any SemanticVisitor::visitArrayOrVar(WPLParser::ArrayOrVarContext *ctx) 
+std::any SemanticVisitor::visitArrayOrVar(WPLParser::ArrayOrVarContext *ctx)
 {
-    if(ctx->var)
+    if (ctx->var)
     {
-        errorHandler.addSemanticError(ctx->getStart(), "UNIMPLEMENTED: VAR"); //FIXME
-        return Types::UNDEFINED; 
+        errorHandler.addSemanticError(ctx->getStart(), "UNIMPLEMENTED: VAR"); // FIXME
+        return Types::UNDEFINED;
     }
 
-    return ctx->array->accept(this); 
+    return ctx->array->accept(this);
 }
-
 
 std::any SemanticVisitor::visitIConstExpr(WPLParser::IConstExprContext *ctx)
 {
@@ -335,10 +334,59 @@ std::any SemanticVisitor::visitParameter(WPLParser::ParameterContext *ctx)
 }
 //     std::any visitAssignment(WPLParser::AssignmentContext *ctx) override;
 //     std::any visitExternStatement(WPLParser::ExternStatementContext *ctx) override;
-//     std::any visitFuncDef(WPLParser::FuncDefContext *ctx) override;
+
+std::any SemanticVisitor::visitFuncDef(WPLParser::FuncDefContext *ctx)
+{
+    std::string funcId = ctx->name->getText();
+
+    // FIXME: NEEDS TO BE LOCAL SCOPE ONLY AND THEN NEEDS TO COMPARE TYPES (OR JUST GLOBAL SCOPE)
+
+    std::optional<Symbol *> opt = stmgr->lookup(funcId);
+
+    // FIXME: DO BETTER, NEED ORDERING TO CATCH ALL ERRORS (BASICALLY SEE ANY ISSUE THAT APPLIES TO PROCs)
+    if (opt)
+    {
+        errorHandler.addSemanticError(ctx->getStart(), "Unsupported redeclaration of " + funcId);
+        return Types::UNDEFINED;
+    }
+
+    // FIXME: test breaking params somehow!! like using something thats not a type!!!!
+    const TypeInvoke *procType = (ctx->paramList) ? std::any_cast<const TypeInvoke *>(ctx->paramList->accept(this))
+                                                  : new TypeInvoke();
+
+    const Type *retType = std::any_cast<const Type *>(ctx->ty->accept(this));
+
+    const TypeInvoke *funcType = new TypeInvoke(procType->getParamTypes(), retType);
+
+    Symbol *funcSymbol = new Symbol(funcId, funcType);
+
+    stmgr->addSymbol(funcSymbol);
+    stmgr->enterScope(); // FIXME DOUBLING SCOPES!
+
+    stmgr->addSymbol(new Symbol("@RETURN", retType));
+
+    // FIXME: we double up work here b/c we essentially get the type twice....
+    if (ctx->paramList)
+    {
+        for (auto param : ctx->paramList->params)
+        {
+            const Type *paramType = std::any_cast<const Type *>(param->ty->accept(this));
+            Symbol *paramSymbol = new Symbol(param->name->getText(), paramType);
+
+            stmgr->addSymbol(paramSymbol);
+        }
+    }
+
+    ctx->block()->accept(this);
+
+    // Double scope for params.... should maybe make this a function....
+    stmgr->exitScope();
+
+    return funcType;
+}
+
 std::any SemanticVisitor::visitProcDef(WPLParser::ProcDefContext *ctx)
 {
-    std::cout << "PROC DEF" << std::endl;
     std::string procId = ctx->name->getText();
 
     // FIXME: NEEDS TO BE LOCAL SCOPE ONLY AND THEN NEED TO COMPARE TYPES
@@ -352,11 +400,9 @@ std::any SemanticVisitor::visitProcDef(WPLParser::ProcDefContext *ctx)
     }
 
     // FIXME: test breaking params somehow!! like using something thats not a type!!!!
-    std::cout << "239" << std::endl;
-    std::cout << typeid(ctx->paramList->accept(this)).name() << std::endl;
     const Type *procType = (ctx->paramList) ? std::any_cast<const Type *>(ctx->paramList->accept(this))
                                             : new TypeInvoke();
-    std::cout << "242" << std::endl;
+
     Symbol *procSymbol = new Symbol(procId, procType);
 
     stmgr->addSymbol(procSymbol);
@@ -497,31 +543,31 @@ std::any SemanticVisitor::visitCallStatement(WPLParser::CallStatementContext *ct
     return ctx->call->accept(this);
 }
 
-std::any SemanticVisitor::visitReturnStatement(WPLParser::ReturnStatementContext *ctx) 
+std::any SemanticVisitor::visitReturnStatement(WPLParser::ReturnStatementContext *ctx)
 {
-    //FIXME: DO BETTER!!!
+    // FIXME: DO BETTER!!!
 
     std::optional<Symbol *> sym = stmgr->lookup("@RETURN");
 
-    if(!sym)
+    if (!sym)
     {
         errorHandler.addSemanticError(ctx->getStart(), "Cannot use return outside of FUNC or PROC");
         return Types::UNDEFINED;
     }
 
-    if(ctx->expression())
+    if (ctx->expression())
     {
-        if(const TypeBot* b = dynamic_cast<const TypeBot*>(sym.value()->type)) 
+        if (const TypeBot *b = dynamic_cast<const TypeBot *>(sym.value()->type))
         {
-            const Type* valType = std::any_cast<const Type*>(ctx->expression()->accept(this));
+            const Type *valType = std::any_cast<const Type *>(ctx->expression()->accept(this));
             errorHandler.addSemanticError(ctx->getStart(), "PROC cannot return value, yet it was given a " + valType->toString() + " to return!");
-            return Types::UNDEFINED; 
+            return Types::UNDEFINED;
         }
-        else 
+        else
         {
-            const Type* valType = std::any_cast<const Type*>(ctx->expression()->accept(this)); 
-            
-            if(sym.value()->type->isNot(valType)) 
+            const Type *valType = std::any_cast<const Type *>(ctx->expression()->accept(this));
+
+            if (sym.value()->type->isNot(valType))
             {
                 errorHandler.addSemanticError(ctx->getStart(), "Expected return type of " + sym.value()->type->toString() + " but got " + valType->toString());
                 return Types::UNDEFINED;
@@ -530,20 +576,19 @@ std::any SemanticVisitor::visitReturnStatement(WPLParser::ReturnStatementContext
             return Types::UNDEFINED;
         }
     }
-    else 
+    else
     {
-        if(const TypeBot* b = dynamic_cast<const TypeBot*>(sym.value()->type)) {
+        if (const TypeBot *b = dynamic_cast<const TypeBot *>(sym.value()->type))
+        {
             return Types::UNDEFINED;
         }
-        
+
         errorHandler.addSemanticError(ctx->getStart(), "Expected to return a " + sym.value()->type->toString() + " but recieved nothing.");
         return Types::UNDEFINED;
-
     }
 
     errorHandler.addSemanticError(ctx->getStart(), "Unknown case");
-    return Types::UNDEFINED; 
-
+    return Types::UNDEFINED;
 }
 
 std::any SemanticVisitor::visitBlockStatement(WPLParser::BlockStatementContext *ctx)
