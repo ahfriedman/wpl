@@ -97,9 +97,25 @@ std::any CodegenVisitor::visitUnaryExpr(WPLParser::UnaryExprContext *ctx)
 
 std::any CodegenVisitor::visitBinaryArithExpr(WPLParser::BinaryArithExprContext *ctx)
 {
-    errorHandler.addSemanticError(ctx->getStart(), "UNIMPLEMENTED");
-    return nullptr;
+    Value *lhs = std::any_cast<Value *>(ctx->left->accept(this));
+    Value *rhs = std::any_cast<Value *>(ctx->right->accept(this));
+
+    switch (ctx->op->getType())
+    {
+    case WPLParser::PLUS:
+        return builder->CreateNSWAdd(lhs, rhs);
+    case WPLParser::MINUS:
+        return builder->CreateNSWSub(lhs, rhs);
+    case WPLParser::MULTIPLY:
+        return builder->CreateNSWMul(lhs, rhs);
+    case WPLParser::DIVIDE:
+        return builder->CreateSDiv(lhs, rhs);
+    }
+
+    errorHandler.addSemanticError(ctx->getStart(), "Unknown arith op: " + ctx->op->getText());
+    return nullptr; 
 }
+
 std::any CodegenVisitor::visitEqExpr(WPLParser::EqExprContext *ctx)
 {
     errorHandler.addSemanticError(ctx->getStart(), "UNIMPLEMENTED");
@@ -143,10 +159,7 @@ std::any CodegenVisitor::visitBinaryRelExpr(WPLParser::BinaryRelExprContext *ctx
 
 std::any CodegenVisitor::visitBConstExpr(WPLParser::BConstExprContext *ctx)
 {
-    Value *v = builder->getInt32(
-        ctx->booleanConst()->TRUE() ? 1 : 0);
-
-    return v;
+   return ctx->booleanConst()->accept(this); 
 }
 
 std::any CodegenVisitor::visitBlock(WPLParser::BlockContext *ctx)
@@ -246,6 +259,7 @@ std::any CodegenVisitor::visitType(WPLParser::TypeContext *ctx)
 }
 std::any CodegenVisitor::visitBooleanConst(WPLParser::BooleanConstContext *ctx)
 {
-    errorHandler.addSemanticError(ctx->getStart(), "UNIMPLEMENTED");
-    return nullptr;
+    Value *v = builder->getInt32(ctx->TRUE() ? 1 : 0);
+
+    return v;
 }
