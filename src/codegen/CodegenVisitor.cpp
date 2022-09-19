@@ -118,8 +118,29 @@ std::any CodegenVisitor::visitBinaryArithExpr(WPLParser::BinaryArithExprContext 
 
 std::any CodegenVisitor::visitEqExpr(WPLParser::EqExprContext *ctx)
 {
-    errorHandler.addSemanticError(ctx->getStart(), "UNIMPLEMENTED");
-    return nullptr;
+    //FIXME: VERIFY GOOD ENOUGH! PROBS WONT WORK ON STRINGS!!!
+    Value * lhs = std::any_cast<Value*>(ctx->left->accept(this));
+    Value * rhs = std::any_cast<Value*>(ctx->right->accept(this)); 
+
+    switch(ctx->op->getType())
+    {
+        case WPLParser::EQUAL:
+        {
+            Value * v1 = builder->CreateICmpEQ(lhs, rhs);
+            Value * v = builder->CreateZExtOrTrunc(v1, Int32Ty);
+            return v; 
+        }
+
+        case WPLParser::NOT_EQUAL:
+        {
+            Value * v1 = builder->CreateICmpNE(lhs, rhs);
+            Value * v = builder->CreateZExtOrTrunc(v1, Int32Ty);
+            return v; 
+        }
+    }
+
+    errorHandler.addSemanticError(ctx->getStart(), "Unknown equality operator: " + ctx->op->getText()); 
+    return nullptr; 
 }
 std::any CodegenVisitor::visitLogAndExpr(WPLParser::LogAndExprContext *ctx)
 {
@@ -148,8 +169,7 @@ std::any CodegenVisitor::visitFieldAccessExpr(WPLParser::FieldAccessExprContext 
 }
 std::any CodegenVisitor::visitParenExpr(WPLParser::ParenExprContext *ctx)
 {
-    errorHandler.addSemanticError(ctx->getStart(), "UNIMPLEMENTED");
-    return nullptr;
+    return ctx->ex->accept(this); //FIXME: VERIFY GOOD ENOUGH 
 }
 std::any CodegenVisitor::visitBinaryRelExpr(WPLParser::BinaryRelExprContext *ctx)
 {
@@ -254,7 +274,11 @@ std::any CodegenVisitor::visitTypeOrVar(WPLParser::TypeOrVarContext *ctx)
 }
 std::any CodegenVisitor::visitType(WPLParser::TypeContext *ctx)
 {
-    errorHandler.addSemanticError(ctx->getStart(), "UNIMPLEMENTED");
+    //FIXME: VERIFY!
+    if(ctx->TYPE_INT()) return Int32Ty;
+    if(ctx->TYPE_BOOL()) return Int32Ty; //FIXME: DO BETTER
+
+    errorHandler.addSemanticError(ctx->getStart(), "UNIMPLEMENTED TYPE: " + ctx->getText());
     return nullptr;
 }
 std::any CodegenVisitor::visitBooleanConst(WPLParser::BooleanConstContext *ctx)
