@@ -87,5 +87,6 @@
     "ios": "cpp",
     "queue": "cpp",
     "stack": "cpp"
-  }
+  },
+  "cmake.configureOnOpen": true
 }

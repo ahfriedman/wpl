@@ -1,5 +1,3 @@
-#pragma once
-
 /**
  * @file STManager.h
  * @author Alex Friedman (ahfriedman.com)
@@ -12,6 +10,7 @@
  * 
  * Modified from starter code. 
  */
+#pragma once
 #include "Scope.h"
 #include <vector>
 #include <optional>

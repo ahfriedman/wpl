@@ -4,8 +4,13 @@
  */
 grammar WPL;
 
+//FIXME: UPDATE BASED ON NEW GRAMMAR!!!
+
+
 // Parser rules
 compilationUnit   :  (stmts+=statement)* EOF ; 
+
+//FIXME: CURRENTLY ALLOWS THINGS LIKE FUNCTIONS IN FUNCTIONS!
 
 invocation          :  VARIABLE '(' (args+=expression (',' args+=expression)* )? ')' ;
 

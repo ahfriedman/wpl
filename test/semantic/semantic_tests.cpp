@@ -5,17 +5,20 @@
 #include "WPLErrorHandler.h"
 #include "SemanticVisitor.h"
 
-TEST_CASE("Development tests", "[semantic]") {
+#include "test_error_handlers.h"
+
+TEST_CASE("Development tests", "[semantic]")
+{
   antlr4::ANTLRInputStream input("42;");
   WPLLexer lexer(&input);
   antlr4::CommonTokenStream tokens(&lexer);
   WPLParser parser(&tokens);
   parser.removeErrorListeners();
-  WPLParser::CompilationUnitContext* tree = NULL;
+  WPLParser::CompilationUnitContext *tree = NULL;
   REQUIRE_NOTHROW(tree = parser.compilationUnit());
   REQUIRE(tree != NULL);
-  SemanticVisitor* sv = new SemanticVisitor(new STManager(), new PropertyManager());  // NEW
-  sv->visitCompilationUnit(tree); // NEW
+  SemanticVisitor *sv = new SemanticVisitor(new STManager(), new PropertyManager()); // NEW
+  sv->visitCompilationUnit(tree);                                                    // NEW
   // Error checking is NEW
   // if (sv->hasErrors()) {
   //   CHECK("foo" == sv->getErrors());
@@ -23,60 +26,123 @@ TEST_CASE("Development tests", "[semantic]") {
   CHECK_FALSE(sv->hasErrors());
 }
 
-TEST_CASE("Bool Const Tests", "[semantic]") {
+TEST_CASE("Bool Const Tests", "[semantic]")
+{
   antlr4::ANTLRInputStream input("false; true;");
-  WPLLexer lexer(&input); 
+  WPLLexer lexer(&input);
   antlr4::CommonTokenStream tokens(&lexer);
-  WPLParser parser(&tokens); 
+  WPLParser parser(&tokens);
   parser.removeErrorListeners();
-  WPLParser::CompilationUnitContext* tree = NULL; 
-  
-  REQUIRE_NOTHROW(tree = parser.compilationUnit());
-  REQUIRE(tree != NULL); 
+  WPLParser::CompilationUnitContext *tree = NULL;
 
-  SemanticVisitor* sv = new SemanticVisitor(new STManager(), new PropertyManager());
-  sv->visitCompilationUnit(tree); 
+  REQUIRE_NOTHROW(tree = parser.compilationUnit());
+  REQUIRE(tree != NULL);
+
+  SemanticVisitor *sv = new SemanticVisitor(new STManager(), new PropertyManager());
+  sv->visitCompilationUnit(tree);
 
   CHECK_FALSE(sv->hasErrors());
 }
 
-TEST_CASE("visitType Tests", "[semantic]") {
-  antlr4::ANTLRInputStream input("int"); //FIXME: We get filtered out, don't we
-  WPLLexer lexer(&input); 
+TEST_CASE("Type from compilationUnit", "[semantic]")
+{
+  antlr4::ANTLRInputStream input("int"); // FIXME: We get filtered out, don't we
+  WPLLexer lexer(&input);
   antlr4::CommonTokenStream tokens(&lexer);
-  WPLParser parser(&tokens); 
+  WPLParser parser(&tokens);
   parser.removeErrorListeners();
-  
-  
+  parser.addErrorListener(new TestErrorListener());
+  WPLParser::CompilationUnitContext *tree = NULL;
+  REQUIRE_THROWS(tree = parser.compilationUnit());
+  REQUIRE(tree == NULL);
+}
 
-  SECTION("Visiting Compilation Unit Context") {
-    WPLParser::CompilationUnitContext* tree = NULL; 
-    REQUIRE_NOTHROW(tree = parser.compilationUnit());
-    REQUIRE(tree != NULL);
+TEST_CASE("Visit Type - INT", "[semantic]")
+{
+  antlr4::ANTLRInputStream input("int"); // FIXME: We get filtered out, don't we
+  WPLLexer lexer(&input);
+  antlr4::CommonTokenStream tokens(&lexer);
+  WPLParser parser(&tokens);
+  parser.removeErrorListeners();
+  parser.addErrorListener(new TestErrorListener());
+  WPLParser::TypeContext *tree = NULL;
+  REQUIRE_NOTHROW(tree = parser.type());
+  REQUIRE(tree != NULL);
 
-    //Any errors should be syntax errors. 
-    //FIXME: Should probably confirm the above statement through testing for syntax errors
-    REQUIRE(tree->getText() == "");
+  REQUIRE(tree->getText() != "");
+
+  STManager *stmgr = new STManager();
+  SemanticVisitor *sv = new SemanticVisitor(stmgr, new PropertyManager());
+
+  const Type *ty = std::any_cast<const Type *>(sv->visitType(tree));
+
+  REQUIRE(ty->is(Types::INT));
+}
+
+TEST_CASE("Test Type Equality", "[semantic]")
+{
+  Type *TOP = new Type();
+  Type *INT = new TypeInt();
+  Type *BOOL = new TypeBool();
+  Type *STR = new TypeStr();
+  Type *BOT = new TypeBot();
+
+  SECTION("Top Type tests")
+  {
+    REQUIRE(TOP->is(TOP));
+    REQUIRE_FALSE(TOP->isNot(TOP));
+
+    REQUIRE(TOP->is(INT));
+    REQUIRE_FALSE(TOP->isNot(INT));
+
+    REQUIRE(TOP->is(BOOL));
+    REQUIRE_FALSE(TOP->isNot(BOOL));
+
+    REQUIRE(TOP->is(STR));
+
+    REQUIRE(TOP->is(BOT));
   }
 
-  SECTION("Visiting Type Context") {
-    WPLParser::TypeContext* tree = NULL; 
+  SECTION("Int Type tests")
+  {
+    REQUIRE(INT->isNot(TOP));
+    REQUIRE_FALSE(INT->is(TOP));
 
-    REQUIRE_NOTHROW(tree = parser.type());
-    REQUIRE(tree != NULL); 
+    REQUIRE(INT->is(INT));
+    // REQUIRE(INT->is(TypeInt()));
 
-    REQUIRE(tree->getText() != "");
+    REQUIRE(INT->isNot(BOOL));
+
+    REQUIRE(INT->isNot(STR));
+
+    REQUIRE(INT->isNot(BOT));
   }
-  // REQUIRE_NOTHROW(tree = parser.type());
-  // REQUIRE(tree != NULL); 
-  // REQUIRE(tree->getText() != "");
 
-  // STManager* stmgr = new STManager(); 
-  // SemanticVisitor* sv = new SemanticVisitor(stmgr, new PropertyManager());
-  // sv->visitType(tree);//visitCompilationUnit(tree); 
+  SECTION("Bool Type Tests")
+  {
+    REQUIRE(BOOL->isNot(TOP));
+    REQUIRE(BOOL->isNot(INT));
+    REQUIRE(BOOL->isNot(STR));
+    REQUIRE(BOOL->is(BOOL));
+    REQUIRE(BOOL->isNot(BOT));
+  }
 
-  // std::cout << stmgr->toString() << std::endl;
-  // std::cout << tree->getText() << std::endl;  
+  SECTION("Str Type Tests")
+  {
+    REQUIRE(STR->isNot(TOP));
+    REQUIRE(STR->isNot(INT));
+    REQUIRE(STR->is(STR));
+    REQUIRE(STR->isNot(BOOL));
+    REQUIRE(STR->isNot(BOT));
+  }
 
-  // CHECK_FALSE(true);//sv->hasErrors());
+  SECTION("Bot Type Tests")
+  {
+    REQUIRE(BOT->isNot(TOP));
+    REQUIRE(BOT->isNot(INT));
+    REQUIRE(BOT->isNot(STR));
+    REQUIRE(BOT->isNot(BOOL));
+    REQUIRE(BOT->isNot(BOT));
+  }
+  // Why is PL easier to read in mono fonts?
 }
