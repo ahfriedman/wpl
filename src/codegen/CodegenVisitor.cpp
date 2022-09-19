@@ -275,8 +275,18 @@ std::any CodegenVisitor::visitAssignStatement(WPLParser::AssignStatementContext 
 }
 std::any CodegenVisitor::visitVarDeclStatement(WPLParser::VarDeclStatementContext *ctx)
 {
+    //FIXME: MODIFY TO DO THINGS BY TYPE!!!!
+    
+    for(auto e : ctx->assignments)
+    {
+        Value * exVal = std::any_cast<Value *>(e->ex->accept(this));
 
-    errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED");
+        for(auto var : e->v)
+        {
+            Value * v = builder->CreateAlloca(Int32Ty, 0, var->getText()); 
+            builder->CreateStore(exVal, v);
+        }
+    }
     return nullptr;
 }
 std::any CodegenVisitor::visitLoopStatement(WPLParser::LoopStatementContext *ctx)
