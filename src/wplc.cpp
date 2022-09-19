@@ -17,7 +17,7 @@
 #include "WPLLexer.h"
 #include "WPLParser.h"
 // #include "WPLErrorHandler.h"
-// #include "SemanticVisitor.h"
+#include "SemanticVisitor.h"
 // #include "CodegenVisitor.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/CommandLine.h"
@@ -90,27 +90,31 @@ int main(int argc, const char* argv[]) {
   }
   WPLLexer lexer(input);
   antlr4::CommonTokenStream tokens(&lexer);
-  
+
   // 2. Create a parser from the token stream
   WPLParser parser(&tokens);   
-  // WPLParser::ProgramContext* tree = NULL;
+  parser.removeErrorListeners();
+  //FIXME: ADD WAY OF CHECKING PARSER ERRORS
 
-  // // 3. Parse the program and get the parse tree
-  // tree = parser.program();
+  WPLParser::CompilationUnitContext* tree = NULL;
 
-  // /******************************************************************
-  //  * Perform semantic analysis and populate the symbol table
-  //  * and bind nodes to Symbols using the property manager. If
-  //  * there are any errors we print them out and exit.
-  //  ******************************************************************/
-  // STManager *stm = new STManager();
-  // PropertyManager *pm = new PropertyManager();
-  // SemanticVisitor* sv = new SemanticVisitor(stm, pm);
-  // sv->visitProgram(tree);
-  // if (sv->hasErrors()) {
-  //   std::cerr << sv->getErrors() << std::endl;
-  //   return -1;
-  // }
+  // 3. Parse the program and get the parse tree
+  tree = parser.compilationUnit();
+
+  /******************************************************************
+   * Perform semantic analysis and populate the symbol table
+   * and bind nodes to Symbols using the property manager. If
+   * there are any errors we print them out and exit.
+   ******************************************************************/
+  STManager *stm = new STManager();
+  PropertyManager *pm = new PropertyManager();
+  SemanticVisitor* sv = new SemanticVisitor(stm, pm);
+  sv->visitCompilationUnit(tree); 
+
+  if (sv->hasErrors()) {
+    std::cerr << sv->getErrors() << std::endl;
+    return -1;
+  }
 
   // // Generate the LLVM IR code
   // CodegenVisitor* cv = new CodegenVisitor(pm, "WPLC.ll");
