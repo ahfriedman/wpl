@@ -44,7 +44,7 @@ TEST_CASE("Bool Const Tests", "[semantic]")
   CHECK_FALSE(sv->hasErrors());
 }
 
-TEST_CASE("visitType Tests", "[semantic]")
+TEST_CASE("Type from compilationUnit", "[semantic]")
 {
   antlr4::ANTLRInputStream input("int"); // FIXME: We get filtered out, don't we
   WPLLexer lexer(&input);
@@ -52,34 +52,32 @@ TEST_CASE("visitType Tests", "[semantic]")
   WPLParser parser(&tokens);
   parser.removeErrorListeners();
   parser.addErrorListener(new TestErrorListener());
+  WPLParser::CompilationUnitContext *tree = NULL;
+  REQUIRE_THROWS(tree = parser.compilationUnit());
+  REQUIRE(tree == NULL);
+}
 
-  SECTION("Visiting Compilation Unit Context")
-  {
-    WPLParser::CompilationUnitContext *tree = NULL;
-    REQUIRE_THROWS(tree = parser.compilationUnit());
-    REQUIRE(tree != NULL);
-  }
+TEST_CASE("Visit Type - INT", "[semantic]")
+{
+  antlr4::ANTLRInputStream input("int"); // FIXME: We get filtered out, don't we
+  WPLLexer lexer(&input);
+  antlr4::CommonTokenStream tokens(&lexer);
+  WPLParser parser(&tokens);
+  parser.removeErrorListeners();
+  parser.addErrorListener(new TestErrorListener());
+  WPLParser::TypeContext *tree = NULL;
+  REQUIRE_NOTHROW(tree = parser.type());
+  REQUIRE(tree != NULL);
 
-  SECTION("Visiting Type Context")
-  {
-    WPLParser::TypeContext *tree = NULL;
-    REQUIRE_NOTHROW(tree = parser.type());
-    REQUIRE(tree != NULL);
+  REQUIRE(tree->getText() != "");
 
-    REQUIRE(tree->getText() != "");
-  }
-  // REQUIRE_NOTHROW(tree = parser.type());
-  // REQUIRE(tree != NULL);
-  // REQUIRE(tree->getText() != "");
+  STManager *stmgr = new STManager();
+  SemanticVisitor *sv = new SemanticVisitor(stmgr, new PropertyManager());
 
-  // STManager* stmgr = new STManager();
-  // SemanticVisitor* sv = new SemanticVisitor(stmgr, new PropertyManager());
-  // sv->visitType(tree);//visitCompilationUnit(tree);
+  const Type* ty = std::any_cast<const Type*>(sv->visitType(tree));
 
-  // std::cout << stmgr->toString() << std::endl;
-  // std::cout << tree->getText() << std::endl;
+  REQUIRE(ty->is(Types::INT));
 
-  // CHECK_FALSE(true);//sv->hasErrors());
 }
 
 TEST_CASE("Test Type Equality", "[semantic]")
@@ -241,7 +239,7 @@ TEST_CASE("Basic Assignments", "[semantic]")
 
     CHECK_FALSE(sv->hasErrors());
 
-    std::optional<Symbol*> opt = stmgr->lookup("a");
+    std::optional<Symbol *> opt = stmgr->lookup("a");
 
     CHECK(opt.has_value());
     CHECK(opt.value()->type->is(Types::INT));

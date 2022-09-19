@@ -14,10 +14,10 @@
 #include "WPLLexer.h"
 #include "test_error_handlers.h"
 
-
 /****************** Positive tests ******************/
 
-TEST_CASE("Scanner operator tests", "[front-end]") {
+TEST_CASE("Scanner operator tests", "[front-end]")
+{
   antlr4::ANTLRInputStream input("<- / = > < - * ~ + ~=");
   WPLLexer lexer(&input);
   lexer.removeErrorListeners();
@@ -34,7 +34,8 @@ TEST_CASE("Scanner operator tests", "[front-end]") {
   CHECK(lexer.nextToken()->getType() == lexer.NOT_EQUAL);
 }
 
-TEST_CASE("Scanner punctuation tests", "[front-end") {
+TEST_CASE("Scanner punctuation tests", "[front-end")
+{
   antlr4::ANTLRInputStream input("();");
   WPLLexer lexer(&input);
   lexer.removeErrorListeners();
@@ -44,7 +45,8 @@ TEST_CASE("Scanner punctuation tests", "[front-end") {
   CHECK(lexer.nextToken()->getType() == lexer.SEMICOLON);
 }
 
-TEST_CASE("Boolean constants, variables, integers, and white space", "[front-end]") {
+TEST_CASE("Boolean constants, variables, integers, and white space", "[front-end]")
+{
   antlr4::ANTLRInputStream input("\n \t \r true false hello 1234 0 EXF");
   WPLLexer lexer(&input);
   lexer.removeErrorListeners();
@@ -58,9 +60,36 @@ TEST_CASE("Boolean constants, variables, integers, and white space", "[front-end
   CHECK(lexer.nextToken()->getType() == lexer.EOF);
 }
 
+TEST_CASE("Types", "[front-end]")
+{
+
+  SECTION("INT")
+  {
+    antlr4::ANTLRInputStream input("int");
+    WPLLexer lexer(&input);
+    lexer.removeErrorListeners();
+    lexer.addErrorListener(new TestErrorListener());
+
+    CHECK(lexer.nextToken()->getType() == lexer.TYPE_INT);
+    CHECK(lexer.nextToken()->getType() == lexer.EOF);
+  }
+
+  SECTION("STR")
+  {
+    antlr4::ANTLRInputStream input("str");
+    WPLLexer lexer(&input);
+    lexer.removeErrorListeners();
+    lexer.addErrorListener(new TestErrorListener());
+
+    CHECK(lexer.nextToken()->getType() == lexer.TYPE_STR);
+    CHECK(lexer.nextToken()->getType() == lexer.EOF);
+  }
+}
+
 /****************** Negative tests ******************/
 
-TEST_CASE("Invalid lexemes", "[front-end]") {
+TEST_CASE("Invalid lexemes", "[front-end]")
+{
   antlr4::ANTLRInputStream input("`");
   WPLLexer lexer(&input);
   lexer.removeErrorListeners();
