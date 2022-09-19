@@ -96,13 +96,26 @@ int main(int argc, const char *argv[])
 
   // 2. Create a parser from the token stream
   WPLParser parser(&tokens);
+
   parser.removeErrorListeners();
+  WPLSyntaxErrorListener *syntaxListener = new WPLSyntaxErrorListener();
+  parser.addErrorListener(syntaxListener);
+  // delete syntaxListener;
+
   // FIXME: ADD WAY OF CHECKING PARSER ERRORS
 
   WPLParser::CompilationUnitContext *tree = NULL;
 
   // 3. Parse the program and get the parse tree
   tree = parser.compilationUnit();
+
+  // FIXME: WHY CAN I JUST DO INT?
+  if (syntaxListener->hasErrors())
+  {
+    std::cout << "ERRORS" << std::endl;
+    std::cerr << syntaxListener->errorList() << std::endl;
+    return -1;
+  }
 
   /******************************************************************
    * Perform semantic analysis and populate the symbol table
@@ -113,7 +126,7 @@ int main(int argc, const char *argv[])
   PropertyManager *pm = new PropertyManager();
   SemanticVisitor *sv = new SemanticVisitor(stm, pm);
   sv->visitCompilationUnit(tree);
-  std::cout << "OUT" << std::endl; 
+  std::cout << "OUT" << std::endl;
   if (sv->hasErrors())
   {
     std::cerr << sv->getErrors() << std::endl;
