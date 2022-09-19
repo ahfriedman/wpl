@@ -320,7 +320,7 @@ std::any SemanticVisitor::visitSelectAlternative(WPLParser::SelectAlternativeCon
     // FIXME: VERIFY
     ctx->eval->accept(this);
 
-    const Type *checkType = std::any_cast<const Type *>(ctx->check);
+    const Type *checkType = std::any_cast<const Type *>(ctx->check->accept(this));
 
     if (const TypeBool *b = dynamic_cast<const TypeBool *>(checkType))
     {
@@ -372,13 +372,19 @@ std::any SemanticVisitor::visitFuncDef(WPLParser::FuncDefContext *ctx)
         return Types::UNDEFINED;
     }
 
+    std::cout << "375" << std::endl; 
     // FIXME: test breaking params somehow!! like using something thats not a type!!!!
-    const TypeInvoke *procType = (ctx->paramList) ? std::any_cast<const TypeInvoke *>(ctx->paramList->accept(this))
+    const Type *ty = (ctx->paramList) ? std::any_cast<const Type *>(ctx->paramList->accept(this))
                                                   : new TypeInvoke();
 
+    const TypeInvoke* procType = dynamic_cast<const TypeInvoke*>(ty); //Always true, but needs separate statement to make C happy. 
+    std::cout << "380" << std::endl; 
     const Type *retType = std::any_cast<const Type *>(ctx->ty->accept(this));
 
+std::cout << "383" << std::endl; 
     const TypeInvoke *funcType = new TypeInvoke(procType->getParamTypes(), retType);
+
+std::cout << "384" << std::endl; 
 
     Symbol *funcSymbol = new Symbol(funcId, funcType);
 

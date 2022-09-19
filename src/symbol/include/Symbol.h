@@ -176,12 +176,12 @@ public:
         bool isProc = !retType.has_value();
 
         std::ostringstream description;
-        description << (isProc ? "PROC " : "FUNC");
+        description << (isProc ? "PROC " : "FUNC ");
         for (auto param : paramTypes)
         {
             description << param->toString() << " ";
         }
-        description << (isProc ? " -> BOT" : (" -> " + retType.value()->toString()));
+        description << (isProc ? "-> BOT" : ("-> " + retType.value()->toString()));
         return description.str();
     }
 
