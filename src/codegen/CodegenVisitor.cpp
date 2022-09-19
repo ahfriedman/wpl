@@ -142,15 +142,24 @@ std::any CodegenVisitor::visitEqExpr(WPLParser::EqExprContext *ctx)
     errorHandler.addSemanticError(ctx->getStart(), "Unknown equality operator: " + ctx->op->getText()); 
     return nullptr; 
 }
+
 std::any CodegenVisitor::visitLogAndExpr(WPLParser::LogAndExprContext *ctx)
 {
-    errorHandler.addSemanticError(ctx->getStart(), "UNIMPLEMENTED");
-    return nullptr;
+    Value * lhs = std::any_cast<Value*>(ctx->left->accept(this));
+    Value * rhs = std::any_cast<Value*>(ctx->right->accept(this)); 
+
+    Value * IR = builder->CreateAnd(lhs, rhs);
+    Value * v = builder->CreateZExtOrTrunc(IR, Int32Ty);
+    return v; //FIXME: VERIFY!!!
 }
 std::any CodegenVisitor::visitLogOrExpr(WPLParser::LogOrExprContext *ctx)
 {
-    errorHandler.addSemanticError(ctx->getStart(), "UNIMPLEMENTED");
-    return nullptr;
+    Value * lhs = std::any_cast<Value*>(ctx->left->accept(this));
+    Value * rhs = std::any_cast<Value*>(ctx->right->accept(this)); 
+
+    Value * IR = builder->CreateOr(lhs, rhs);
+    Value * v = builder->CreateZExtOrTrunc(IR, Int32Ty);
+    return v; //FIXME: VERIFY!!!
 }
 std::any CodegenVisitor::visitCallExpr(WPLParser::CallExprContext *ctx)
 {
