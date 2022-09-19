@@ -5,6 +5,8 @@
 #include "WPLErrorHandler.h"
 #include "SemanticVisitor.h"
 
+#include "test_error_handlers.h"
+
 TEST_CASE("Development tests", "[semantic]")
 {
   antlr4::ANTLRInputStream input("42;");
@@ -160,9 +162,12 @@ TEST_CASE("visitbasicProc", "[semantic]")
   {
     antlr4::ANTLRInputStream input("proc program () {}");
     WPLLexer lexer(&input);
+    // lexer.removeErrorListeners();
+    // lexer.addErrorListener(new TestErrorListener());
     antlr4::CommonTokenStream tokens(&lexer);
     WPLParser parser(&tokens);
     parser.removeErrorListeners();
+    parser.addErrorListener(new TestErrorListener());
 
     WPLParser::CompilationUnitContext *tree = NULL;
     REQUIRE_NOTHROW(tree = parser.compilationUnit());
@@ -183,7 +188,7 @@ TEST_CASE("visitbasicProc", "[semantic]")
     CHECK_FALSE(sv->hasErrors());
   }
 
-  //FIXME: test recursion
+  // FIXME: test recursion
 
   SECTION("1 arg & empty")
   {
@@ -197,7 +202,7 @@ TEST_CASE("visitbasicProc", "[semantic]")
     REQUIRE_NOTHROW(tree = parser.compilationUnit());
     REQUIRE(tree != NULL);
 
-    std::cout << "PAST" << std::endl; 
+    std::cout << "PAST" << std::endl;
     // Any errors should be syntax errors.
     // FIXME: Should probably confirm the above statement through testing for syntax errors
     REQUIRE(tree->getText() != "");
@@ -209,6 +214,34 @@ TEST_CASE("visitbasicProc", "[semantic]")
 
     std::cout << stmgr->toString() << std::endl;
     std::cout << tree->getText() << std::endl;
+
+    CHECK_FALSE(sv->hasErrors());
+  }
+}
+
+TEST_CASE("Basic Assignments", "[semantic]")
+{
+  // FIXME: is a <- 2 allowed without a type/previous definition?
+  SECTION("Test 1")
+  {
+    antlr4::ANTLRInputStream input("int a <- 2;");
+    WPLLexer lexer(&input);
+    // lexer.removeErrorListeners();
+    // lexer.addErrorListener(new TestErrorListener());
+    antlr4::CommonTokenStream tokens(&lexer);
+    WPLParser parser(&tokens);
+    parser.removeErrorListeners();
+    parser.addErrorListener(new TestErrorListener());
+
+    WPLParser::CompilationUnitContext *tree = NULL;
+    REQUIRE_NOTHROW(tree = parser.compilationUnit());
+    REQUIRE(tree != NULL);
+    REQUIRE(tree->getText() != "");
+
+    STManager *stmgr = new STManager();
+    SemanticVisitor *sv = new SemanticVisitor(stmgr, new PropertyManager());
+
+    sv->visitCompilationUnit(tree);
 
     CHECK_FALSE(sv->hasErrors());
   }

@@ -411,12 +411,12 @@ std::any SemanticVisitor::visitVarDeclStatement(WPLParser::VarDeclStatementConte
     // FIXME: need lookup in current scope!!!
 
     // FIXME: make sure this lookup checks undefined!!!
-    auto assignType = std::any_cast<const Type *>(ctx->typeOrVar());
-
+    auto assignType = std::any_cast<const Type *>(ctx->typeOrVar()->accept(this));
+    std::cout << "415" << std::endl;
     for (auto e : ctx->assignments)
     {
         auto exprType = std::any_cast<const Type *>(e->ex->accept(this));
-
+        std::cout << "419" << std::endl;
         if (assignType->isNot(exprType))
         {
             errorHandler.addSemanticError(e->getStart(), "Expression of type " + exprType->toString() + " cannot be assigned to " + assignType->toString());
@@ -492,12 +492,13 @@ std::any SemanticVisitor::visitBlockStatement(WPLParser::BlockStatementContext *
 
 std::any SemanticVisitor::visitTypeOrVar(WPLParser::TypeOrVarContext *ctx)
 {
+    std::cout << "495" << std::endl;
     if (!(ctx->type()))
     {
         errorHandler.addSemanticError(ctx->getStart(), "UNIMPLEMENTED: var"); // FIXME: TYPE INFERENC
         return Types::UNDEFINED;
     }
-
+    std::cout << "500" << std::endl;
     return ctx->type()->accept(this);
 }
 

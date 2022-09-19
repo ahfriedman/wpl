@@ -4,6 +4,9 @@
  */
 grammar WPL;
 
+//FIXME: UPDATE BASED ON NEW GRAMMAR!!!
+
+
 // Parser rules
 compilationUnit   :  (stmts+=statement)* EOF ; 
 
