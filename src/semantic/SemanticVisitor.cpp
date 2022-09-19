@@ -412,10 +412,10 @@ std::any SemanticVisitor::visitVarDeclStatement(WPLParser::VarDeclStatementConte
 
     // FIXME: make sure this lookup checks undefined!!!
     auto assignType = std::any_cast<const Type *>(ctx->typeOrVar()->accept(this));
-    std::cout << "415" << std::endl;
+    std::cout << "415" << ctx->getText() << std::endl;
     for (auto e : ctx->assignments)
     {
-        auto exprType = std::any_cast<const Type *>(e->ex->accept(this));
+        auto exprType = (e->ex) ? std::any_cast<const Type *>(e->ex->accept(this)) : assignType;
         std::cout << "419" << std::endl;
         if (assignType->isNot(exprType))
         {
