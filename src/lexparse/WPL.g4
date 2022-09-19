@@ -10,6 +10,8 @@ grammar WPL;
 // Parser rules
 compilationUnit   :  (stmts+=statement)* EOF ; 
 
+//FIXME: CURRENTLY ALLOWS THINGS LIKE FUNCTIONS IN FUNCTIONS!
+
 invocation          :  VARIABLE '(' (args+=expression (',' args+=expression)* )? ')' ;
 
 //Helps allow us to use VARIABLE or arrayAccess and not other expressions (such as for assignments)

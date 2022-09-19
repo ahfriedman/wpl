@@ -160,7 +160,7 @@ TEST_CASE("If Example 1-3", "[semantic][conditional]")
 {
   antlr4::ANTLRInputStream input(
     "int a, b <- 0;"
-    "int isNegative;"
+    "int isNegative;" //FIXME: HANDLE THINGS W/O VALUES BETTER!
     "if a < b {"
     " isNegative <- true;"  
     "} else {"
