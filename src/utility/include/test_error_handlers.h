@@ -14,6 +14,6 @@ class TestErrorListener: public antlr4::BaseErrorListener {
       size_t charPositionInLine,
       const std::string &msg,
       std::exception_ptr e) override {
-    throw std::invalid_argument("test error thrown");
+    throw std::invalid_argument("test error thrown: " + msg);
   }
 };

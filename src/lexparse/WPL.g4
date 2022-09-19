@@ -4,8 +4,15 @@
  */
 grammar WPL;
 
+//FIXME: UPDATE BASED ON NEW GRAMMAR!!!
+
+
 // Parser rules
-compilationUnit   :  (stmts+=statement)* EOF ; 
+compilationUnit   :  (stmts+=statement | extens+=externStatement)* EOF ; 
+
+externStatement : EXTERN (ty=type FUNC | PROC) name=VARIABLE '(' (paramList=parameterList variadic=VariadicParam?)? ')' ';';
+
+//FIXME: CURRENTLY ALLOWS THINGS LIKE FUNCTIONS IN FUNCTIONS!
 
 invocation          :  VARIABLE '(' (args+=expression (',' args+=expression)* )? ')' ;
 
@@ -106,13 +113,12 @@ assignment : v+=VARIABLE (',' v+=VARIABLE)* (ASSIGN ex=expression)? ;
  * 10. Return statements
  * 11. Block statements. 
  */
-statement           : EXTERN (ty=type FUNC | PROC) name=VARIABLE '(' (paramList=parameterList variadic=VariadicParam?)? ')' ';' # ExternStatement
-                    | ty=type FUNC name=VARIABLE '(' (paramList=parameterList)? ')' block   # FuncDef 
+statement           : ty=type FUNC name=VARIABLE '(' (paramList=parameterList)? ')' block   # FuncDef 
                     | PROC name=VARIABLE '(' (paramList=parameterList)? ')' block           # ProcDef
                     | <assoc=right> to=arrayOrVar ASSIGN ex=expression ';'                     # AssignStatement 
                     | <assoc=right> ty=typeOrVar assignments+=assignment (',' assignments+=assignment)* ';'   # VarDeclStatement
                     | WHILE check=condition DO block                                # LoopStatement 
-                    | IF check=condition THEN? trueBlk=block (ELSE falseBlk=block)? # ConditionalStatement
+                    | IF check=condition IF_THEN? trueBlk=block (ELSE falseBlk=block)? # ConditionalStatement
                     | SELECT '{' (cases+=selectAlternative)+ '}'  # SelectStatement  
                     | call=invocation  ';'?    # CallStatement 
                     | RETURN expression? ';'  # ReturnStatement 
@@ -163,7 +169,7 @@ TYPE_STR        :   'str' ;
 FUNC            :   'func'  ;
 PROC            :   'proc'  ;
 IF              :   'if'    ;
-THEN            :   'then'  ;
+IF_THEN            :   'then'  ;
 ELSE            :   'else'  ;
 WHILE           :   'while' ;
 RETURN          :   'return';

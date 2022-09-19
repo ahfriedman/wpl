@@ -6,8 +6,8 @@
 # that you will start with the scanner and parser.
 ########################################################
 include (ANTLR)
-# include (Utility)
-# include(Semantic)
+include (Utility)
+include(Semantic)
 include(Symbol)
 # include(Codegen)
 include(LLVM)
@@ -28,8 +28,8 @@ add_subdirectory(lexparse)
 # Add others as your design evolves
 #
 add_subdirectory(symbol)
-# add_subdirectory(semantic)
-# add_subdirectory(utility)
+add_subdirectory(semantic)
+add_subdirectory(utility)
 # add_subdirectory(codegen)
 # add_subdirectory(runtime)
 
@@ -37,10 +37,10 @@ add_executable(wplc wplc.cpp)
 
 # add dependencies as you need them
 add_dependencies(wplc 
-#   parser_lib 
+  parser_lib 
   sym_lib 
-#   semantic_lib
-#   utility_lib
+  semantic_lib
+  utility_lib
 #   codegen_lib
 #   wpl_runtime
 )
@@ -48,8 +48,8 @@ add_dependencies(wplc
 target_include_directories(wplc PUBLIC 
   ${ANTLR_INCLUDE} ${ANTLR_GENERATED_DIR}
   ${SYMBOL_INCLUDE}
-  # ${SEMANTIC_INCLUDE}
-  # ${UTILITY_INCLUDE}
+  ${SEMANTIC_INCLUDE}
+  ${UTILITY_INCLUDE}
   # ${CODEGEN_INCLUDE}
   ${LLVM_BINARY_DIR}/include
   ${LLVM_INCLUDE_DIR}
@@ -61,8 +61,8 @@ target_link_libraries(wplc
   parser_lib
   lexparse_lib
   sym_lib
-  # semantic_lib
-  # utility_lib
+  semantic_lib
+  utility_lib
   # codegen_lib
   ${LLVM_LIBS}
 )
