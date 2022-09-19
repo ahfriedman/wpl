@@ -237,7 +237,29 @@ std::any SemanticVisitor::visitVariableExpr(WPLParser::VariableExprContext *ctx)
     bindings->bind(ctx, symbol);
     return symbol->type;
 }
-//     std::any visitFieldAccessExpr(WPLParser::FieldAccessExprContext *ctx) override;
+
+std::any SemanticVisitor::visitFieldAccessExpr(WPLParser::FieldAccessExprContext *ctx) 
+{
+    const Type* ty = std::any_cast<const Type*>(ctx->ex->accept(this));
+
+    if(const TypeArray* a = dynamic_cast<const TypeArray*>(ty))
+    {}
+    else 
+    {
+        errorHandler.addSemanticError(ctx->getStart(), "Cannot perform operation: " + ctx->field->getText() + " on " + ty->toString());
+        return Types::UNDEFINED; 
+    }
+
+
+    if(ctx->field->getText() != "length")
+    {
+        errorHandler.addSemanticError(ctx->getStart(), "Unsupported operation on " + ty->toString() + ": " + ctx->field->getText());
+        return Types::UNDEFINED;
+    }
+
+    return Types::INT; //FIXME: DO THIS WHOLE THING BETTER
+}
+
 std::any SemanticVisitor::visitParenExpr(WPLParser::ParenExprContext *ctx)
 {
     return ctx->ex->accept(this);

@@ -34,7 +34,7 @@ public:
     std::any visitLogOrExpr(WPLParser::LogOrExprContext *ctx) override;
     std::any visitCallExpr(WPLParser::CallExprContext *ctx) override;
     std::any visitVariableExpr(WPLParser::VariableExprContext *ctx) override;
-    //     std::any visitFieldAccessExpr(WPLParser::FieldAccessExprContext *ctx) override;
+    std::any visitFieldAccessExpr(WPLParser::FieldAccessExprContext *ctx) override;
     std::any visitParenExpr(WPLParser::ParenExprContext *ctx) override;
     std::any visitBinaryRelExpr(WPLParser::BinaryRelExprContext *ctx) override;
     std::any visitBConstExpr(WPLParser::BConstExprContext *ctx) override;
