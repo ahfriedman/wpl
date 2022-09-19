@@ -51,22 +51,18 @@ TEST_CASE("visitType Tests", "[semantic]")
   antlr4::CommonTokenStream tokens(&lexer);
   WPLParser parser(&tokens);
   parser.removeErrorListeners();
+  parser.addErrorListener(new TestErrorListener());
 
   SECTION("Visiting Compilation Unit Context")
   {
     WPLParser::CompilationUnitContext *tree = NULL;
-    REQUIRE_NOTHROW(tree = parser.compilationUnit());
+    REQUIRE_THROWS(tree = parser.compilationUnit());
     REQUIRE(tree != NULL);
-
-    // Any errors should be syntax errors.
-    // FIXME: Should probably confirm the above statement through testing for syntax errors
-    REQUIRE(tree->getText() == "");
   }
 
   SECTION("Visiting Type Context")
   {
     WPLParser::TypeContext *tree = NULL;
-
     REQUIRE_NOTHROW(tree = parser.type());
     REQUIRE(tree != NULL);
 
@@ -222,7 +218,7 @@ TEST_CASE("visitbasicProc", "[semantic]")
 TEST_CASE("Basic Assignments", "[semantic]")
 {
   // FIXME: is a <- 2 allowed without a type/previous definition?
-  SECTION("Test 1")
+  SECTION("Basic Int Test")
   {
     antlr4::ANTLRInputStream input("int a <- 2;");
     WPLLexer lexer(&input);
@@ -244,5 +240,10 @@ TEST_CASE("Basic Assignments", "[semantic]")
     sv->visitCompilationUnit(tree);
 
     CHECK_FALSE(sv->hasErrors());
+
+    std::optional<Symbol*> opt = stmgr->lookup("a");
+
+    CHECK(opt.has_value());
+    CHECK(opt.value()->type->is(Types::INT));
   }
 }
