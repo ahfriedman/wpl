@@ -9,7 +9,7 @@ include (ANTLR)
 include (Utility)
 include(Semantic)
 include(Symbol)
-# include(Codegen)
+include(Codegen)
 include(LLVM)
 # include(Runtime)
 
@@ -30,7 +30,7 @@ add_subdirectory(lexparse)
 add_subdirectory(symbol)
 add_subdirectory(semantic)
 add_subdirectory(utility)
-# add_subdirectory(codegen)
+add_subdirectory(codegen)
 # add_subdirectory(runtime)
 
 add_executable(wplc wplc.cpp)
@@ -41,7 +41,7 @@ add_dependencies(wplc
   sym_lib 
   semantic_lib
   utility_lib
-#   codegen_lib
+  codegen_lib
 #   wpl_runtime
 )
 
@@ -50,7 +50,7 @@ target_include_directories(wplc PUBLIC
   ${SYMBOL_INCLUDE}
   ${SEMANTIC_INCLUDE}
   ${UTILITY_INCLUDE}
-  # ${CODEGEN_INCLUDE}
+  ${CODEGEN_INCLUDE}
   ${LLVM_BINARY_DIR}/include
   ${LLVM_INCLUDE_DIR}
 )
@@ -63,6 +63,6 @@ target_link_libraries(wplc
   sym_lib
   semantic_lib
   utility_lib
-  # codegen_lib
+  codegen_lib
   ${LLVM_LIBS}
 )

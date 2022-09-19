@@ -7,6 +7,6 @@ set (CODEGEN_INCLUDE ${CODEGEN_DIR}/include)
 ###############################################
 # Modify the next if you have different names.
 #
-# set (CODEGEN_SOURCES
-#   ${CODEGEN_DIR}/CodegenVisitor.cpp
-# )
+set (CODEGEN_SOURCES
+  ${CODEGEN_DIR}/CodegenVisitor.cpp
+)
