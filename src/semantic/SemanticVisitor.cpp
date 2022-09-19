@@ -282,7 +282,26 @@ std::any SemanticVisitor::visitCondition(WPLParser::ConditionContext *ctx)
 
     return Types::UNDEFINED;
 }
-//     std::any visitSelectAlternative(WPLParser::SelectAlternativeContext *ctx) override;
+
+std::any SemanticVisitor::visitSelectAlternative(WPLParser::SelectAlternativeContext *ctx)
+{
+    //FIXME: VERIFY
+    ctx->eval->accept(this); 
+
+    const Type* checkType = std::any_cast<const Type*>(ctx->check);
+
+    if(const TypeBool* b = dynamic_cast<const TypeBool*>(checkType))
+    {
+
+    }
+    else 
+    {
+        errorHandler.addSemanticError(ctx->getStart(), "Select alternative expected BOOL but got " + checkType->toString());
+    }
+
+    return Types::UNDEFINED; 
+}
+
 std::any SemanticVisitor::visitParameterList(WPLParser::ParameterListContext *ctx)
 {
     std::cout << "STAR PARAMLIST" << std::endl;
@@ -450,11 +469,11 @@ std::any SemanticVisitor::visitConditionalStatement(WPLParser::ConditionalStatem
 
 std::any SemanticVisitor::visitSelectStatement(WPLParser::SelectStatementContext *ctx)
 {
-    //FIXME: VERIFY
-    for(auto e : ctx->cases)
+    // FIXME: VERIFY
+    for (auto e : ctx->cases)
     {
-        //FIXME: do better?
-        e->accept(this); 
+        // FIXME: do better?
+        e->accept(this);
     }
 
     return Types::UNDEFINED;

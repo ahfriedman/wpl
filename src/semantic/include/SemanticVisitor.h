@@ -40,7 +40,7 @@ public:
     std::any visitBConstExpr(WPLParser::BConstExprContext *ctx) override;
     std::any visitBlock(WPLParser::BlockContext *ctx) override;
     std::any visitCondition(WPLParser::ConditionContext *ctx) override;
-    //     std::any visitSelectAlternative(WPLParser::SelectAlternativeContext *ctx) override;
+    std::any visitSelectAlternative(WPLParser::SelectAlternativeContext *ctx) override;
     std::any visitParameterList(WPLParser::ParameterListContext *ctx) override;
     std::any visitParameter(WPLParser::ParameterContext *ctx) override;
     //     std::any visitAssignment(WPLParser::AssignmentContext *ctx) override;
