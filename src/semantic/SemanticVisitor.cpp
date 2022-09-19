@@ -85,7 +85,7 @@ std::any SemanticVisitor::visitArrayAccess(WPLParser::ArrayAccessContext *ctx)
 
         if (const TypeArray *arr = dynamic_cast<const TypeArray *>(sym->type))
         {
-            return arr->getValueType(); 
+            return arr->getValueType();
         }
         else
         {
@@ -448,7 +448,18 @@ std::any SemanticVisitor::visitConditionalStatement(WPLParser::ConditionalStatem
     return Types::UNDEFINED;
 }
 
-//     std::any visitSelectStatement(WPLParser::SelectStatementContext *ctx) override;
+std::any SemanticVisitor::visitSelectStatement(WPLParser::SelectStatementContext *ctx)
+{
+    //FIXME: VERIFY
+    for(auto e : ctx->cases)
+    {
+        //FIXME: do better?
+        e->accept(this); 
+    }
+
+    return Types::UNDEFINED;
+}
+
 std::any SemanticVisitor::visitCallStatement(WPLParser::CallStatementContext *ctx)
 {
     return ctx->call->accept(this);
