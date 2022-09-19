@@ -273,6 +273,7 @@ std::any CodegenVisitor::visitAssignStatement(WPLParser::AssignStatementContext 
     errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED");
     return nullptr;
 }
+
 std::any CodegenVisitor::visitVarDeclStatement(WPLParser::VarDeclStatementContext *ctx)
 {
     //FIXME: MODIFY TO DO THINGS BY TYPE!!!!
@@ -289,6 +290,7 @@ std::any CodegenVisitor::visitVarDeclStatement(WPLParser::VarDeclStatementContex
     }
     return nullptr;
 }
+
 std::any CodegenVisitor::visitLoopStatement(WPLParser::LoopStatementContext *ctx)
 {
     errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED");
