@@ -7,7 +7,9 @@ std::any SemanticVisitor::visitCompilationUnit(WPLParser::CompilationUnitContext
 
     for (auto e : ctx->stmts)
     {
+        std::cout << "-> " << e->getText() << std::endl; 
         e->accept(this);
+        std::cout << "<-" << e->getText() << std::endl; 
     }
 
     return Types::UNDEFINED;
@@ -567,7 +569,7 @@ std::any SemanticVisitor::visitVarDeclStatement(WPLParser::VarDeclStatementConte
             }
         }
     }
-
+    std::cout << "570" << std::endl; 
     return Types::UNDEFINED;
 }
 
