@@ -407,6 +407,12 @@ std::cout << "384" << std::endl;
 
     ctx->block()->accept(this);
 
+
+    if(ctx->block()->stmts.size() == 0 || !dynamic_cast<WPLParser::ReturnStatementContext*>(ctx->block()->stmts.at(ctx->block()->stmts.size() - 1)))
+    {
+        errorHandler.addSemanticError(ctx->getStart(), "Function must end in return statement");
+    }
+
     // Double scope for params.... should maybe make this a function....
     stmgr->exitScope();
 
