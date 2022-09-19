@@ -8,7 +8,9 @@ grammar WPL;
 
 
 // Parser rules
-compilationUnit   :  (stmts+=statement)* EOF ; 
+compilationUnit   :  (stmts+=statement | extens+=externStatement)* EOF ; 
+
+externStatement : EXTERN (ty=type FUNC | PROC) name=VARIABLE '(' (paramList=parameterList variadic=VariadicParam?)? ')' ';';
 
 //FIXME: CURRENTLY ALLOWS THINGS LIKE FUNCTIONS IN FUNCTIONS!
 
@@ -111,8 +113,7 @@ assignment : v+=VARIABLE (',' v+=VARIABLE)* (ASSIGN ex=expression)? ;
  * 10. Return statements
  * 11. Block statements. 
  */
-statement           : EXTERN (ty=type FUNC | PROC) name=VARIABLE '(' (paramList=parameterList variadic=VariadicParam?)? ')' ';' # ExternStatement
-                    | ty=type FUNC name=VARIABLE '(' (paramList=parameterList)? ')' block   # FuncDef 
+statement           : ty=type FUNC name=VARIABLE '(' (paramList=parameterList)? ')' block   # FuncDef 
                     | PROC name=VARIABLE '(' (paramList=parameterList)? ')' block           # ProcDef
                     | <assoc=right> to=arrayOrVar ASSIGN ex=expression ';'                     # AssignStatement 
                     | <assoc=right> ty=typeOrVar assignments+=assignment (',' assignments+=assignment)* ';'   # VarDeclStatement

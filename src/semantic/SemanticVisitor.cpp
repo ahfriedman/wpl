@@ -238,26 +238,26 @@ std::any SemanticVisitor::visitVariableExpr(WPLParser::VariableExprContext *ctx)
     return symbol->type;
 }
 
-std::any SemanticVisitor::visitFieldAccessExpr(WPLParser::FieldAccessExprContext *ctx) 
+std::any SemanticVisitor::visitFieldAccessExpr(WPLParser::FieldAccessExprContext *ctx)
 {
-    const Type* ty = std::any_cast<const Type*>(ctx->ex->accept(this));
+    const Type *ty = std::any_cast<const Type *>(ctx->ex->accept(this));
 
-    if(const TypeArray* a = dynamic_cast<const TypeArray*>(ty))
-    {}
-    else 
+    if (const TypeArray *a = dynamic_cast<const TypeArray *>(ty))
+    {
+    }
+    else
     {
         errorHandler.addSemanticError(ctx->getStart(), "Cannot perform operation: " + ctx->field->getText() + " on " + ty->toString());
-        return Types::UNDEFINED; 
+        return Types::UNDEFINED;
     }
 
-
-    if(ctx->field->getText() != "length")
+    if (ctx->field->getText() != "length")
     {
         errorHandler.addSemanticError(ctx->getStart(), "Unsupported operation on " + ty->toString() + ": " + ctx->field->getText());
         return Types::UNDEFINED;
     }
 
-    return Types::INT; //FIXME: DO THIS WHOLE THING BETTER
+    return Types::INT; // FIXME: DO THIS WHOLE THING BETTER
 }
 
 std::any SemanticVisitor::visitParenExpr(WPLParser::ParenExprContext *ctx)
@@ -355,7 +355,46 @@ std::any SemanticVisitor::visitParameter(WPLParser::ParameterContext *ctx)
     return ctx->ty->accept(this);
 }
 //     std::any visitAssignment(WPLParser::AssignmentContext *ctx) override;
-//     std::any visitExternStatement(WPLParser::ExternStatementContext *ctx) override;
+
+std::any SemanticVisitor::visitExternStatement(WPLParser::ExternStatementContext *ctx){
+    if(ctx->variadic)
+    {
+        errorHandler.addSemanticError(ctx->getStart(), "UNSUPPORTED: Variadic"); //FIXME: Also, fix so these are done correctly. 
+        return Types::UNDEFINED;
+    }
+
+    std::string id = ctx->name->getText(); 
+    
+    std::optional<Symbol *> opt = stmgr->lookup(id); 
+
+    // FIXME: DO BETTER, NEED ORDERING TO CATCH ALL ERRORS (BASICALLY SEE ANY ISSUE THAT APPLIES TO PROCs)
+    if (opt)
+    {
+        errorHandler.addSemanticError(ctx->getStart(), "Unsupported redeclaration of " + id);
+        return Types::UNDEFINED;
+    }
+
+
+    // FIXME: test breaking params somehow!! like using something thats not a type!!!!
+    const Type *ty = (ctx->paramList) ? std::any_cast<const Type *>(ctx->paramList->accept(this))
+                                      : new TypeInvoke();
+
+    const TypeInvoke *procType = dynamic_cast<const TypeInvoke *>(ty); // Always true, but needs separate statement to make C happy.
+    
+    //FIXME: DO BETTER
+    const Type *retType = ctx->ty ? std::any_cast<const Type *>(ctx->ty->accept(this))
+                                  : Types::UNDEFINED;
+
+    const TypeInvoke *funcType = (ctx->ty) ? new TypeInvoke(procType->getParamTypes(), retType)
+                                           : procType;
+
+
+    Symbol *funcSymbol = new Symbol(id, funcType);
+
+    stmgr->addSymbol(funcSymbol);
+
+    return Types::UNDEFINED;
+};
 
 std::any SemanticVisitor::visitFuncDef(WPLParser::FuncDefContext *ctx)
 {
@@ -372,19 +411,15 @@ std::any SemanticVisitor::visitFuncDef(WPLParser::FuncDefContext *ctx)
         return Types::UNDEFINED;
     }
 
-    std::cout << "375" << std::endl; 
     // FIXME: test breaking params somehow!! like using something thats not a type!!!!
     const Type *ty = (ctx->paramList) ? std::any_cast<const Type *>(ctx->paramList->accept(this))
-                                                  : new TypeInvoke();
+                                      : new TypeInvoke();
 
-    const TypeInvoke* procType = dynamic_cast<const TypeInvoke*>(ty); //Always true, but needs separate statement to make C happy. 
-    std::cout << "380" << std::endl; 
+    const TypeInvoke *procType = dynamic_cast<const TypeInvoke *>(ty); // Always true, but needs separate statement to make C happy.
     const Type *retType = std::any_cast<const Type *>(ctx->ty->accept(this));
 
-std::cout << "383" << std::endl; 
     const TypeInvoke *funcType = new TypeInvoke(procType->getParamTypes(), retType);
 
-std::cout << "384" << std::endl; 
 
     Symbol *funcSymbol = new Symbol(funcId, funcType);
 
@@ -407,8 +442,7 @@ std::cout << "384" << std::endl;
 
     ctx->block()->accept(this);
 
-
-    if(ctx->block()->stmts.size() == 0 || !dynamic_cast<WPLParser::ReturnStatementContext*>(ctx->block()->stmts.at(ctx->block()->stmts.size() - 1)))
+    if (ctx->block()->stmts.size() == 0 || !dynamic_cast<WPLParser::ReturnStatementContext *>(ctx->block()->stmts.at(ctx->block()->stmts.size() - 1)))
     {
         errorHandler.addSemanticError(ctx->getStart(), "Function must end in return statement");
     }
@@ -416,7 +450,7 @@ std::cout << "384" << std::endl;
     // Double scope for params.... should maybe make this a function....
     stmgr->exitScope();
 
-    return funcType;
+    return funcType; //FIXME: Should this return nothing?
 }
 
 std::any SemanticVisitor::visitProcDef(WPLParser::ProcDefContext *ctx)
