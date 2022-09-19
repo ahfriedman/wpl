@@ -285,6 +285,9 @@ std::any CodegenVisitor::visitProcDef(WPLParser::ProcDefContext *ctx)
 
 std::any CodegenVisitor::visitAssignStatement(WPLParser::AssignStatementContext *ctx)
 {
+    //FIXME: Might not work perfectly due to no arrays/vars yet.... or strings...
+    Value * exprVal = std::any_cast<Value *>(ctx->ex->accept(this));
+
     errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED");
     return nullptr;
 }
