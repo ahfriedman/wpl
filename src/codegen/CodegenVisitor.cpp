@@ -36,17 +36,17 @@ std::any CodegenVisitor::visitCompilationUnit(WPLParser::CompilationUnitContext 
 }
 std::any CodegenVisitor::visitInvocation(WPLParser::InvocationContext *ctx)
 {
-    errorHandler.addSemanticError(ctx->getStart(), "UNIMPLEMENTED");
+    errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED");
     return nullptr;
 }
 std::any CodegenVisitor::visitArrayAccess(WPLParser::ArrayAccessContext *ctx)
 {
-    errorHandler.addSemanticError(ctx->getStart(), "UNIMPLEMENTED");
+    errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED");
     return nullptr;
 }
 std::any CodegenVisitor::visitArrayOrVar(WPLParser::ArrayOrVarContext *ctx)
 {
-    errorHandler.addSemanticError(ctx->getStart(), "UNIMPLEMENTED");
+    errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED");
     return nullptr;
 }
 
@@ -59,12 +59,12 @@ std::any CodegenVisitor::visitIConstExpr(WPLParser::IConstExprContext *ctx)
 
 std::any CodegenVisitor::visitArrayAccessExpr(WPLParser::ArrayAccessExprContext *ctx)
 {
-    errorHandler.addSemanticError(ctx->getStart(), "UNIMPLEMENTED");
+    errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED");
     return nullptr;
 }
 std::any CodegenVisitor::visitSConstExpr(WPLParser::SConstExprContext *ctx)
 {
-    errorHandler.addSemanticError(ctx->getStart(), "UNIMPLEMENTED");
+    errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED");
     return nullptr;
 }
 
@@ -90,7 +90,7 @@ std::any CodegenVisitor::visitUnaryExpr(WPLParser::UnaryExprContext *ctx)
     }
     }
 
-    errorHandler.addSemanticError(ctx->getStart(), "Unknown unary operator: " + ctx->op->getText());
+    errorHandler.addCodegenError(ctx->getStart(), "Unknown unary operator: " + ctx->op->getText());
 
     return nullptr;
 }
@@ -112,7 +112,7 @@ std::any CodegenVisitor::visitBinaryArithExpr(WPLParser::BinaryArithExprContext 
         return builder->CreateSDiv(lhs, rhs);
     }
 
-    errorHandler.addSemanticError(ctx->getStart(), "Unknown arith op: " + ctx->op->getText());
+    errorHandler.addCodegenError(ctx->getStart(), "Unknown arith op: " + ctx->op->getText());
     return nullptr;
 }
 
@@ -139,7 +139,7 @@ std::any CodegenVisitor::visitEqExpr(WPLParser::EqExprContext *ctx)
     }
     }
 
-    errorHandler.addSemanticError(ctx->getStart(), "Unknown equality operator: " + ctx->op->getText());
+    errorHandler.addCodegenError(ctx->getStart(), "Unknown equality operator: " + ctx->op->getText());
     return nullptr;
 }
 
@@ -165,17 +165,17 @@ std::any CodegenVisitor::visitLogOrExpr(WPLParser::LogOrExprContext *ctx)
 
 std::any CodegenVisitor::visitCallExpr(WPLParser::CallExprContext *ctx)
 {
-    errorHandler.addSemanticError(ctx->getStart(), "UNIMPLEMENTED");
+    errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED");
     return nullptr;
 }
 std::any CodegenVisitor::visitVariableExpr(WPLParser::VariableExprContext *ctx)
 {
-    errorHandler.addSemanticError(ctx->getStart(), "UNIMPLEMENTED");
+    errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED");
     return nullptr;
 }
 std::any CodegenVisitor::visitFieldAccessExpr(WPLParser::FieldAccessExprContext *ctx)
 {
-    errorHandler.addSemanticError(ctx->getStart(), "UNIMPLEMENTED");
+    errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED");
     return nullptr;
 }
 
@@ -207,7 +207,7 @@ std::any CodegenVisitor::visitBinaryRelExpr(WPLParser::BinaryRelExprContext *ctx
         break;
 
     default:
-        errorHandler.addSemanticError(ctx->getStart(), "Unknown rel operator: " + ctx->op->getText());
+        errorHandler.addCodegenError(ctx->getStart(), "Unknown rel operator: " + ctx->op->getText());
         return nullptr;
     }
 
@@ -222,92 +222,96 @@ std::any CodegenVisitor::visitBConstExpr(WPLParser::BConstExprContext *ctx)
 
 std::any CodegenVisitor::visitBlock(WPLParser::BlockContext *ctx)
 {
-    errorHandler.addSemanticError(ctx->getStart(), "UNIMPLEMENTED");
+    errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED");
     return nullptr;
 }
 std::any CodegenVisitor::visitCondition(WPLParser::ConditionContext *ctx)
 {
-    errorHandler.addSemanticError(ctx->getStart(), "UNIMPLEMENTED");
+    //Based on https://llvm.org/docs/tutorial/MyFirstLanguageFrontend/LangImpl05.html
+    //FIXME: VERIFY
+    
+    errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED");
     return nullptr;
 }
 std::any CodegenVisitor::visitSelectAlternative(WPLParser::SelectAlternativeContext *ctx)
 {
-    errorHandler.addSemanticError(ctx->getStart(), "UNIMPLEMENTED");
+    errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED");
     return nullptr;
 }
 std::any CodegenVisitor::visitParameterList(WPLParser::ParameterListContext *ctx)
 {
-    errorHandler.addSemanticError(ctx->getStart(), "UNIMPLEMENTED");
+    errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED");
     return nullptr;
 }
 std::any CodegenVisitor::visitParameter(WPLParser::ParameterContext *ctx)
 {
-    errorHandler.addSemanticError(ctx->getStart(), "UNIMPLEMENTED");
+    errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED");
     return nullptr;
 }
 std::any CodegenVisitor::visitAssignment(WPLParser::AssignmentContext *ctx)
 {
-    errorHandler.addSemanticError(ctx->getStart(), "UNIMPLEMENTED");
+    errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED");
     return nullptr;
 }
 std::any CodegenVisitor::visitExternStatement(WPLParser::ExternStatementContext *ctx)
 {
-    errorHandler.addSemanticError(ctx->getStart(), "UNIMPLEMENTED");
+    errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED");
     return nullptr;
 }
 std::any CodegenVisitor::visitFuncDef(WPLParser::FuncDefContext *ctx)
 {
-    errorHandler.addSemanticError(ctx->getStart(), "UNIMPLEMENTED");
+    errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED");
     return nullptr;
 }
 std::any CodegenVisitor::visitProcDef(WPLParser::ProcDefContext *ctx)
 {
-    errorHandler.addSemanticError(ctx->getStart(), "UNIMPLEMENTED");
+    errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED");
     return nullptr;
 }
 std::any CodegenVisitor::visitAssignStatement(WPLParser::AssignStatementContext *ctx)
 {
-    errorHandler.addSemanticError(ctx->getStart(), "UNIMPLEMENTED");
+    errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED");
     return nullptr;
 }
 std::any CodegenVisitor::visitVarDeclStatement(WPLParser::VarDeclStatementContext *ctx)
 {
-    errorHandler.addSemanticError(ctx->getStart(), "UNIMPLEMENTED");
+
+    errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED");
     return nullptr;
 }
 std::any CodegenVisitor::visitLoopStatement(WPLParser::LoopStatementContext *ctx)
 {
-    errorHandler.addSemanticError(ctx->getStart(), "UNIMPLEMENTED");
+    errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED");
     return nullptr;
 }
 std::any CodegenVisitor::visitConditionalStatement(WPLParser::ConditionalStatementContext *ctx)
 {
-    errorHandler.addSemanticError(ctx->getStart(), "UNIMPLEMENTED");
+    errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED");
     return nullptr;
 }
 std::any CodegenVisitor::visitSelectStatement(WPLParser::SelectStatementContext *ctx)
 {
-    errorHandler.addSemanticError(ctx->getStart(), "UNIMPLEMENTED");
+    errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED");
     return nullptr;
 }
 std::any CodegenVisitor::visitCallStatement(WPLParser::CallStatementContext *ctx)
 {
-    errorHandler.addSemanticError(ctx->getStart(), "UNIMPLEMENTED");
+    errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED");
     return nullptr;
 }
 std::any CodegenVisitor::visitReturnStatement(WPLParser::ReturnStatementContext *ctx)
 {
-    errorHandler.addSemanticError(ctx->getStart(), "UNIMPLEMENTED");
+    errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED");
     return nullptr;
 }
 std::any CodegenVisitor::visitBlockStatement(WPLParser::BlockStatementContext *ctx)
 {
-    errorHandler.addSemanticError(ctx->getStart(), "UNIMPLEMENTED");
+    errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED");
     return nullptr;
 }
 std::any CodegenVisitor::visitTypeOrVar(WPLParser::TypeOrVarContext *ctx)
 {
-    errorHandler.addSemanticError(ctx->getStart(), "UNIMPLEMENTED");
+    errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED");
     return nullptr;
 }
 std::any CodegenVisitor::visitType(WPLParser::TypeContext *ctx)
@@ -318,7 +322,7 @@ std::any CodegenVisitor::visitType(WPLParser::TypeContext *ctx)
     if (ctx->TYPE_BOOL())
         return Int32Ty; // FIXME: DO BETTER
 
-    errorHandler.addSemanticError(ctx->getStart(), "UNIMPLEMENTED TYPE: " + ctx->getText());
+    errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED TYPE: " + ctx->getText());
     return nullptr;
 }
 std::any CodegenVisitor::visitBooleanConst(WPLParser::BooleanConstContext *ctx)
