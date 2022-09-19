@@ -287,6 +287,15 @@ std::any CodegenVisitor::visitAssignStatement(WPLParser::AssignStatementContext 
 {
     //FIXME: Might not work perfectly due to no arrays/vars yet.... or strings...
     Value * exprVal = std::any_cast<Value *>(ctx->ex->accept(this));
+    Symbol * varSym = props->getBinding(ctx->to);
+
+    if(varSym == nullptr)
+    {
+        errorHandler.addCodegenError(ctx->getStart(), "Incorrectly processed variable in assignment: " + ctx->to->toString());
+        return nullptr; 
+    }
+
+    builder->CreateStore(exprVal, varSym->val);
 
     errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED - visitAssignStatement");
     return nullptr;
