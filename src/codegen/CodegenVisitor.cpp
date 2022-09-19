@@ -113,54 +113,56 @@ std::any CodegenVisitor::visitBinaryArithExpr(WPLParser::BinaryArithExprContext 
     }
 
     errorHandler.addSemanticError(ctx->getStart(), "Unknown arith op: " + ctx->op->getText());
-    return nullptr; 
+    return nullptr;
 }
 
 std::any CodegenVisitor::visitEqExpr(WPLParser::EqExprContext *ctx)
 {
-    //FIXME: VERIFY GOOD ENOUGH! PROBS WONT WORK ON STRINGS!!!
-    Value * lhs = std::any_cast<Value*>(ctx->left->accept(this));
-    Value * rhs = std::any_cast<Value*>(ctx->right->accept(this)); 
+    // FIXME: VERIFY GOOD ENOUGH! PROBS WONT WORK ON STRINGS!!!
+    Value *lhs = std::any_cast<Value *>(ctx->left->accept(this));
+    Value *rhs = std::any_cast<Value *>(ctx->right->accept(this));
 
-    switch(ctx->op->getType())
+    switch (ctx->op->getType())
     {
-        case WPLParser::EQUAL:
-        {
-            Value * v1 = builder->CreateICmpEQ(lhs, rhs);
-            Value * v = builder->CreateZExtOrTrunc(v1, Int32Ty);
-            return v; 
-        }
-
-        case WPLParser::NOT_EQUAL:
-        {
-            Value * v1 = builder->CreateICmpNE(lhs, rhs);
-            Value * v = builder->CreateZExtOrTrunc(v1, Int32Ty);
-            return v; 
-        }
+    case WPLParser::EQUAL:
+    {
+        Value *v1 = builder->CreateICmpEQ(lhs, rhs);
+        Value *v = builder->CreateZExtOrTrunc(v1, Int32Ty);
+        return v;
     }
 
-    errorHandler.addSemanticError(ctx->getStart(), "Unknown equality operator: " + ctx->op->getText()); 
-    return nullptr; 
+    case WPLParser::NOT_EQUAL:
+    {
+        Value *v1 = builder->CreateICmpNE(lhs, rhs);
+        Value *v = builder->CreateZExtOrTrunc(v1, Int32Ty);
+        return v;
+    }
+    }
+
+    errorHandler.addSemanticError(ctx->getStart(), "Unknown equality operator: " + ctx->op->getText());
+    return nullptr;
 }
 
 std::any CodegenVisitor::visitLogAndExpr(WPLParser::LogAndExprContext *ctx)
 {
-    Value * lhs = std::any_cast<Value*>(ctx->left->accept(this));
-    Value * rhs = std::any_cast<Value*>(ctx->right->accept(this)); 
+    Value *lhs = std::any_cast<Value *>(ctx->left->accept(this));
+    Value *rhs = std::any_cast<Value *>(ctx->right->accept(this));
 
-    Value * IR = builder->CreateAnd(lhs, rhs);
-    Value * v = builder->CreateZExtOrTrunc(IR, Int32Ty);
-    return v; //FIXME: VERIFY!!!
+    Value *IR = builder->CreateAnd(lhs, rhs);
+    Value *v = builder->CreateZExtOrTrunc(IR, Int32Ty);
+    return v; // FIXME: VERIFY!!!
 }
+
 std::any CodegenVisitor::visitLogOrExpr(WPLParser::LogOrExprContext *ctx)
 {
-    Value * lhs = std::any_cast<Value*>(ctx->left->accept(this));
-    Value * rhs = std::any_cast<Value*>(ctx->right->accept(this)); 
+    Value *lhs = std::any_cast<Value *>(ctx->left->accept(this));
+    Value *rhs = std::any_cast<Value *>(ctx->right->accept(this));
 
-    Value * IR = builder->CreateOr(lhs, rhs);
-    Value * v = builder->CreateZExtOrTrunc(IR, Int32Ty);
-    return v; //FIXME: VERIFY!!!
+    Value *IR = builder->CreateOr(lhs, rhs);
+    Value *v = builder->CreateZExtOrTrunc(IR, Int32Ty);
+    return v; // FIXME: VERIFY!!!
 }
+
 std::any CodegenVisitor::visitCallExpr(WPLParser::CallExprContext *ctx)
 {
     errorHandler.addSemanticError(ctx->getStart(), "UNIMPLEMENTED");
@@ -176,19 +178,46 @@ std::any CodegenVisitor::visitFieldAccessExpr(WPLParser::FieldAccessExprContext 
     errorHandler.addSemanticError(ctx->getStart(), "UNIMPLEMENTED");
     return nullptr;
 }
+
 std::any CodegenVisitor::visitParenExpr(WPLParser::ParenExprContext *ctx)
 {
-    return ctx->ex->accept(this); //FIXME: VERIFY GOOD ENOUGH 
+    return ctx->ex->accept(this); // FIXME: VERIFY GOOD ENOUGH
 }
+
 std::any CodegenVisitor::visitBinaryRelExpr(WPLParser::BinaryRelExprContext *ctx)
 {
-    errorHandler.addSemanticError(ctx->getStart(), "UNIMPLEMENTED");
-    return nullptr;
+    Value *lhs = std::any_cast<Value *>(ctx->left->accept(this));
+    Value *rhs = std::any_cast<Value *>(ctx->right->accept(this));
+
+    Value *v1;
+
+    switch (ctx->op->getType())
+    {
+    case WPLParser::LESS:
+        v1 = builder->CreateICmpSLT(lhs, rhs);
+        break;
+    case WPLParser::LESS_EQ:
+        v1 = builder->CreateICmpSLE(lhs, rhs); // FIXME: VERIFY
+        break;
+    case WPLParser::GREATER:
+        v1 = builder->CreateICmpSGT(lhs, rhs);
+        break;
+    case WPLParser::GREATER_EQ:
+        v1 = builder->CreateICmpSGE(lhs, rhs); // FIXME: VERIFY
+        break;
+
+    default:
+        errorHandler.addSemanticError(ctx->getStart(), "Unknown rel operator: " + ctx->op->getText());
+        return nullptr;
+    }
+
+    Value *v = builder->CreateZExtOrTrunc(v1, CodegenVisitor::Int32Ty);
+    return v;
 }
 
 std::any CodegenVisitor::visitBConstExpr(WPLParser::BConstExprContext *ctx)
 {
-   return ctx->booleanConst()->accept(this); 
+    return ctx->booleanConst()->accept(this);
 }
 
 std::any CodegenVisitor::visitBlock(WPLParser::BlockContext *ctx)
@@ -283,9 +312,11 @@ std::any CodegenVisitor::visitTypeOrVar(WPLParser::TypeOrVarContext *ctx)
 }
 std::any CodegenVisitor::visitType(WPLParser::TypeContext *ctx)
 {
-    //FIXME: VERIFY!
-    if(ctx->TYPE_INT()) return Int32Ty;
-    if(ctx->TYPE_BOOL()) return Int32Ty; //FIXME: DO BETTER
+    // FIXME: VERIFY!
+    if (ctx->TYPE_INT())
+        return Int32Ty;
+    if (ctx->TYPE_BOOL())
+        return Int32Ty; // FIXME: DO BETTER
 
     errorHandler.addSemanticError(ctx->getStart(), "UNIMPLEMENTED TYPE: " + ctx->getText());
     return nullptr;
