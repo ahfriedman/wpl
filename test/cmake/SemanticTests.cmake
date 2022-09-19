@@ -4,4 +4,5 @@ set(SEMANTIC_TESTS
   semantic/assignment_tests.cpp
   semantic/loop_tests.cpp
   semantic/conditional_tests.cpp
+  semantic/procedure_tests.cpp 
 )

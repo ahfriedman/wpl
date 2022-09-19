@@ -285,21 +285,20 @@ std::any SemanticVisitor::visitCondition(WPLParser::ConditionContext *ctx)
 
 std::any SemanticVisitor::visitSelectAlternative(WPLParser::SelectAlternativeContext *ctx)
 {
-    //FIXME: VERIFY
-    ctx->eval->accept(this); 
+    // FIXME: VERIFY
+    ctx->eval->accept(this);
 
-    const Type* checkType = std::any_cast<const Type*>(ctx->check);
+    const Type *checkType = std::any_cast<const Type *>(ctx->check);
 
-    if(const TypeBool* b = dynamic_cast<const TypeBool*>(checkType))
+    if (const TypeBool *b = dynamic_cast<const TypeBool *>(checkType))
     {
-
     }
-    else 
+    else
     {
         errorHandler.addSemanticError(ctx->getStart(), "Select alternative expected BOOL but got " + checkType->toString());
     }
 
-    return Types::UNDEFINED; 
+    return Types::UNDEFINED;
 }
 
 std::any SemanticVisitor::visitParameterList(WPLParser::ParameterListContext *ctx)
@@ -352,6 +351,9 @@ std::any SemanticVisitor::visitProcDef(WPLParser::ProcDefContext *ctx)
     stmgr->addSymbol(procSymbol);
 
     stmgr->enterScope(); // FIXME: we double up on scope entrances here. Is that ok?
+
+    // Used to help manage return types //FIXME: maybe do better?
+    stmgr->addSymbol(new Symbol("@RETURN", Types::UNDEFINED));
 
     // FIXME: we double up work here b/c we essentially get the type twice....
     if (ctx->paramList)
@@ -483,7 +485,55 @@ std::any SemanticVisitor::visitCallStatement(WPLParser::CallStatementContext *ct
 {
     return ctx->call->accept(this);
 }
-//     std::any visitReturnStatement(WPLParser::ReturnStatementContext *ctx) override;
+
+std::any SemanticVisitor::visitReturnStatement(WPLParser::ReturnStatementContext *ctx) 
+{
+    //FIXME: DO BETTER!!!
+
+    std::optional<Symbol *> sym = stmgr->lookup("@RETURN");
+
+    if(!sym)
+    {
+        errorHandler.addSemanticError(ctx->getStart(), "Cannot use return outside of FUNC or PROC");
+        return Types::UNDEFINED;
+    }
+
+    if(ctx->expression())
+    {
+        if(const TypeBot* b = dynamic_cast<const TypeBot*>(sym.value()->type)) 
+        {
+            const Type* valType = std::any_cast<const Type*>(ctx->expression()->accept(this));
+            errorHandler.addSemanticError(ctx->getStart(), "PROC cannot return value, yet it was given a " + valType->toString() + " to return!");
+            return Types::UNDEFINED; 
+        }
+        else 
+        {
+            const Type* valType = std::any_cast<const Type*>(ctx->expression()->accept(this)); 
+            
+            if(sym.value()->type->isNot(valType)) 
+            {
+                errorHandler.addSemanticError(ctx->getStart(), "Expected return type of " + sym.value()->type->toString() + " but got " + valType->toString());
+                return Types::UNDEFINED;
+            }
+
+            return Types::UNDEFINED;
+        }
+    }
+    else 
+    {
+        if(const TypeBot* b = dynamic_cast<const TypeBot*>(sym.value()->type)) {
+            return Types::UNDEFINED;
+        }
+        
+        errorHandler.addSemanticError(ctx->getStart(), "Expected to return a " + sym.value()->type->toString() + " but recieved nothing.");
+        return Types::UNDEFINED;
+
+    }
+
+    errorHandler.addSemanticError(ctx->getStart(), "Unknown case");
+    return Types::UNDEFINED; 
+
+}
 
 std::any SemanticVisitor::visitBlockStatement(WPLParser::BlockStatementContext *ctx)
 {
