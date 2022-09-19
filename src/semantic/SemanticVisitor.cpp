@@ -97,7 +97,18 @@ std::any SemanticVisitor::visitArrayAccess(WPLParser::ArrayAccessContext *ctx)
     return Types::UNDEFINED;
 }
 
-//     std::any visitArrayOrVar(WPLParser::ArrayOrVarContext *ctx) override;
+std::any SemanticVisitor::visitArrayOrVar(WPLParser::ArrayOrVarContext *ctx) 
+{
+    if(ctx->var)
+    {
+        errorHandler.addSemanticError(ctx->getStart(), "UNIMPLEMENTED: VAR"); //FIXME
+        return Types::UNDEFINED; 
+    }
+
+    return ctx->array->accept(this); 
+}
+
+
 std::any SemanticVisitor::visitIConstExpr(WPLParser::IConstExprContext *ctx)
 {
     return Types::INT;
