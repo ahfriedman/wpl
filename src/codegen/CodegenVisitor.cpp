@@ -175,8 +175,20 @@ std::any CodegenVisitor::visitCallExpr(WPLParser::CallExprContext *ctx)
 
 std::any CodegenVisitor::visitVariableExpr(WPLParser::VariableExprContext *ctx)
 {
-    errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED");
-    return nullptr;
+    //FIXME: should probably methodize...
+    std::string id = ctx->v->getText(); 
+    Symbol * sym = props->getBinding(ctx); 
+
+    if(!sym)
+    {
+        errorHandler.addCodegenError(ctx->getStart(), "Undefined variable access: " + id);
+        return nullptr; //FIXME: these nulptrs are causing bad anycasts.
+    }
+
+    //FIXME: ADD TYPES
+    Value * v = builder->CreateLoad(CodegenVisitor::Int32Ty, sym->val, id);
+
+    return v; 
 }
 
 std::any CodegenVisitor::visitFieldAccessExpr(WPLParser::FieldAccessExprContext *ctx)
@@ -327,7 +339,7 @@ std::any CodegenVisitor::visitVarDeclStatement(WPLParser::VarDeclStatementContex
 
             Value * v = builder->CreateAlloca(Int32Ty, 0, var->getText()); 
             varSymbol->val = v; 
-            
+
             builder->CreateStore(exVal, v);
 
         }
