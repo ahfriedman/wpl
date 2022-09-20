@@ -15,7 +15,12 @@ std::any CodegenVisitor::visitCompilationUnit(WPLParser::CompilationUnitContext 
     // BasicBlock *bBlk = BasicBlock::Create(module->getContext(), "entry", mainFunc);
     // builder->SetInsertPoint(bBlk);
 
-    // FIXME: PROCESS EXTERNS!!!!
+    for (auto e : ctx->extens)
+    {
+        e->accept(this);
+    }
+
+    // FIXME: SURROUND IN IF
     for (auto e : ctx->stmts)
     {
         // Generate code for statement
@@ -37,7 +42,7 @@ std::any CodegenVisitor::visitCompilationUnit(WPLParser::CompilationUnitContext 
      * Create main to invoke program
      */
 
-    //FIXME: SHOULD WE DISALLOW MAIN?
+    // FIXME: SHOULD WE DISALLOW MAIN?
 
     FunctionType *mainFuncType = FunctionType::get(Int32Ty, {Int32Ty, Int8PtrPtrTy}, false);
     Function *mainFunc = Function::Create(mainFuncType, GlobalValue::ExternalLinkage, "main", module);
@@ -45,7 +50,6 @@ std::any CodegenVisitor::visitCompilationUnit(WPLParser::CompilationUnitContext 
     // Create block to attach to main
     BasicBlock *bBlk = BasicBlock::Create(module->getContext(), "entry", mainFunc);
     builder->SetInsertPoint(bBlk);
-
 
     // auto progType = FunctionType::get(Int32Ty, true);
     // auto progFn = Function::Create(progType, Function::ExternalLinkage, "program", module);
@@ -57,27 +61,25 @@ std::any CodegenVisitor::visitCompilationUnit(WPLParser::CompilationUnitContext 
 
     llvm::Function *progFn = module->getFunction("program");
     builder->CreateRet(
-        builder->CreateCall(progFn, {})
-    );
+        builder->CreateCall(progFn, {}));
 
     return nullptr; // FIXME: DANGER!!
 }
 
 std::any CodegenVisitor::visitInvocation(WPLParser::InvocationContext *ctx)
 {
-    //FIXME: IMPL VARIADIC
+    // FIXME: IMPL VARIADIC
     std::vector<llvm::Value *> args;
 
-    for(auto e : ctx->args)
+    for (auto e : ctx->args)
     {
-        Value * val = std::any_cast<Value *>(e->accept(this));
-        args.push_back(val); 
+        Value *val = std::any_cast<Value *>(e->accept(this));
+        args.push_back(val);
     }
 
-    ArrayRef<Value *> ref = ArrayRef(args); 
+    ArrayRef<Value *> ref = ArrayRef(args);
 
-    llvm::Function * call = module->getFunction(ctx->VARIABLE()->getText());
-
+    llvm::Function *call = module->getFunction(ctx->VARIABLE()->getText());
 
     return builder->CreateCall(call, ref);
 }
@@ -112,7 +114,7 @@ std::any CodegenVisitor::visitSConstExpr(WPLParser::SConstExprContext *ctx)
     return nullptr;
 }
 
-//FIXME: SHOULD WE ALLOW INTS IN VARIABLE NAMES? PROBABLY 
+// FIXME: SHOULD WE ALLOW INTS IN VARIABLE NAMES? PROBABLY
 
 std::any CodegenVisitor::visitUnaryExpr(WPLParser::UnaryExprContext *ctx)
 {
@@ -300,7 +302,29 @@ std::any CodegenVisitor::visitSelectAlternative(WPLParser::SelectAlternativeCont
 
 std::any CodegenVisitor::visitExternStatement(WPLParser::ExternStatementContext *ctx)
 {
-    errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED - visitExternStatement");
+    // FIXME: VARIADIC
+    std::vector<llvm::Type *> typeVec;
+
+    if (ctx->paramList)
+    {
+        for (auto e : ctx->paramList->params)
+        {
+            llvm::Type *type = std::any_cast<llvm::Type *>(e->ty->accept(this));
+            typeVec.push_back(type);
+        }
+    }
+
+    ArrayRef<llvm::Type *> paramRef = ArrayRef(typeVec);
+
+    FunctionType *fnType = FunctionType::get(
+        std::any_cast<llvm::Type *>(ctx->ty->accept(this)), // Int32Ty, //ctx->ty->accept(this), // FIXME: DO BETTER
+        paramRef,
+        false);
+
+    // FIXME: VERIFY CORRECT!
+    Function *fn = Function::Create(fnType, GlobalValue::ExternalLinkage, ctx->name->getText(), module);
+
+    // errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED - visitExternStatement");
     return nullptr;
 }
 
@@ -330,30 +354,30 @@ std::any CodegenVisitor::visitFuncDef(WPLParser::FuncDefContext *ctx)
     {
         for (auto e : ctx->paramList->params)
         {
-            llvm::Type * type = std::any_cast<llvm::Type*>(e->ty->accept(this));
+            llvm::Type *type = std::any_cast<llvm::Type *>(e->ty->accept(this));
             typeVec.push_back(type);
         }
     }
     ArrayRef<llvm::Type *> paramRef = ArrayRef(typeVec);
 
     FunctionType *fnType = FunctionType::get(
-        std::any_cast<llvm::Type*>(ctx->ty->accept(this)),//Int32Ty, //ctx->ty->accept(this), // FIXME: DO BETTER
+        std::any_cast<llvm::Type *>(ctx->ty->accept(this)), // Int32Ty, //ctx->ty->accept(this), // FIXME: DO BETTER
         paramRef,
         false);
 
-    //FIXME: VERIFY CORRECT!
-    Function * fn = Function::Create(fnType, GlobalValue::ExternalLinkage, ctx->name->getText(), module);
-    
-    //Create block
-    BasicBlock * bBlk = BasicBlock::Create(module->getContext(), "entry", fn); //FIXME: USING ENTRY MAY BE AN ISSUE?
+    // FIXME: VERIFY CORRECT!
+    Function *fn = Function::Create(fnType, GlobalValue::ExternalLinkage, ctx->name->getText(), module);
+
+    // Create block
+    BasicBlock *bBlk = BasicBlock::Create(module->getContext(), "entry", fn); // FIXME: USING ENTRY MAY BE AN ISSUE?
     builder->SetInsertPoint(bBlk);
 
-    for(auto e : ctx->block()->stmts)
+    for (auto e : ctx->block()->stmts)
     {
-        e->accept(this); 
+        e->accept(this);
     }
 
-    //FIXME: VERIFY ENOUGH, NOTHING FOLLOWING, ETC. THIS IS PROBS WRONG!
+    // FIXME: VERIFY ENOUGH, NOTHING FOLLOWING, ETC. THIS IS PROBS WRONG!
 
     return nullptr;
 }
@@ -411,7 +435,7 @@ std::any CodegenVisitor::visitVarDeclStatement(WPLParser::VarDeclStatementContex
             builder->CreateStore(exVal, v);
         }
     }
-    //FIXME: ENSURE CORRECT!!!
+    // FIXME: ENSURE CORRECT!!!
     return nullptr;
 }
 
@@ -476,18 +500,18 @@ std::any CodegenVisitor::visitCallStatement(WPLParser::CallStatementContext *ctx
 
 std::any CodegenVisitor::visitReturnStatement(WPLParser::ReturnStatementContext *ctx)
 {
-    if(ctx->expression())
+    if (ctx->expression())
     {
         builder->CreateRet(
-            std::any_cast<Value*>(ctx->expression()->accept(this)) //FIXME: UNSAFE W/ ERORS
+            std::any_cast<Value *>(ctx->expression()->accept(this)) // FIXME: UNSAFE W/ ERORS
         );
-        //FIXME: ENSURE NO FOLLOWING CODE
+        // FIXME: ENSURE NO FOLLOWING CODE
 
-        return nullptr; 
+        return nullptr;
     }
-    builder->CreateRetVoid(); 
-    //FIXME: ENSURE NO FOLLOWING CODE, ENSURE CORRECT!!
-    return nullptr; 
+    builder->CreateRetVoid();
+    // FIXME: ENSURE NO FOLLOWING CODE, ENSURE CORRECT!!
+    return nullptr;
 }
 
 std::any CodegenVisitor::visitBlockStatement(WPLParser::BlockStatementContext *ctx)
