@@ -32,6 +32,29 @@ std::any CodegenVisitor::visitCompilationUnit(WPLParser::CompilationUnitContext 
     }
 
     // builder->CreateRet(Int32Zero);
+
+    /*
+     * Create main to invoke program
+     */
+
+    //FIXME: SHOULD WE DISALLOW MAIN?
+
+    FunctionType *mainFuncType = FunctionType::get(Int32Ty, {Int32Ty, Int8PtrPtrTy}, false);
+    Function *mainFunc = Function::Create(mainFuncType, GlobalValue::ExternalLinkage, "main", module);
+
+    // Create block to attach to main
+    BasicBlock *bBlk = BasicBlock::Create(module->getContext(), "entry", mainFunc);
+    builder->SetInsertPoint(bBlk);
+
+
+    auto progType = FunctionType::get(Int32Ty, true);
+    auto progFn = Function::Create(progType, Function::ExternalLinkage, "program", module);
+    FunctionCallee progCall(progType, progFn);
+
+    builder->CreateRet(
+        builder->CreateCall(progFn, {})
+    );
+
     return nullptr; // FIXME: DANGER!!
 }
 
