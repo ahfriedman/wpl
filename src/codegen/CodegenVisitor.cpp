@@ -279,6 +279,29 @@ std::any CodegenVisitor::visitExternStatement(WPLParser::ExternStatementContext 
 
 std::any CodegenVisitor::visitFuncDef(WPLParser::FuncDefContext *ctx)
 {
+    
+    std::vector<Type*> typeVec ; 
+
+    Symbol * sym = props->getBinding(ctx); 
+    if(!sym)
+    {
+        errorHandler.addCodegenError(ctx->getStart(), "Unbound function: " + ctx->name->getText());
+        return nullptr; 
+    }
+
+    const TypeInvoke * inv = dynamic_cast<const TypeInvoke*>(sym->type);
+
+    for(const Type * t : inv->getParamTypes())
+    {
+        typeVec.push_back(t); 
+    }
+
+    ArrayRef<Type*> paramRef = ArrayRef(typeVec); 
+
+    FunctionType * fnType = FunctionType::get(
+        ctx->ty->accept(this), //FIXME: DO BETTER
+
+    )
     errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED - visitFuncDef");
     return nullptr;
 }

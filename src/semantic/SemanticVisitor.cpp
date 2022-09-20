@@ -466,6 +466,8 @@ std::any SemanticVisitor::visitFuncDef(WPLParser::FuncDefContext *ctx)
     // Double scope for params.... should maybe make this a function....
     stmgr->exitScope();
 
+    bindings->bind(ctx, funcSymbol);
+    
     return funcType; // FIXME: Should this return nothing?
 }
 

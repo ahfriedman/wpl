@@ -86,7 +86,8 @@
     "__verbose_abort": "cpp",
     "ios": "cpp",
     "queue": "cpp",
-    "stack": "cpp"
+    "stack": "cpp",
+    "*.def": "cpp"
   },
   "cmake.configureOnOpen": true
 }

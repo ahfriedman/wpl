@@ -26,7 +26,21 @@
 #include <any> 
 #include <string>
 
-using namespace llvm;
+// using namespace llvm;
+using llvm::FunctionType; 
+using llvm::GlobalValue; 
+using llvm::BasicBlock; 
+using llvm::StringRef; 
+using llvm::Value; 
+using llvm::Function; 
+using llvm::FunctionCallee; 
+using llvm::ArrayRef; 
+using llvm::ConstantInt; 
+using llvm::Module; 
+using llvm::LLVMContext; 
+using llvm::IRBuilder; 
+using llvm::NoFolder; 
+using llvm::Constant; 
 
 class CodegenVisitor : WPLBaseVisitor
 {
