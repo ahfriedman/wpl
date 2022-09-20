@@ -515,6 +515,8 @@ std::any SemanticVisitor::visitProcDef(WPLParser::ProcDefContext *ctx)
     // Double scope for params.... should maybe make this a function....
     stmgr->exitScope();
 
+    bindings->bind(ctx, procSymbol);
+
     return procType;
 }
 

@@ -384,7 +384,55 @@ std::any CodegenVisitor::visitFuncDef(WPLParser::FuncDefContext *ctx)
 
 std::any CodegenVisitor::visitProcDef(WPLParser::ProcDefContext *ctx)
 {
-    errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED - visitProcDef");
+    // FIXME: VERIFY + METHODIZE
+    std::vector<llvm::Type *> typeVec;
+
+    Symbol *sym = props->getBinding(ctx);
+    if (!sym)
+    {
+        errorHandler.addCodegenError(ctx->getStart(), "Unbound function: " + ctx->name->getText());
+        return nullptr;
+    }
+
+    const TypeInvoke *inv = dynamic_cast<const TypeInvoke *>(sym->type);
+
+    /*
+        for(const Type * t : inv->getParamTypes())
+        {
+            //FIXME: NEED A WAY TO get the type!!!
+            typeVec.push_back(t);
+        }
+    */
+
+    if (ctx->paramList)
+    {
+        for (auto e : ctx->paramList->params)
+        {
+            llvm::Type *type = std::any_cast<llvm::Type *>(e->ty->accept(this));
+            typeVec.push_back(type);
+        }
+    }
+    ArrayRef<llvm::Type *> paramRef = ArrayRef(typeVec);
+
+    FunctionType *fnType = FunctionType::get(
+        VoidTy,
+        paramRef,
+        false);
+
+    // FIXME: VERIFY CORRECT!
+    Function *fn = Function::Create(fnType, GlobalValue::ExternalLinkage, ctx->name->getText(), module);
+
+    // Create block
+    BasicBlock *bBlk = BasicBlock::Create(module->getContext(), "entry", fn); // FIXME: USING ENTRY MAY BE AN ISSUE?
+    builder->SetInsertPoint(bBlk);
+
+    for (auto e : ctx->block()->stmts)
+    {
+        e->accept(this);
+    }
+
+    // FIXME: VERIFY ENOUGH, NOTHING FOLLOWING, ETC. THIS IS PROBS WRONG!
+
     return nullptr;
 }
 
