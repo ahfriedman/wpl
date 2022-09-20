@@ -169,8 +169,7 @@ std::any CodegenVisitor::visitLogOrExpr(WPLParser::LogOrExprContext *ctx)
 
 std::any CodegenVisitor::visitCallExpr(WPLParser::CallExprContext *ctx)
 {
-    errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED");
-    return nullptr;
+    return ctx->call->accept(this); 
 }
 
 std::any CodegenVisitor::visitVariableExpr(WPLParser::VariableExprContext *ctx)
@@ -271,12 +270,6 @@ std::any CodegenVisitor::visitParameter(WPLParser::ParameterContext *ctx)
     return nullptr;
 }
 
-std::any CodegenVisitor::visitAssignment(WPLParser::AssignmentContext *ctx)
-{
-    errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED - visitAssignment");
-    return nullptr;
-}
-
 std::any CodegenVisitor::visitExternStatement(WPLParser::ExternStatementContext *ctx)
 {
     errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED - visitExternStatement");
@@ -367,8 +360,7 @@ std::any CodegenVisitor::visitSelectStatement(WPLParser::SelectStatementContext 
 
 std::any CodegenVisitor::visitCallStatement(WPLParser::CallStatementContext *ctx)
 {
-    errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED - visitCallStatement");
-    return nullptr;
+   return ctx->call->accept(this); 
 }
 
 std::any CodegenVisitor::visitReturnStatement(WPLParser::ReturnStatementContext *ctx)
@@ -380,12 +372,6 @@ std::any CodegenVisitor::visitReturnStatement(WPLParser::ReturnStatementContext 
 std::any CodegenVisitor::visitBlockStatement(WPLParser::BlockStatementContext *ctx)
 {
     errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED - visitBlockStatement");
-    return nullptr;
-}
-
-std::any CodegenVisitor::visitTypeOrVar(WPLParser::TypeOrVarContext *ctx)
-{
-    errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED - visitTypeOrVar");
     return nullptr;
 }
 
@@ -406,4 +392,27 @@ std::any CodegenVisitor::visitBooleanConst(WPLParser::BooleanConstContext *ctx)
     Value *v = builder->getInt32(ctx->TRUE() ? 1 : 0);
 
     return v;
+}
+
+
+/*
+ *
+ * UNUSED VISITORS
+ * ===============
+ *
+ * These are visitors which should NEVER be seen during the compilation process.  
+ * 
+ */
+
+//FIXME: maybe these should be meta/compiler errors
+std::any CodegenVisitor::visitTypeOrVar(WPLParser::TypeOrVarContext *ctx)
+{
+    errorHandler.addCodegenError(ctx->getStart(), "Unknown Error: Type information should be collected prior to codegen!");
+    return nullptr; 
+}
+
+std::any CodegenVisitor::visitAssignment(WPLParser::AssignmentContext *ctx)
+{
+    errorHandler.addCodegenError(ctx->getStart(), "Assignment fragment should never be visited directly during codegen!");
+    return nullptr;
 }
