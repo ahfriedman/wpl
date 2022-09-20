@@ -291,13 +291,13 @@ std::any CodegenVisitor::visitAssignStatement(WPLParser::AssignStatementContext 
 
     if(varSym == nullptr)
     {
-        errorHandler.addCodegenError(ctx->getStart(), "Incorrectly processed variable in assignment: " + ctx->to->toString());
+        errorHandler.addCodegenError(ctx->getStart(), "Incorrectly processed variable in assignment: " + ctx->to->getText());
         return nullptr; 
     }
     //Shouldn't need this in the end....
     if(varSym->val == nullptr)
     {
-        errorHandler.addCodegenError(ctx->getStart(), "Improperly initialized variable in assignment: " + ctx->to->toString());
+        errorHandler.addCodegenError(ctx->getStart(), "Improperly initialized variable in assignment: " + ctx->to->getText());
         return nullptr; 
     }
 
