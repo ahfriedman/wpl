@@ -569,7 +569,7 @@ std::any SemanticVisitor::visitVarDeclStatement(WPLParser::VarDeclStatementConte
             errorHandler.addSemanticError(e->getStart(), "Expression of type " + exprType->toString() + " cannot be assigned to " + assignType->toString());
         }
 
-        for (auto var : e->v)
+        for (auto var : e->VARIABLE())
         {
             std::string id = var->getText();
 
@@ -583,6 +583,7 @@ std::any SemanticVisitor::visitVarDeclStatement(WPLParser::VarDeclStatementConte
             {
                 Symbol *symbol = new Symbol(id, exprType); // Done with exprType for later inferencing purposes
                 stmgr->addSymbol(symbol);
+                bindings->bind(var, symbol);
                 // bindings->bind() //FIXME: What to do about bindings????
             }
         }

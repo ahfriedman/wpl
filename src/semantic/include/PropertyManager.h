@@ -5,12 +5,12 @@
 class PropertyManager {
   public:
     // Get the Symbol associated with this node
-    Symbol* getBinding(antlr4::ParserRuleContext *ctx) {
+    Symbol* getBinding(antlr4::tree::ParseTree *ctx) {
       return bindings.get(ctx);
     }
 
     // Bind the symbol to the node
-    void bind(antlr4::ParserRuleContext *ctx, Symbol* symbol) {
+    void bind(antlr4::tree::ParseTree *ctx, Symbol* symbol) {
       bindings.put(ctx, symbol);
     }
 
