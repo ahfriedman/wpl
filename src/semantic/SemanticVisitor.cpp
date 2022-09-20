@@ -36,7 +36,10 @@ std::any SemanticVisitor::visitInvocation(WPLParser::InvocationContext *ctx)
     {
         std::vector<const Type *> fnParams = invokeable->getParamTypes();
 
-        if (fnParams.size() != ctx->args.size())
+        if (
+            (!invokeable->isVariadic() && fnParams.size() != ctx->args.size())
+            || (invokeable->isVariadic() && fnParams.size() > ctx->args.size()) //FIXME: verify correct
+            )
         {
             std::ostringstream errorMsg;
             errorMsg << "Invocation of " << name << " expected " << fnParams.size() << " argument(s), but got " << ctx->args.size();
@@ -44,10 +47,12 @@ std::any SemanticVisitor::visitInvocation(WPLParser::InvocationContext *ctx)
             return Types::UNDEFINED;
         }
 
-        for (unsigned int i = 0; i < fnParams.size(); i++)
+        for (unsigned int i = 0; i < ctx->args.size(); i++)//fnParams.size(); i++)
         {
             const Type *providedType = std::any_cast<const Type *>(ctx->args.at(i)->accept(this));
-            const Type *expectedType = fnParams.at(i);
+            const Type *expectedType = fnParams.at(
+                i < fnParams.size() ? i : (fnParams.size() - 1)
+                );
 
             if (providedType->isNot(expectedType))
             {
@@ -57,6 +62,13 @@ std::any SemanticVisitor::visitInvocation(WPLParser::InvocationContext *ctx)
                 errorHandler.addSemanticError(ctx->getStart(), errorMsg.str());
             }
         }
+
+        // if(invokeable->isVariadic() && fnParams.size() < ctx->args.size())
+        // {
+        //     const Type * expectedType = fnParams.at(fnParams.size() - 1);
+
+        //     for(unsigned int )
+        // }
 
         return invokeable->getReturnType().has_value() ? invokeable->getReturnType().value() : Types::UNDEFINED;
     }

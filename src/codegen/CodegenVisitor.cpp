@@ -68,7 +68,7 @@ std::any CodegenVisitor::visitCompilationUnit(WPLParser::CompilationUnitContext 
 
 std::any CodegenVisitor::visitInvocation(WPLParser::InvocationContext *ctx)
 {
-    // FIXME: IMPL VARIADIC
+    // FIXME: IMPL VARIADIC - should be ok on this side...
     std::vector<llvm::Value *> args;
 
     for (auto e : ctx->args)
@@ -296,7 +296,7 @@ std::any CodegenVisitor::visitSelectAlternative(WPLParser::SelectAlternativeCont
 
 std::any CodegenVisitor::visitExternStatement(WPLParser::ExternStatementContext *ctx)
 {
-    // FIXME: VARIADIC
+    // FIXME: VARIADIC - Should be OK here now...
     std::vector<llvm::Type *> typeVec;
 
     if (ctx->paramList)
