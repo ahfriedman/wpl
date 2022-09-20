@@ -294,10 +294,16 @@ std::any CodegenVisitor::visitAssignStatement(WPLParser::AssignStatementContext 
         errorHandler.addCodegenError(ctx->getStart(), "Incorrectly processed variable in assignment: " + ctx->to->toString());
         return nullptr; 
     }
+    //Shouldn't need this in the end....
+    if(varSym->val == nullptr)
+    {
+        errorHandler.addCodegenError(ctx->getStart(), "Improperly initialized variable in assignment: " + ctx->to->toString());
+        return nullptr; 
+    }
 
     builder->CreateStore(exprVal, varSym->val);
 
-    errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED - visitAssignStatement");
+    // errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED - visitAssignStatement");
     return nullptr;
 }
 
