@@ -3,9 +3,9 @@
 std::any CodegenVisitor::visitCompilationUnit(WPLParser::CompilationUnitContext *ctx)
 {
     // External functions --- Temporary thing
-    auto printf_prototype = FunctionType::get(i8p, true);
-    auto printf_fn = Function::Create(printf_prototype, Function::ExternalLinkage, "printf", module);
-    FunctionCallee printExpr(printf_prototype, printf_fn);
+    // auto printf_prototype = FunctionType::get(i8p, true);
+    // auto printf_fn = Function::Create(printf_prototype, Function::ExternalLinkage, "printf", module);
+    // FunctionCallee printExpr(printf_prototype, printf_fn);
 
     // Main function --- FIXME: WE DON'T DO THIS IN FINAL VERSION!!!
     // FunctionType *mainFuncType = FunctionType::get(Int32Ty, {Int32Ty, Int8PtrPtrTy}, false);
@@ -29,8 +29,8 @@ std::any CodegenVisitor::visitCompilationUnit(WPLParser::CompilationUnitContext 
 
         // Log expression for debugging purposes
         // auto txt = e->getText();
-        // StringRef formatRef = "Processed %s\n";
-        // auto gFormat = builder->CreateGlobalStringPtr(formatRef, "fmtStr");
+        StringRef formatRef = "Processed %s\n";
+        auto gFormat = builder->CreateGlobalStringPtr(formatRef, "fmtStr");
         // StringRef ref = txt;
         // auto fmt = builder->CreateGlobalStringPtr(ref, "exprStr");
         // builder->CreateCall(printf_fn, {gFormat, fmt});
@@ -112,9 +112,18 @@ std::any CodegenVisitor::visitArrayAccessExpr(WPLParser::ArrayAccessExprContext 
 
 std::any CodegenVisitor::visitSConstExpr(WPLParser::SConstExprContext *ctx)
 {
-    std::cout << "PRE STR" << std::endl; 
-    StringRef ref = ctx->s->getText(); 
-    Value * strVal = builder->CreateGlobalStringPtr(ref); //For some reason, I can't return this directly...
+    std::string full = ctx->s->getText(); 
+    std::string actual = full.substr(1, full.length() - 2);
+    std::cout << "PRE STR: " << actual << std::endl; 
+
+    std::stringstream in;
+    in << std::quoted(actual); 
+
+    std::string out; 
+    in >> std::quoted(out);
+
+    // StringRef ref = actual; 
+    Value * strVal = builder->CreateGlobalStringPtr(out); //For some reason, I can't return this directly...
 
     return strVal;
     // errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED - visitSConstExpr");
@@ -470,9 +479,7 @@ std::any CodegenVisitor::visitVarDeclStatement(WPLParser::VarDeclStatementContex
 
     for (auto e : ctx->assignments)
     {
-        std::cout << "470" << std::endl; 
         Value *exVal = std::any_cast<Value *>(e->ex->accept(this));
-std::cout << "472" << std::endl; 
         for (auto var : e->VARIABLE())
         {
             Symbol *varSymbol = props->getBinding(var);
@@ -483,7 +490,10 @@ std::cout << "472" << std::endl;
                 return nullptr; // FIXME: DO BETTER
             }
 
-            Value *v = builder->CreateAlloca(Int32Ty, 0, var->getText());
+            //FIXME: THIS WILL NOT WORK FOR VAR!!! (may have multiple types!)
+            llvm::Type* ty = std::any_cast<llvm::Type*>(ctx->ty->accept(this)); 
+
+            Value *v = builder->CreateAlloca(ty, 0, var->getText());
             varSymbol->val = v;
 
             builder->CreateStore(exVal, v);
@@ -534,6 +544,7 @@ std::any CodegenVisitor::visitLoopStatement(WPLParser::LoopStatementContext *ctx
 }
 
 //FIXME: EXTERNS THAT ARE JUST ...!!!!
+//FIXME: EXTERNS CANT HAVE A SPACE? 
 
 std::any CodegenVisitor::visitConditionalStatement(WPLParser::ConditionalStatementContext *ctx)
 {
@@ -635,7 +646,12 @@ std::any CodegenVisitor::visitBooleanConst(WPLParser::BooleanConstContext *ctx)
 // FIXME: maybe these should be meta/compiler errors
 std::any CodegenVisitor::visitTypeOrVar(WPLParser::TypeOrVarContext *ctx)
 {
-    errorHandler.addCodegenError(ctx->getStart(), "Unknown Error: Type information should be collected prior to codegen!");
+    if(ctx->type())
+    {
+        return ctx->type()->accept(this); 
+    }
+
+    errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED: TYPE INFERENCE");
     return nullptr;
 }
 

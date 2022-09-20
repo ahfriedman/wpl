@@ -5,6 +5,11 @@ std::any SemanticVisitor::visitCompilationUnit(WPLParser::CompilationUnitContext
     // Enter initial scope
     stmgr->enterScope();
 
+    for(auto e : ctx->extens)
+    {
+        e->accept(this); 
+    }
+
     for (auto e : ctx->stmts)
     {
         std::cout << "-> " << e->getText() << std::endl;
