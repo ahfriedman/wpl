@@ -315,10 +315,21 @@ std::any CodegenVisitor::visitVarDeclStatement(WPLParser::VarDeclStatementContex
     {
         Value * exVal = std::any_cast<Value *>(e->ex->accept(this));
 
-        for(auto var : e->v)
+        for(auto var : e->VARIABLE())
         {
+            Symbol *varSymbol = props->getBinding(var);
+
+            if(!varSymbol)
+            {
+                errorHandler.addCodegenError(ctx->getStart(), "Issue creating variable: " + var->getText());
+                return nullptr; //FIXME: DO BETTER
+            }
+
             Value * v = builder->CreateAlloca(Int32Ty, 0, var->getText()); 
+            varSymbol->val = v; 
+            
             builder->CreateStore(exVal, v);
+
         }
     }
     return nullptr;

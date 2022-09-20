@@ -581,9 +581,10 @@ std::any SemanticVisitor::visitVarDeclStatement(WPLParser::VarDeclStatementConte
             }
             else
             {
+                //FIXME: may cause issues with reusing exprType!!! VERIFY VARS DONT HAVE PARODY
                 Symbol *symbol = new Symbol(id, exprType); // Done with exprType for later inferencing purposes
                 stmgr->addSymbol(symbol);
-                bindings->bind(var, symbol);
+                bindings->bind(var, symbol); 
                 // bindings->bind() //FIXME: What to do about bindings????
             }
         }
