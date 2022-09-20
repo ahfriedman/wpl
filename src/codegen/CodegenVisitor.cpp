@@ -112,9 +112,10 @@ std::any CodegenVisitor::visitArrayAccessExpr(WPLParser::ArrayAccessExprContext 
 
 std::any CodegenVisitor::visitSConstExpr(WPLParser::SConstExprContext *ctx)
 {
-    std::string full = ctx->s->getText(); 
+    //FIXME: UNESCAPE STRINg
+    std::string full (ctx->s->getText()); 
     std::string actual = full.substr(1, full.length() - 2);
-    std::cout << "PRE STR: " << actual << std::endl; 
+    std::cout << "PRE STR: " << actual <<  "/" << ctx->s-> << std::endl; 
 
     std::stringstream in;
     in << std::quoted(actual); 
