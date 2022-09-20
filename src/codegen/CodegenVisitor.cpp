@@ -281,12 +281,6 @@ std::any CodegenVisitor::visitBConstExpr(WPLParser::BConstExprContext *ctx)
     return ctx->booleanConst()->accept(this);
 }
 
-std::any CodegenVisitor::visitBlock(WPLParser::BlockContext *ctx)
-{
-    errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED - visitBlock");
-    return nullptr;
-}
-
 std::any CodegenVisitor::visitCondition(WPLParser::ConditionContext *ctx)
 {
     // Based on https://llvm.org/docs/tutorial/MyFirstLanguageFrontend/LangImpl05.html
@@ -489,7 +483,41 @@ std::any CodegenVisitor::visitVarDeclStatement(WPLParser::VarDeclStatementContex
 
 std::any CodegenVisitor::visitLoopStatement(WPLParser::LoopStatementContext *ctx)
 {
-    errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED - visitVarDeclStatement");
+    //Very similar to conditionals
+
+    Value * check = std::any_cast<Value *>(ctx->check->accept(this));
+
+    auto parent = builder->GetInsertBlock()->getParent(); 
+
+    BasicBlock * loopBlk = BasicBlock::Create(module->getContext(), "loop");
+    BasicBlock * restBlk = BasicBlock::Create(module->getContext(), "rest");
+
+    builder->CreateCondBr(check, loopBlk, restBlk);
+    
+    //Need to add here otherwise we will overwrite it
+    parent->getBasicBlockList().push_back(loopBlk); 
+
+    //In the loop block 
+    builder->SetInsertPoint(loopBlk);
+    for(auto e : ctx->block()->stmts)
+    {
+        e->accept(this); 
+    }
+    //Re-calculate the loop condition 
+    check = std::any_cast<Value *>(ctx->check->accept(this));
+    //Check if we need to loop back again...
+    loopBlk = builder->GetInsertBlock();  //FIXME: REVIEW
+    builder->CreateCondBr(check, loopBlk, restBlk);
+
+
+//FIXME: ALLOW _ IN NAMES? 
+    // Out of Loop
+
+    parent->getBasicBlockList().push_back(restBlk); 
+    builder->SetInsertPoint(restBlk); 
+
+
+    //FIXME: VERIFY!!!
     return nullptr;
 }
 
@@ -562,12 +590,6 @@ std::any CodegenVisitor::visitReturnStatement(WPLParser::ReturnStatementContext 
     return nullptr;
 }
 
-std::any CodegenVisitor::visitBlockStatement(WPLParser::BlockStatementContext *ctx)
-{
-    errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED - visitBlockStatement");
-    return nullptr;
-}
-
 std::any CodegenVisitor::visitType(WPLParser::TypeContext *ctx)
 {
     // FIXME: VERIFY!
@@ -616,5 +638,17 @@ std::any CodegenVisitor::visitParameterList(WPLParser::ParameterListContext *ctx
 std::any CodegenVisitor::visitParameter(WPLParser::ParameterContext *ctx)
 {
     errorHandler.addCodegenError(ctx->getStart(), "Unknown error: Codegen should not have to visit parameter!");
+    return nullptr;
+}
+
+std::any CodegenVisitor::visitBlock(WPLParser::BlockContext *ctx)
+{
+    errorHandler.addCodegenError(ctx->getStart(), "Unknown error: Codegen should not directly visit block!");
+    return nullptr;
+}
+
+std::any CodegenVisitor::visitBlockStatement(WPLParser::BlockStatementContext *ctx)
+{
+    errorHandler.addCodegenError(ctx->getStart(), "Unknown error: Codegen should not directly visit block statement!");
     return nullptr;
 }
