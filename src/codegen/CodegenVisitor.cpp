@@ -281,7 +281,7 @@ std::any CodegenVisitor::visitBConstExpr(WPLParser::BConstExprContext *ctx)
 
 std::any CodegenVisitor::visitBlock(WPLParser::BlockContext *ctx)
 {
-    // errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED - visitBlock");
+    errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED - visitBlock");
     return nullptr;
 }
 
@@ -289,10 +289,6 @@ std::any CodegenVisitor::visitCondition(WPLParser::ConditionContext *ctx)
 {
     // Based on https://llvm.org/docs/tutorial/MyFirstLanguageFrontend/LangImpl05.html
     // FIXME: VERIFY, This might not actually get a boolean well enough....
-    // lvm::ConstantInt::getSigned((llvm::Type::getInt1Ty(*context)),
-    //    expr.val);
-    // FIXME: DO BETTER, SHOULD PROBABLY JUST USE 1 BIT TYPES
-    //  return ConstantInt::get(Int1Ty, ctx->ex->accept(this));
     return ctx->ex->accept(this);
 }
 
