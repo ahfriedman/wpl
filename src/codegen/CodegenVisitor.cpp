@@ -152,7 +152,7 @@ std::any CodegenVisitor::visitLogAndExpr(WPLParser::LogAndExprContext *ctx)
     Value *rhs = std::any_cast<Value *>(ctx->right->accept(this));
 
     Value *IR = builder->CreateAnd(lhs, rhs);
-    Value *v = builder->CreateZExtOrTrunc(IR, Int32Ty);
+    Value *v = builder->CreateZExtOrTrunc(IR, Int1Ty);
     return v; // FIXME: VERIFY!!!
 }
 
@@ -162,7 +162,7 @@ std::any CodegenVisitor::visitLogOrExpr(WPLParser::LogOrExprContext *ctx)
     Value *rhs = std::any_cast<Value *>(ctx->right->accept(this));
 
     Value *IR = builder->CreateOr(lhs, rhs);
-    Value *v = builder->CreateZExtOrTrunc(IR, Int32Ty);
+    Value *v = builder->CreateZExtOrTrunc(IR, Int1Ty);
     return v; // FIXME: VERIFY!!!
 }
 
@@ -191,7 +191,7 @@ std::any CodegenVisitor::visitVariableExpr(WPLParser::VariableExprContext *ctx)
 
 std::any CodegenVisitor::visitFieldAccessExpr(WPLParser::FieldAccessExprContext *ctx)
 {
-    errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED");
+    errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED - visitFieldAccessExpr");
     return nullptr;
 }
 
@@ -227,7 +227,7 @@ std::any CodegenVisitor::visitBinaryRelExpr(WPLParser::BinaryRelExprContext *ctx
         return nullptr;
     }
 
-    Value *v = builder->CreateZExtOrTrunc(v1, CodegenVisitor::Int32Ty);
+    Value *v = builder->CreateZExtOrTrunc(v1, Int1Ty);
     return v;
 }
 
@@ -238,17 +238,19 @@ std::any CodegenVisitor::visitBConstExpr(WPLParser::BConstExprContext *ctx)
 
 std::any CodegenVisitor::visitBlock(WPLParser::BlockContext *ctx)
 {
-    errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED");
+    // errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED - visitBlock");
     return nullptr;
 }
 
 std::any CodegenVisitor::visitCondition(WPLParser::ConditionContext *ctx)
 {
     //Based on https://llvm.org/docs/tutorial/MyFirstLanguageFrontend/LangImpl05.html
-    //FIXME: VERIFY
-    
-    errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED");
-    return nullptr;
+    //FIXME: VERIFY, This might not actually get a boolean well enough....
+    //lvm::ConstantInt::getSigned((llvm::Type::getInt1Ty(*context)),
+                                    //   expr.val);
+    //FIXME: DO BETTER, SHOULD PROBABLY JUST USE 1 BIT TYPES
+    // return ConstantInt::get(Int1Ty, ctx->ex->accept(this));
+    return ctx->ex->accept(this); 
 }
 
 std::any CodegenVisitor::visitSelectAlternative(WPLParser::SelectAlternativeContext *ctx)
@@ -347,7 +349,44 @@ std::any CodegenVisitor::visitLoopStatement(WPLParser::LoopStatementContext *ctx
 
 std::any CodegenVisitor::visitConditionalStatement(WPLParser::ConditionalStatementContext *ctx)
 {
-    errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED - visitConditionalStatement");
+    //FIXME: THIS MIGHT NOT WORK OUTSIDE A FUNCTION
+    Value *  cond = std::any_cast<Value *>(ctx->check->accept(this)); 
+
+    auto parentFn = builder->GetInsertBlock()->getParent(); 
+
+    BasicBlock * thenBlk = BasicBlock::Create(module->getContext(), "then", parentFn);
+    BasicBlock * elseBlk = BasicBlock::Create(module->getContext(), "else");
+    BasicBlock * restBlk = BasicBlock::Create(module->getContext(), "ifcont");
+
+    //FIXME: WHAT IF NO ELSE BLOCK??
+
+    //Builder.CreateCondBr(CondV, ThenBB, ElseBB);
+    builder->CreateCondBr(cond, thenBlk, elseBlk);
+
+    //Then block 
+    builder->SetInsertPoint(thenBlk); 
+    ctx->trueBlk->accept(this); //FIXME: DO BETTER, ALSO CHECK THE DOUBLING UP OF BLOCKS! & MAYBE DO A NULL CHECK!
+    //FIXME: HOW WILL THIS WORK WITH RETURNS??
+    builder->CreateBr(restBlk);
+
+    thenBlk = builder ->GetInsertBlock(); //REVIEW
+
+    //Else block  //FIXME: THIS TREATS IT AS REQUIRED. SHOULD WE DO SOMETHING AB THIS?
+    parentFn->getBasicBlockList().push_back(elseBlk); 
+    builder->SetInsertPoint(elseBlk);
+    ctx->falseBlk->accept(this); //FIXME: SEE ABOVE COMMENTS
+    builder->CreateBr(restBlk); 
+
+    elseBlk = builder->GetInsertBlock(); 
+
+
+    //Merge back in 
+    parentFn->getBasicBlockList().push_back(restBlk); 
+    builder->SetInsertPoint(restBlk);
+    
+    //FIXME: ADD PHI STUFF SO RETURNS WORK? 
+
+    // errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED - visitConditionalStatement");
     return nullptr;
 }
 
@@ -380,7 +419,7 @@ std::any CodegenVisitor::visitType(WPLParser::TypeContext *ctx)
     if (ctx->TYPE_INT())
         return Int32Ty;
     if (ctx->TYPE_BOOL())
-        return Int32Ty; // FIXME: DO BETTER
+        return Int1Ty; // FIXME: DO BETTER
 
     errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED TYPE: " + ctx->getText());
     return nullptr;
@@ -388,9 +427,10 @@ std::any CodegenVisitor::visitType(WPLParser::TypeContext *ctx)
 
 std::any CodegenVisitor::visitBooleanConst(WPLParser::BooleanConstContext *ctx)
 {
-    Value *v = builder->getInt32(ctx->TRUE() ? 1 : 0);
+    // Value *v = builder->getInt32(ctx->TRUE() ? 1 : 0);
 
-    return v;
+    // return v;
+    return ctx->TRUE() ? builder->getTrue() : builder->getFalse(); 
 }
 
 
