@@ -112,8 +112,9 @@ std::any CodegenVisitor::visitArrayAccessExpr(WPLParser::ArrayAccessExprContext 
 
 std::any CodegenVisitor::visitSConstExpr(WPLParser::SConstExprContext *ctx)
 {
-    errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED - visitSConstExpr");
-    return nullptr;
+    return builder->CreateGlobalStringPtr(ctx->s->getText());
+    // errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED - visitSConstExpr");
+    // return nullptr;
 }
 
 // FIXME: SHOULD WE ALLOW INTS IN VARIABLE NAMES? PROBABLY
@@ -603,6 +604,8 @@ std::any CodegenVisitor::visitType(WPLParser::TypeContext *ctx)
         return Int32Ty;
     if (ctx->TYPE_BOOL())
         return Int1Ty; // FIXME: DO BETTER
+    if (ctx->TYPE_STR())
+        return i8p; 
 
     errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED TYPE: " + ctx->getText());
     return nullptr;
