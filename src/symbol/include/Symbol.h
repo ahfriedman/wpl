@@ -13,6 +13,8 @@
 
 #include <string>  //Includes strings
 #include <sstream> //Used for string streams
+#include "llvm/IR/Value.h"
+
 
 // Needed for anycasts
 #include <any>
@@ -230,11 +232,15 @@ struct Symbol
     std::string identifier; // Mostly needed for our tostring function
     const Type *type;       // Keeps track of the symbol's type
 
+    llvm::Value *val;
+
     // Constructs a symbol from an ID and symbol type.
     Symbol(std::string id, const Type *t)
     {
         identifier = id;
         type = t;
+
+        val = nullptr; //FIXME: replace with optional? 
     }
 
     std::string toString() const

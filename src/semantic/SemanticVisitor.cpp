@@ -7,7 +7,9 @@ std::any SemanticVisitor::visitCompilationUnit(WPLParser::CompilationUnitContext
 
     for (auto e : ctx->stmts)
     {
+        std::cout << "-> " << e->getText() << std::endl;
         e->accept(this);
+        std::cout << "<-" << e->getText() << std::endl;
     }
 
     return Types::UNDEFINED;
@@ -65,6 +67,7 @@ std::any SemanticVisitor::visitInvocation(WPLParser::InvocationContext *ctx)
 
 std::any SemanticVisitor::visitArrayAccess(WPLParser::ArrayAccessContext *ctx)
 {
+    // FIXME: PROBABLY NEED TO DO SOMETHING HERE WITH BINDINGS INSTEAD!!!
     std::string name = ctx->var->toString();
 
     const Type *exprType = std::any_cast<const Type *>(ctx->index->accept(this));
@@ -101,10 +104,25 @@ std::any SemanticVisitor::visitArrayOrVar(WPLParser::ArrayOrVarContext *ctx)
 {
     if (ctx->var)
     {
-        errorHandler.addSemanticError(ctx->getStart(), "UNIMPLEMENTED: VAR"); // FIXME
-        return Types::UNDEFINED;
+        // FIXME: SAME AS VAR
+        //  Based on starter
+        std::string id = ctx->var->getText();
+
+        std::optional<Symbol *> opt = stmgr->lookup(id);
+
+        if (!opt)
+        {
+            errorHandler.addSemanticError(ctx->getStart(), "Undefined variable in expression: " + id);
+            return Types::UNDEFINED;
+        }
+
+        Symbol *symbol = opt.value();
+
+        bindings->bind(ctx, symbol);
+        return symbol->type;
     }
 
+    //FIXME: THIS WON'T WORK AS WE'LL MISS THE BINDINGS!!!
     return ctx->array->accept(this);
 }
 
@@ -356,16 +374,17 @@ std::any SemanticVisitor::visitParameter(WPLParser::ParameterContext *ctx)
 }
 //     std::any visitAssignment(WPLParser::AssignmentContext *ctx) override;
 
-std::any SemanticVisitor::visitExternStatement(WPLParser::ExternStatementContext *ctx){
-    if(ctx->variadic)
+std::any SemanticVisitor::visitExternStatement(WPLParser::ExternStatementContext *ctx)
+{
+    if (ctx->variadic)
     {
-        errorHandler.addSemanticError(ctx->getStart(), "UNSUPPORTED: Variadic"); //FIXME: Also, fix so these are done correctly. 
+        errorHandler.addSemanticError(ctx->getStart(), "UNSUPPORTED: Variadic"); // FIXME: Also, fix so these are done correctly.
         return Types::UNDEFINED;
     }
 
-    std::string id = ctx->name->getText(); 
-    
-    std::optional<Symbol *> opt = stmgr->lookup(id); 
+    std::string id = ctx->name->getText();
+
+    std::optional<Symbol *> opt = stmgr->lookup(id);
 
     // FIXME: DO BETTER, NEED ORDERING TO CATCH ALL ERRORS (BASICALLY SEE ANY ISSUE THAT APPLIES TO PROCs)
     if (opt)
@@ -374,20 +393,18 @@ std::any SemanticVisitor::visitExternStatement(WPLParser::ExternStatementContext
         return Types::UNDEFINED;
     }
 
-
     // FIXME: test breaking params somehow!! like using something thats not a type!!!!
     const Type *ty = (ctx->paramList) ? std::any_cast<const Type *>(ctx->paramList->accept(this))
                                       : new TypeInvoke();
 
     const TypeInvoke *procType = dynamic_cast<const TypeInvoke *>(ty); // Always true, but needs separate statement to make C happy.
-    
-    //FIXME: DO BETTER
+
+    // FIXME: DO BETTER
     const Type *retType = ctx->ty ? std::any_cast<const Type *>(ctx->ty->accept(this))
                                   : Types::UNDEFINED;
 
     const TypeInvoke *funcType = (ctx->ty) ? new TypeInvoke(procType->getParamTypes(), retType)
                                            : procType;
-
 
     Symbol *funcSymbol = new Symbol(id, funcType);
 
@@ -420,7 +437,6 @@ std::any SemanticVisitor::visitFuncDef(WPLParser::FuncDefContext *ctx)
 
     const TypeInvoke *funcType = new TypeInvoke(procType->getParamTypes(), retType);
 
-
     Symbol *funcSymbol = new Symbol(funcId, funcType);
 
     stmgr->addSymbol(funcSymbol);
@@ -450,7 +466,9 @@ std::any SemanticVisitor::visitFuncDef(WPLParser::FuncDefContext *ctx)
     // Double scope for params.... should maybe make this a function....
     stmgr->exitScope();
 
-    return funcType; //FIXME: Should this return nothing?
+    bindings->bind(ctx, funcSymbol);
+    
+    return funcType; // FIXME: Should this return nothing?
 }
 
 std::any SemanticVisitor::visitProcDef(WPLParser::ProcDefContext *ctx)
@@ -497,6 +515,8 @@ std::any SemanticVisitor::visitProcDef(WPLParser::ProcDefContext *ctx)
     // Double scope for params.... should maybe make this a function....
     stmgr->exitScope();
 
+    bindings->bind(ctx, procSymbol);
+
     return procType;
 }
 
@@ -511,14 +531,18 @@ std::any SemanticVisitor::visitAssignStatement(WPLParser::AssignStatementContext
     //     errorHandler.addSemanticError(ctx->getStart(), "Expression evaluates to an Types::UNDEFINED type");
     // }
 
-    std::string varId = ctx->to->getText();
+    ctx->to->accept(this);
 
-    std::optional<Symbol *> opt = stmgr->lookup(varId);
+    Symbol *opt = bindings->getBinding(ctx->to);
+
+    // std::string varId = ctx->to->getText();
+
+    // std::optional<Symbol *> opt = stmgr->lookup(varId);
 
     // FIXME: need to still do body checks!!!
     if (opt)
     {
-        Symbol *symbol = opt.value();
+        Symbol *symbol = opt; //.value();
 
         if (symbol->type->isNot(exprType))
         {
@@ -527,7 +551,7 @@ std::any SemanticVisitor::visitAssignStatement(WPLParser::AssignStatementContext
     }
     else
     {
-        errorHandler.addSemanticError(ctx->getStart(), "Cannot assign to undefined variable: " + varId);
+        errorHandler.addSemanticError(ctx->getStart(), "Cannot assign to undefined variable: " + ctx->to->getText());
     }
 
     return Types::UNDEFINED; // FIXME: VERIFY
@@ -549,7 +573,7 @@ std::any SemanticVisitor::visitVarDeclStatement(WPLParser::VarDeclStatementConte
             errorHandler.addSemanticError(e->getStart(), "Expression of type " + exprType->toString() + " cannot be assigned to " + assignType->toString());
         }
 
-        for (auto var : e->v)
+        for (auto var : e->VARIABLE())
         {
             std::string id = var->getText();
 
@@ -561,13 +585,15 @@ std::any SemanticVisitor::visitVarDeclStatement(WPLParser::VarDeclStatementConte
             }
             else
             {
+                //FIXME: may cause issues with reusing exprType!!! VERIFY VARS DONT HAVE PARODY
                 Symbol *symbol = new Symbol(id, exprType); // Done with exprType for later inferencing purposes
                 stmgr->addSymbol(symbol);
+                bindings->bind(var, symbol); 
                 // bindings->bind() //FIXME: What to do about bindings????
             }
         }
     }
-
+    std::cout << "570" << std::endl;
     return Types::UNDEFINED;
 }
 

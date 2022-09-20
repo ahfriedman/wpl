@@ -5,7 +5,7 @@
 grammar WPL;
 
 //FIXME: UPDATE BASED ON NEW GRAMMAR!!!
-
+//FIXME: WHAT ABOUT VAR IN IF/SELECT??? SHOULD WE TYPE INF THAT?
 
 // Parser rules
 compilationUnit   :  (stmts+=statement | extens+=externStatement)* EOF ; 
