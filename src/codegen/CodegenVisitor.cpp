@@ -112,7 +112,11 @@ std::any CodegenVisitor::visitArrayAccessExpr(WPLParser::ArrayAccessExprContext 
 
 std::any CodegenVisitor::visitSConstExpr(WPLParser::SConstExprContext *ctx)
 {
-    return builder->CreateGlobalStringPtr(ctx->s->getText());
+    std::cout << "PRE STR" << std::endl; 
+    StringRef ref = ctx->s->getText(); 
+    Value * strVal = builder->CreateGlobalStringPtr(ref); //For some reason, I can't return this directly...
+
+    return strVal;
     // errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED - visitSConstExpr");
     // return nullptr;
 }
@@ -466,8 +470,9 @@ std::any CodegenVisitor::visitVarDeclStatement(WPLParser::VarDeclStatementContex
 
     for (auto e : ctx->assignments)
     {
+        std::cout << "470" << std::endl; 
         Value *exVal = std::any_cast<Value *>(e->ex->accept(this));
-
+std::cout << "472" << std::endl; 
         for (auto var : e->VARIABLE())
         {
             Symbol *varSymbol = props->getBinding(var);
@@ -527,6 +532,8 @@ std::any CodegenVisitor::visitLoopStatement(WPLParser::LoopStatementContext *ctx
     //FIXME: VERIFY!!!
     return nullptr;
 }
+
+//FIXME: EXTERNS THAT ARE JUST ...!!!!
 
 std::any CodegenVisitor::visitConditionalStatement(WPLParser::ConditionalStatementContext *ctx)
 {
