@@ -313,7 +313,7 @@ std::any CodegenVisitor::visitExternStatement(WPLParser::ExternStatementContext 
     FunctionType *fnType = FunctionType::get(
         std::any_cast<llvm::Type *>(ctx->ty->accept(this)), // Int32Ty, //ctx->ty->accept(this), // FIXME: DO BETTER
         paramRef,
-        false);
+        ctx->variadic);
 
     // FIXME: VERIFY CORRECT!
     Function *fn = Function::Create(fnType, GlobalValue::ExternalLinkage, ctx->name->getText(), module);

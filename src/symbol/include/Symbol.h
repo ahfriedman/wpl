@@ -153,6 +153,8 @@ class TypeInvoke : public Type
 private:
     std::vector<const Type *> paramTypes;
     std::optional<const Type *> retType;
+    
+    bool variadic = false; 
 
 public:
     TypeInvoke()
@@ -166,10 +168,27 @@ public:
         retType = {};
     }
 
+    TypeInvoke(std::vector<const Type *> p, bool v)
+    {
+        paramTypes = p;
+        retType = {};
+
+        variadic = v; 
+    }
+
     TypeInvoke(std::vector<const Type *> p, const Type *r)
     {
         paramTypes = p;
         retType = r;
+    }
+
+    TypeInvoke(std::vector<const Type *> p, const Type *r, bool v)
+    {
+        paramTypes = p;
+        retType = r;
+
+        //FIXME: MAKE SURE AT LEAST ONE PARAMTYPE!!!
+        variadic = v; 
     }
 
     // FIXME: do better
@@ -183,12 +202,18 @@ public:
         {
             description << param->toString() << " ";
         }
+
+        if(variadic)
+            description << "... "; //FIXME: DO BETTER!
+
         description << (isProc ? "-> BOT" : ("-> " + retType.value()->toString()));
         return description.str();
     }
 
     std::vector<const Type *> getParamTypes() const { return paramTypes; }
     std::optional<const Type *> getReturnType() const { return retType; }
+
+    bool isVariadic() const { return variadic; }
 
 protected:
     bool equals(const Type *other) const override
@@ -213,7 +238,7 @@ protected:
                 return this->retType.value()->is(p->retType.value());
             }
 
-            return true;
+            return (this->variadic == p->variadic);
         }
         return false;
     }

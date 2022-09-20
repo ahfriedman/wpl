@@ -376,11 +376,8 @@ std::any SemanticVisitor::visitParameter(WPLParser::ParameterContext *ctx)
 
 std::any SemanticVisitor::visitExternStatement(WPLParser::ExternStatementContext *ctx)
 {
-    if (ctx->variadic)
-    {
-        errorHandler.addSemanticError(ctx->getStart(), "UNSUPPORTED: Variadic"); // FIXME: Also, fix so these are done correctly.
-        return Types::UNDEFINED;
-    }
+
+    bool variadic = ctx->variadic; 
 
     std::string id = ctx->name->getText();
 
@@ -403,8 +400,8 @@ std::any SemanticVisitor::visitExternStatement(WPLParser::ExternStatementContext
     const Type *retType = ctx->ty ? std::any_cast<const Type *>(ctx->ty->accept(this))
                                   : Types::UNDEFINED;
 
-    const TypeInvoke *funcType = (ctx->ty) ? new TypeInvoke(procType->getParamTypes(), retType)
-                                           : procType;
+    const TypeInvoke *funcType = (ctx->ty) ? new TypeInvoke(procType->getParamTypes(), retType, variadic)
+                                           : new TypeInvoke(procType->getParamTypes(), variadic);
 
     Symbol *funcSymbol = new Symbol(id, funcType);
 
