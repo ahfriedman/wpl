@@ -62,8 +62,7 @@ std::any CodegenVisitor::visitIConstExpr(WPLParser::IConstExprContext *ctx)
 
 std::any CodegenVisitor::visitArrayAccessExpr(WPLParser::ArrayAccessExprContext *ctx)
 {
-    errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED - visitArrayAccessExpr");
-    return nullptr;
+   return ctx->arrayAccess()->accept(this); 
 }
 
 std::any CodegenVisitor::visitSConstExpr(WPLParser::SConstExprContext *ctx)
