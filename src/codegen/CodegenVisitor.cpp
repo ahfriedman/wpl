@@ -298,18 +298,6 @@ std::any CodegenVisitor::visitSelectAlternative(WPLParser::SelectAlternativeCont
     return nullptr;
 }
 
-std::any CodegenVisitor::visitParameterList(WPLParser::ParameterListContext *ctx)
-{
-    errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED - visitParameter");
-    return nullptr;
-}
-
-std::any CodegenVisitor::visitParameter(WPLParser::ParameterContext *ctx)
-{
-    errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED - visitParameterList");
-    return nullptr;
-}
-
 std::any CodegenVisitor::visitExternStatement(WPLParser::ExternStatementContext *ctx)
 {
     errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED - visitExternStatement");
@@ -367,7 +355,6 @@ std::any CodegenVisitor::visitFuncDef(WPLParser::FuncDefContext *ctx)
 
     //FIXME: VERIFY ENOUGH, NOTHING FOLLOWING, ETC. THIS IS PROBS WRONG!
 
-    // errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED - visitFuncDef");
     return nullptr;
 }
 
@@ -397,7 +384,6 @@ std::any CodegenVisitor::visitAssignStatement(WPLParser::AssignStatementContext 
 
     builder->CreateStore(exprVal, varSym->val);
 
-    // errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED - visitAssignStatement");
     return nullptr;
 }
 
@@ -524,9 +510,6 @@ std::any CodegenVisitor::visitType(WPLParser::TypeContext *ctx)
 
 std::any CodegenVisitor::visitBooleanConst(WPLParser::BooleanConstContext *ctx)
 {
-    // Value *v = builder->getInt32(ctx->TRUE() ? 1 : 0);
-
-    // return v;
     return ctx->TRUE() ? builder->getTrue() : builder->getFalse();
 }
 
@@ -549,5 +532,17 @@ std::any CodegenVisitor::visitTypeOrVar(WPLParser::TypeOrVarContext *ctx)
 std::any CodegenVisitor::visitAssignment(WPLParser::AssignmentContext *ctx)
 {
     errorHandler.addCodegenError(ctx->getStart(), "Assignment fragment should never be visited directly during codegen!");
+    return nullptr;
+}
+
+std::any CodegenVisitor::visitParameterList(WPLParser::ParameterListContext *ctx)
+{
+    errorHandler.addCodegenError(ctx->getStart(), "Unknown error: Codegen should not have to visits parameter list!");
+    return nullptr;
+}
+
+std::any CodegenVisitor::visitParameter(WPLParser::ParameterContext *ctx)
+{
+    errorHandler.addCodegenError(ctx->getStart(), "Unknown error: Codegen should not have to visit parameter!");
     return nullptr;
 }
