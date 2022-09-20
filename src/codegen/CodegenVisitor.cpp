@@ -65,8 +65,21 @@ std::any CodegenVisitor::visitCompilationUnit(WPLParser::CompilationUnitContext 
 
 std::any CodegenVisitor::visitInvocation(WPLParser::InvocationContext *ctx)
 {
-    errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED - visitInvocation");
-    return nullptr;
+    //FIXME: IMPL VARIADIC
+    std::vector<llvm::Value *> args;
+
+    for(auto e : ctx->args)
+    {
+        Value * val = std::any_cast<Value *>(e->accept(this));
+        args.push_back(val); 
+    }
+
+    ArrayRef<Value *> ref = ArrayRef(args); 
+
+    llvm::Function * call = module->getFunction(ctx->VARIABLE()->getText());
+
+
+    return builder->CreateCall(call, ref);
 }
 
 std::any CodegenVisitor::visitArrayAccess(WPLParser::ArrayAccessContext *ctx)
