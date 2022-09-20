@@ -47,10 +47,15 @@ std::any CodegenVisitor::visitCompilationUnit(WPLParser::CompilationUnitContext 
     builder->SetInsertPoint(bBlk);
 
 
-    auto progType = FunctionType::get(Int32Ty, true);
-    auto progFn = Function::Create(progType, Function::ExternalLinkage, "program", module);
-    FunctionCallee progCall(progType, progFn);
+    // auto progType = FunctionType::get(Int32Ty, true);
+    // auto progFn = Function::Create(progType, Function::ExternalLinkage, "program", module);
+    // FunctionCallee progCall(progType, progFn);
 
+    // builder->CreateRet(
+    //     builder->CreateCall(progFn, {})
+    // );
+
+    llvm::Function *progFn = module->getFunction("program");
     builder->CreateRet(
         builder->CreateCall(progFn, {})
     );
