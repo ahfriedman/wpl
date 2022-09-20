@@ -8,12 +8,12 @@ std::any CodegenVisitor::visitCompilationUnit(WPLParser::CompilationUnitContext 
     FunctionCallee printExpr(printf_prototype, printf_fn);
 
     // Main function --- FIXME: WE DON'T DO THIS IN FINAL VERSION!!!
-    FunctionType *mainFuncType = FunctionType::get(Int32Ty, {Int32Ty, Int8PtrPtrTy}, false);
-    Function *mainFunc = Function::Create(mainFuncType, GlobalValue::ExternalLinkage, "main", module);
+    // FunctionType *mainFuncType = FunctionType::get(Int32Ty, {Int32Ty, Int8PtrPtrTy}, false);
+    // Function *mainFunc = Function::Create(mainFuncType, GlobalValue::ExternalLinkage, "main", module);
 
-    // Create block to attach to main
-    BasicBlock *bBlk = BasicBlock::Create(module->getContext(), "entry", mainFunc);
-    builder->SetInsertPoint(bBlk);
+    // // Create block to attach to main
+    // BasicBlock *bBlk = BasicBlock::Create(module->getContext(), "entry", mainFunc);
+    // builder->SetInsertPoint(bBlk);
 
     // FIXME: PROCESS EXTERNS!!!!
     for (auto e : ctx->stmts)
@@ -23,15 +23,15 @@ std::any CodegenVisitor::visitCompilationUnit(WPLParser::CompilationUnitContext 
         e->accept(this);
 
         // Log expression for debugging purposes
-        auto txt = e->getText();
-        StringRef formatRef = "Processed %s\n";
-        auto gFormat = builder->CreateGlobalStringPtr(formatRef, "fmtStr");
-        StringRef ref = txt;
-        auto fmt = builder->CreateGlobalStringPtr(ref, "exprStr");
-        builder->CreateCall(printf_fn, {gFormat, fmt});
+        // auto txt = e->getText();
+        // StringRef formatRef = "Processed %s\n";
+        // auto gFormat = builder->CreateGlobalStringPtr(formatRef, "fmtStr");
+        // StringRef ref = txt;
+        // auto fmt = builder->CreateGlobalStringPtr(ref, "exprStr");
+        // builder->CreateCall(printf_fn, {gFormat, fmt});
     }
 
-    builder->CreateRet(Int32Zero);
+    // builder->CreateRet(Int32Zero);
     return nullptr; // FIXME: DANGER!!
 }
 
@@ -62,7 +62,7 @@ std::any CodegenVisitor::visitIConstExpr(WPLParser::IConstExprContext *ctx)
 
 std::any CodegenVisitor::visitArrayAccessExpr(WPLParser::ArrayAccessExprContext *ctx)
 {
-   return ctx->arrayAccess()->accept(this); 
+    return ctx->arrayAccess()->accept(this);
 }
 
 std::any CodegenVisitor::visitSConstExpr(WPLParser::SConstExprContext *ctx)
@@ -70,6 +70,8 @@ std::any CodegenVisitor::visitSConstExpr(WPLParser::SConstExprContext *ctx)
     errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED - visitSConstExpr");
     return nullptr;
 }
+
+//FIXME: SHOULD WE ALLOW INTS IN VARIABLE NAMES? PROBABLY 
 
 std::any CodegenVisitor::visitUnaryExpr(WPLParser::UnaryExprContext *ctx)
 {
@@ -168,25 +170,25 @@ std::any CodegenVisitor::visitLogOrExpr(WPLParser::LogOrExprContext *ctx)
 
 std::any CodegenVisitor::visitCallExpr(WPLParser::CallExprContext *ctx)
 {
-    return ctx->call->accept(this); 
+    return ctx->call->accept(this);
 }
 
 std::any CodegenVisitor::visitVariableExpr(WPLParser::VariableExprContext *ctx)
 {
-    //FIXME: should probably methodize...
-    std::string id = ctx->v->getText(); 
-    Symbol * sym = props->getBinding(ctx); 
+    // FIXME: should probably methodize...
+    std::string id = ctx->v->getText();
+    Symbol *sym = props->getBinding(ctx);
 
-    if(!sym)
+    if (!sym)
     {
         errorHandler.addCodegenError(ctx->getStart(), "Undefined variable access: " + id);
-        return nullptr; //FIXME: these nulptrs are causing bad anycasts.
+        return nullptr; // FIXME: these nulptrs are causing bad anycasts.
     }
 
-    //FIXME: ADD TYPES
-    Value * v = builder->CreateLoad(CodegenVisitor::Int32Ty, sym->val, id);
+    // FIXME: ADD TYPES
+    Value *v = builder->CreateLoad(CodegenVisitor::Int32Ty, sym->val, id);
 
-    return v; 
+    return v;
 }
 
 std::any CodegenVisitor::visitFieldAccessExpr(WPLParser::FieldAccessExprContext *ctx)
@@ -244,13 +246,13 @@ std::any CodegenVisitor::visitBlock(WPLParser::BlockContext *ctx)
 
 std::any CodegenVisitor::visitCondition(WPLParser::ConditionContext *ctx)
 {
-    //Based on https://llvm.org/docs/tutorial/MyFirstLanguageFrontend/LangImpl05.html
-    //FIXME: VERIFY, This might not actually get a boolean well enough....
-    //lvm::ConstantInt::getSigned((llvm::Type::getInt1Ty(*context)),
-                                    //   expr.val);
-    //FIXME: DO BETTER, SHOULD PROBABLY JUST USE 1 BIT TYPES
-    // return ConstantInt::get(Int1Ty, ctx->ex->accept(this));
-    return ctx->ex->accept(this); 
+    // Based on https://llvm.org/docs/tutorial/MyFirstLanguageFrontend/LangImpl05.html
+    // FIXME: VERIFY, This might not actually get a boolean well enough....
+    // lvm::ConstantInt::getSigned((llvm::Type::getInt1Ty(*context)),
+    //    expr.val);
+    // FIXME: DO BETTER, SHOULD PROBABLY JUST USE 1 BIT TYPES
+    //  return ConstantInt::get(Int1Ty, ctx->ex->accept(this));
+    return ctx->ex->accept(this);
 }
 
 std::any CodegenVisitor::visitSelectAlternative(WPLParser::SelectAlternativeContext *ctx)
@@ -279,30 +281,56 @@ std::any CodegenVisitor::visitExternStatement(WPLParser::ExternStatementContext 
 
 std::any CodegenVisitor::visitFuncDef(WPLParser::FuncDefContext *ctx)
 {
-    
-    std::vector<Type*> typeVec ; 
 
-    Symbol * sym = props->getBinding(ctx); 
-    if(!sym)
+    std::vector<llvm::Type *> typeVec;
+
+    Symbol *sym = props->getBinding(ctx);
+    if (!sym)
     {
         errorHandler.addCodegenError(ctx->getStart(), "Unbound function: " + ctx->name->getText());
-        return nullptr; 
+        return nullptr;
     }
 
-    const TypeInvoke * inv = dynamic_cast<const TypeInvoke*>(sym->type);
+    const TypeInvoke *inv = dynamic_cast<const TypeInvoke *>(sym->type);
 
-    for(const Type * t : inv->getParamTypes())
+    /*
+        for(const Type * t : inv->getParamTypes())
+        {
+            //FIXME: NEED A WAY TO get the type!!!
+            typeVec.push_back(t);
+        }
+    */
+
+    if (ctx->paramList)
     {
-        typeVec.push_back(t); 
+        for (auto e : ctx->paramList->params)
+        {
+            llvm::Type * type = std::any_cast<llvm::Type*>(e->ty->accept(this));
+            typeVec.push_back(type);
+        }
+    }
+    ArrayRef<llvm::Type *> paramRef = ArrayRef(typeVec);
+
+    FunctionType *fnType = FunctionType::get(
+        std::any_cast<llvm::Type*>(ctx->ty->accept(this)),//Int32Ty, //ctx->ty->accept(this), // FIXME: DO BETTER
+        paramRef,
+        false);
+
+    //FIXME: VERIFY CORRECT!
+    Function * fn = Function::Create(fnType, GlobalValue::ExternalLinkage, ctx->name->getText(), module);
+    
+    //Create block
+    BasicBlock * bBlk = BasicBlock::Create(module->getContext(), "entry", fn); //FIXME: USING ENTRY MAY BE AN ISSUE?
+    builder->SetInsertPoint(bBlk);
+
+    for(auto e : ctx->block()->stmts)
+    {
+        e->accept(this); 
     }
 
-    ArrayRef<Type*> paramRef = ArrayRef(typeVec); 
+    //FIXME: VERIFY ENOUGH, NOTHING FOLLOWING, ETC. THIS IS PROBS WRONG!
 
-    FunctionType * fnType = FunctionType::get(
-        ctx->ty->accept(this), //FIXME: DO BETTER
-
-    )
-    errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED - visitFuncDef");
+    // errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED - visitFuncDef");
     return nullptr;
 }
 
@@ -314,20 +342,20 @@ std::any CodegenVisitor::visitProcDef(WPLParser::ProcDefContext *ctx)
 
 std::any CodegenVisitor::visitAssignStatement(WPLParser::AssignStatementContext *ctx)
 {
-    //FIXME: Might not work perfectly due to no arrays/vars yet.... or strings...
-    Value * exprVal = std::any_cast<Value *>(ctx->ex->accept(this));
-    Symbol * varSym = props->getBinding(ctx->to);
+    // FIXME: Might not work perfectly due to no arrays/vars yet.... or strings...
+    Value *exprVal = std::any_cast<Value *>(ctx->ex->accept(this));
+    Symbol *varSym = props->getBinding(ctx->to);
 
-    if(varSym == nullptr)
+    if (varSym == nullptr)
     {
         errorHandler.addCodegenError(ctx->getStart(), "Incorrectly processed variable in assignment: " + ctx->to->getText());
-        return nullptr; 
+        return nullptr;
     }
-    //Shouldn't need this in the end....
-    if(varSym->val == nullptr)
+    // Shouldn't need this in the end....
+    if (varSym->val == nullptr)
     {
         errorHandler.addCodegenError(ctx->getStart(), "Improperly initialized variable in assignment: " + ctx->to->getText());
-        return nullptr; 
+        return nullptr;
     }
 
     builder->CreateStore(exprVal, varSym->val);
@@ -338,29 +366,29 @@ std::any CodegenVisitor::visitAssignStatement(WPLParser::AssignStatementContext 
 
 std::any CodegenVisitor::visitVarDeclStatement(WPLParser::VarDeclStatementContext *ctx)
 {
-    //FIXME: MODIFY TO DO THINGS BY TYPE!!!!
-    
-    for(auto e : ctx->assignments)
-    {
-        Value * exVal = std::any_cast<Value *>(e->ex->accept(this));
+    // FIXME: MODIFY TO DO THINGS BY TYPE!!!!
 
-        for(auto var : e->VARIABLE())
+    for (auto e : ctx->assignments)
+    {
+        Value *exVal = std::any_cast<Value *>(e->ex->accept(this));
+
+        for (auto var : e->VARIABLE())
         {
             Symbol *varSymbol = props->getBinding(var);
 
-            if(!varSymbol)
+            if (!varSymbol)
             {
                 errorHandler.addCodegenError(ctx->getStart(), "Issue creating variable: " + var->getText());
-                return nullptr; //FIXME: DO BETTER
+                return nullptr; // FIXME: DO BETTER
             }
 
-            Value * v = builder->CreateAlloca(Int32Ty, 0, var->getText()); 
-            varSymbol->val = v; 
+            Value *v = builder->CreateAlloca(Int32Ty, 0, var->getText());
+            varSymbol->val = v;
 
             builder->CreateStore(exVal, v);
-
         }
     }
+    //FIXME: ENSURE CORRECT!!!
     return nullptr;
 }
 
@@ -372,42 +400,41 @@ std::any CodegenVisitor::visitLoopStatement(WPLParser::LoopStatementContext *ctx
 
 std::any CodegenVisitor::visitConditionalStatement(WPLParser::ConditionalStatementContext *ctx)
 {
-    //FIXME: THIS MIGHT NOT WORK OUTSIDE A FUNCTION
-    Value *  cond = std::any_cast<Value *>(ctx->check->accept(this)); 
+    // FIXME: THIS MIGHT NOT WORK OUTSIDE A FUNCTION
+    Value *cond = std::any_cast<Value *>(ctx->check->accept(this));
 
-    auto parentFn = builder->GetInsertBlock()->getParent(); 
+    auto parentFn = builder->GetInsertBlock()->getParent();
 
-    BasicBlock * thenBlk = BasicBlock::Create(module->getContext(), "then", parentFn);
-    BasicBlock * elseBlk = BasicBlock::Create(module->getContext(), "else");
-    BasicBlock * restBlk = BasicBlock::Create(module->getContext(), "ifcont");
+    BasicBlock *thenBlk = BasicBlock::Create(module->getContext(), "then", parentFn);
+    BasicBlock *elseBlk = BasicBlock::Create(module->getContext(), "else");
+    BasicBlock *restBlk = BasicBlock::Create(module->getContext(), "ifcont");
 
-    //FIXME: WHAT IF NO ELSE BLOCK??
+    // FIXME: WHAT IF NO ELSE BLOCK??
 
-    //Builder.CreateCondBr(CondV, ThenBB, ElseBB);
+    // Builder.CreateCondBr(CondV, ThenBB, ElseBB);
     builder->CreateCondBr(cond, thenBlk, elseBlk);
 
-    //Then block 
-    builder->SetInsertPoint(thenBlk); 
-    ctx->trueBlk->accept(this); //FIXME: DO BETTER, ALSO CHECK THE DOUBLING UP OF BLOCKS! & MAYBE DO A NULL CHECK!
-    //FIXME: HOW WILL THIS WORK WITH RETURNS??
+    // Then block
+    builder->SetInsertPoint(thenBlk);
+    ctx->trueBlk->accept(this); // FIXME: DO BETTER, ALSO CHECK THE DOUBLING UP OF BLOCKS! & MAYBE DO A NULL CHECK!
+    // FIXME: HOW WILL THIS WORK WITH RETURNS??
     builder->CreateBr(restBlk);
 
-    thenBlk = builder ->GetInsertBlock(); //REVIEW
+    thenBlk = builder->GetInsertBlock(); // REVIEW
 
-    //Else block  //FIXME: THIS TREATS IT AS REQUIRED. SHOULD WE DO SOMETHING AB THIS?
-    parentFn->getBasicBlockList().push_back(elseBlk); 
+    // Else block  //FIXME: THIS TREATS IT AS REQUIRED. SHOULD WE DO SOMETHING AB THIS?
+    parentFn->getBasicBlockList().push_back(elseBlk);
     builder->SetInsertPoint(elseBlk);
-    ctx->falseBlk->accept(this); //FIXME: SEE ABOVE COMMENTS
-    builder->CreateBr(restBlk); 
+    ctx->falseBlk->accept(this); // FIXME: SEE ABOVE COMMENTS
+    builder->CreateBr(restBlk);
 
-    elseBlk = builder->GetInsertBlock(); 
+    elseBlk = builder->GetInsertBlock();
 
-
-    //Merge back in 
-    parentFn->getBasicBlockList().push_back(restBlk); 
+    // Merge back in
+    parentFn->getBasicBlockList().push_back(restBlk);
     builder->SetInsertPoint(restBlk);
-    
-    //FIXME: ADD PHI STUFF SO RETURNS WORK? 
+
+    // FIXME: ADD PHI STUFF SO RETURNS WORK?
 
     // errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED - visitConditionalStatement");
     return nullptr;
@@ -421,13 +448,23 @@ std::any CodegenVisitor::visitSelectStatement(WPLParser::SelectStatementContext 
 
 std::any CodegenVisitor::visitCallStatement(WPLParser::CallStatementContext *ctx)
 {
-   return ctx->call->accept(this); 
+    return ctx->call->accept(this);
 }
 
 std::any CodegenVisitor::visitReturnStatement(WPLParser::ReturnStatementContext *ctx)
 {
-    errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED - visitReturnStatement");
-    return nullptr;
+    if(ctx->expression())
+    {
+        builder->CreateRet(
+            std::any_cast<Value*>(ctx->expression()->accept(this)) //FIXME: UNSAFE W/ ERORS
+        );
+        //FIXME: ENSURE NO FOLLOWING CODE
+
+        return nullptr; 
+    }
+    builder->CreateRetVoid(); 
+    //FIXME: ENSURE NO FOLLOWING CODE, ENSURE CORRECT!!
+    return nullptr; 
 }
 
 std::any CodegenVisitor::visitBlockStatement(WPLParser::BlockStatementContext *ctx)
@@ -453,24 +490,23 @@ std::any CodegenVisitor::visitBooleanConst(WPLParser::BooleanConstContext *ctx)
     // Value *v = builder->getInt32(ctx->TRUE() ? 1 : 0);
 
     // return v;
-    return ctx->TRUE() ? builder->getTrue() : builder->getFalse(); 
+    return ctx->TRUE() ? builder->getTrue() : builder->getFalse();
 }
-
 
 /*
  *
  * UNUSED VISITORS
  * ===============
  *
- * These are visitors which should NEVER be seen during the compilation process.  
- * 
+ * These are visitors which should NEVER be seen during the compilation process.
+ *
  */
 
-//FIXME: maybe these should be meta/compiler errors
+// FIXME: maybe these should be meta/compiler errors
 std::any CodegenVisitor::visitTypeOrVar(WPLParser::TypeOrVarContext *ctx)
 {
     errorHandler.addCodegenError(ctx->getStart(), "Unknown Error: Type information should be collected prior to codegen!");
-    return nullptr; 
+    return nullptr;
 }
 
 std::any CodegenVisitor::visitAssignment(WPLParser::AssignmentContext *ctx)
