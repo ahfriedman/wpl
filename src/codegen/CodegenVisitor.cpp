@@ -59,6 +59,8 @@ std::any CodegenVisitor::visitCompilationUnit(WPLParser::CompilationUnitContext 
     //     builder->CreateCall(progFn, {})
     // );
 
+    //FIXME: WE SEGFAULT IF NOT FOUND!!!
+
     llvm::Function *progFn = module->getFunction("program");
     builder->CreateRet(
         builder->CreateCall(progFn, {}));
@@ -307,17 +309,21 @@ std::any CodegenVisitor::visitExternStatement(WPLParser::ExternStatementContext 
             typeVec.push_back(type);
         }
     }
+    std::cout << "HERE" << std::endl; 
 
     ArrayRef<llvm::Type *> paramRef = ArrayRef(typeVec);
+    bool isVariadic = ctx->variadic; 
+
+std::cout << "HERE2" << std::endl; 
 
     FunctionType *fnType = FunctionType::get(
         std::any_cast<llvm::Type *>(ctx->ty->accept(this)), // Int32Ty, //ctx->ty->accept(this), // FIXME: DO BETTER
         paramRef,
-        ctx->variadic);
-
+        isVariadic);
+std::cout << "HERE3" << std::endl; 
     // FIXME: VERIFY CORRECT!
     Function *fn = Function::Create(fnType, GlobalValue::ExternalLinkage, ctx->name->getText(), module);
-
+std::cout << "HERE4" << std::endl; 
     // errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED - visitExternStatement");
     return nullptr;
 }
