@@ -12,6 +12,8 @@
 #include "antlr4-runtime.h"
 #include "WPLBaseVisitor.h"
 
+// #include "WPLTypedVisitor.h"
+
 #include "PropertyManager.h"
 #include "WPLErrorHandler.h"
 #include "SemanticVisitor.h"
@@ -26,6 +28,7 @@
 #include <any> 
 #include <string>
 #include <iomanip> //Quoted - FIXME: REVIEW
+#include <regex>
 
 // using namespace llvm;
 using llvm::FunctionType; 

@@ -115,20 +115,18 @@ std::any CodegenVisitor::visitSConstExpr(WPLParser::SConstExprContext *ctx)
     //FIXME: UNESCAPE STRINg
     std::string full (ctx->s->getText()); 
     std::string actual = full.substr(1, full.length() - 2);
-    std::cout << "PRE STR: " << actual <<  "/" << ctx->s-> << std::endl; 
 
-    std::stringstream in;
-    in << std::quoted(actual); 
+    // std::regex reg("\\\\(.)");
+    // std::string out = regex_replace(actual, reg, R"($1)");
 
-    std::string out; 
-    in >> std::quoted(out);
+    //FIXME: MAKE THIS WORK!!!
+    std::regex basic("\\\\n");
+    std::string out = regex_replace(actual, basic, "\n");
 
     // StringRef ref = actual; 
     Value * strVal = builder->CreateGlobalStringPtr(out); //For some reason, I can't return this directly...
 
     return strVal;
-    // errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED - visitSConstExpr");
-    // return nullptr;
 }
 
 // FIXME: SHOULD WE ALLOW INTS IN VARIABLE NAMES? PROBABLY
