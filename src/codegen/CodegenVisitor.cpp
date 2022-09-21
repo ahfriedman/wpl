@@ -3,9 +3,9 @@
 std::any CodegenVisitor::visitCompilationUnit(WPLParser::CompilationUnitContext *ctx)
 {
     // External functions --- Temporary thing
-    auto printf_prototype = FunctionType::get(i8p, true);
-    auto printf_fn = Function::Create(printf_prototype, Function::ExternalLinkage, "printf", module);
-    FunctionCallee printExpr(printf_prototype, printf_fn);
+    // auto printf_prototype = FunctionType::get(i8p, true);
+    // auto printf_fn = Function::Create(printf_prototype, Function::ExternalLinkage, "printf", module);
+    // FunctionCallee printExpr(printf_prototype, printf_fn);
 
     // Main function --- FIXME: WE DON'T DO THIS IN FINAL VERSION!!!
     // FunctionType *mainFuncType = FunctionType::get(Int32Ty, {Int32Ty, Int8PtrPtrTy}, false);
@@ -29,8 +29,8 @@ std::any CodegenVisitor::visitCompilationUnit(WPLParser::CompilationUnitContext 
 
         // Log expression for debugging purposes
         // auto txt = e->getText();
-        // StringRef formatRef = "Processed %s\n";
-        // auto gFormat = builder->CreateGlobalStringPtr(formatRef, "fmtStr");
+        StringRef formatRef = "Processed %s\n";
+        auto gFormat = builder->CreateGlobalStringPtr(formatRef, "fmtStr");
         // StringRef ref = txt;
         // auto fmt = builder->CreateGlobalStringPtr(ref, "exprStr");
         // builder->CreateCall(printf_fn, {gFormat, fmt});
@@ -59,6 +59,8 @@ std::any CodegenVisitor::visitCompilationUnit(WPLParser::CompilationUnitContext 
     //     builder->CreateCall(progFn, {})
     // );
 
+    //FIXME: WE SEGFAULT IF NOT FOUND!!!
+
     llvm::Function *progFn = module->getFunction("program");
     builder->CreateRet(
         builder->CreateCall(progFn, {}));
@@ -68,7 +70,7 @@ std::any CodegenVisitor::visitCompilationUnit(WPLParser::CompilationUnitContext 
 
 std::any CodegenVisitor::visitInvocation(WPLParser::InvocationContext *ctx)
 {
-    // FIXME: IMPL VARIADIC
+    // FIXME: IMPL VARIADIC - should be ok on this side...
     std::vector<llvm::Value *> args;
 
     for (auto e : ctx->args)
@@ -110,8 +112,21 @@ std::any CodegenVisitor::visitArrayAccessExpr(WPLParser::ArrayAccessExprContext 
 
 std::any CodegenVisitor::visitSConstExpr(WPLParser::SConstExprContext *ctx)
 {
-    errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED - visitSConstExpr");
-    return nullptr;
+    //FIXME: UNESCAPE STRINg
+    std::string full (ctx->s->getText()); 
+    std::string actual = full.substr(1, full.length() - 2);
+
+    // std::regex reg("\\\\(.)");
+    // std::string out = regex_replace(actual, reg, R"($1)");
+
+    //FIXME: MAKE THIS WORK!!!
+    std::regex basic("\\\\n");
+    std::string out = regex_replace(actual, basic, "\n");
+
+    // StringRef ref = actual; 
+    Value * strVal = builder->CreateGlobalStringPtr(out); //For some reason, I can't return this directly...
+
+    return strVal;
 }
 
 // FIXME: SHOULD WE ALLOW INTS IN VARIABLE NAMES? PROBABLY
@@ -296,7 +311,7 @@ std::any CodegenVisitor::visitSelectAlternative(WPLParser::SelectAlternativeCont
 
 std::any CodegenVisitor::visitExternStatement(WPLParser::ExternStatementContext *ctx)
 {
-    // FIXME: VARIADIC
+    // FIXME: VARIADIC - Should be OK here now...
     std::vector<llvm::Type *> typeVec;
 
     if (ctx->paramList)
@@ -307,17 +322,21 @@ std::any CodegenVisitor::visitExternStatement(WPLParser::ExternStatementContext 
             typeVec.push_back(type);
         }
     }
+    std::cout << "HERE" << std::endl; 
 
     ArrayRef<llvm::Type *> paramRef = ArrayRef(typeVec);
+    bool isVariadic = ctx->variadic || ctx->ELLIPSIS(); 
+
+std::cout << "HERE2" << std::endl; 
 
     FunctionType *fnType = FunctionType::get(
         std::any_cast<llvm::Type *>(ctx->ty->accept(this)), // Int32Ty, //ctx->ty->accept(this), // FIXME: DO BETTER
         paramRef,
-        false);
-
+        isVariadic);
+std::cout << "HERE3" << std::endl; 
     // FIXME: VERIFY CORRECT!
     Function *fn = Function::Create(fnType, GlobalValue::ExternalLinkage, ctx->name->getText(), module);
-
+std::cout << "HERE4" << std::endl; 
     // errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED - visitExternStatement");
     return nullptr;
 }
@@ -460,7 +479,6 @@ std::any CodegenVisitor::visitVarDeclStatement(WPLParser::VarDeclStatementContex
     for (auto e : ctx->assignments)
     {
         Value *exVal = std::any_cast<Value *>(e->ex->accept(this));
-
         for (auto var : e->VARIABLE())
         {
             Symbol *varSymbol = props->getBinding(var);
@@ -471,7 +489,10 @@ std::any CodegenVisitor::visitVarDeclStatement(WPLParser::VarDeclStatementContex
                 return nullptr; // FIXME: DO BETTER
             }
 
-            Value *v = builder->CreateAlloca(Int32Ty, 0, var->getText());
+            //FIXME: THIS WILL NOT WORK FOR VAR!!! (may have multiple types!)
+            llvm::Type* ty = std::any_cast<llvm::Type*>(ctx->ty->accept(this)); 
+
+            Value *v = builder->CreateAlloca(ty, 0, var->getText());
             varSymbol->val = v;
 
             builder->CreateStore(exVal, v);
@@ -520,6 +541,9 @@ std::any CodegenVisitor::visitLoopStatement(WPLParser::LoopStatementContext *ctx
     //FIXME: VERIFY!!!
     return nullptr;
 }
+
+//FIXME: EXTERNS THAT ARE JUST ...!!!!
+//FIXME: EXTERNS CANT HAVE A SPACE? 
 
 std::any CodegenVisitor::visitConditionalStatement(WPLParser::ConditionalStatementContext *ctx)
 {
@@ -597,6 +621,8 @@ std::any CodegenVisitor::visitType(WPLParser::TypeContext *ctx)
         return Int32Ty;
     if (ctx->TYPE_BOOL())
         return Int1Ty; // FIXME: DO BETTER
+    if (ctx->TYPE_STR())
+        return i8p; 
 
     errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED TYPE: " + ctx->getText());
     return nullptr;
@@ -619,7 +645,12 @@ std::any CodegenVisitor::visitBooleanConst(WPLParser::BooleanConstContext *ctx)
 // FIXME: maybe these should be meta/compiler errors
 std::any CodegenVisitor::visitTypeOrVar(WPLParser::TypeOrVarContext *ctx)
 {
-    errorHandler.addCodegenError(ctx->getStart(), "Unknown Error: Type information should be collected prior to codegen!");
+    if(ctx->type())
+    {
+        return ctx->type()->accept(this); 
+    }
+
+    errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED: TYPE INFERENCE");
     return nullptr;
 }
 

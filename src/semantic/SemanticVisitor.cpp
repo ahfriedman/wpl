@@ -5,6 +5,11 @@ std::any SemanticVisitor::visitCompilationUnit(WPLParser::CompilationUnitContext
     // Enter initial scope
     stmgr->enterScope();
 
+    for(auto e : ctx->extens)
+    {
+        e->accept(this); 
+    }
+
     for (auto e : ctx->stmts)
     {
         std::cout << "-> " << e->getText() << std::endl;
@@ -36,7 +41,10 @@ std::any SemanticVisitor::visitInvocation(WPLParser::InvocationContext *ctx)
     {
         std::vector<const Type *> fnParams = invokeable->getParamTypes();
 
-        if (fnParams.size() != ctx->args.size())
+        if (
+            (!invokeable->isVariadic() && fnParams.size() != ctx->args.size())
+            || (invokeable->isVariadic() && fnParams.size() > ctx->args.size()) //FIXME: verify correct
+            )
         {
             std::ostringstream errorMsg;
             errorMsg << "Invocation of " << name << " expected " << fnParams.size() << " argument(s), but got " << ctx->args.size();
@@ -44,10 +52,15 @@ std::any SemanticVisitor::visitInvocation(WPLParser::InvocationContext *ctx)
             return Types::UNDEFINED;
         }
 
-        for (unsigned int i = 0; i < fnParams.size(); i++)
+        for (unsigned int i = 0; i < ctx->args.size(); i++)//fnParams.size(); i++)
         {
             const Type *providedType = std::any_cast<const Type *>(ctx->args.at(i)->accept(this));
-            const Type *expectedType = fnParams.at(i);
+
+            if(invokeable->isVariadic() && fnParams.size() == 0) continue; //FIXME: DO BETTER, USED FOR VARIADIC
+
+            const Type *expectedType = fnParams.at(
+                i < fnParams.size() ? i : (fnParams.size() - 1)
+                );
 
             if (providedType->isNot(expectedType))
             {
@@ -57,6 +70,13 @@ std::any SemanticVisitor::visitInvocation(WPLParser::InvocationContext *ctx)
                 errorHandler.addSemanticError(ctx->getStart(), errorMsg.str());
             }
         }
+
+        // if(invokeable->isVariadic() && fnParams.size() < ctx->args.size())
+        // {
+        //     const Type * expectedType = fnParams.at(fnParams.size() - 1);
+
+        //     for(unsigned int )
+        // }
 
         return invokeable->getReturnType().has_value() ? invokeable->getReturnType().value() : Types::UNDEFINED;
     }
@@ -376,11 +396,8 @@ std::any SemanticVisitor::visitParameter(WPLParser::ParameterContext *ctx)
 
 std::any SemanticVisitor::visitExternStatement(WPLParser::ExternStatementContext *ctx)
 {
-    if (ctx->variadic)
-    {
-        errorHandler.addSemanticError(ctx->getStart(), "UNSUPPORTED: Variadic"); // FIXME: Also, fix so these are done correctly.
-        return Types::UNDEFINED;
-    }
+
+    bool variadic = ctx->variadic || ctx->ELLIPSIS(); 
 
     std::string id = ctx->name->getText();
 
@@ -403,8 +420,8 @@ std::any SemanticVisitor::visitExternStatement(WPLParser::ExternStatementContext
     const Type *retType = ctx->ty ? std::any_cast<const Type *>(ctx->ty->accept(this))
                                   : Types::UNDEFINED;
 
-    const TypeInvoke *funcType = (ctx->ty) ? new TypeInvoke(procType->getParamTypes(), retType)
-                                           : procType;
+    const TypeInvoke *funcType = (ctx->ty) ? new TypeInvoke(procType->getParamTypes(), retType, variadic)
+                                           : new TypeInvoke(procType->getParamTypes(), variadic);
 
     Symbol *funcSymbol = new Symbol(id, funcType);
 

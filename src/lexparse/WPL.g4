@@ -10,7 +10,7 @@ grammar WPL;
 // Parser rules
 compilationUnit   :  (stmts+=statement | extens+=externStatement)* EOF ; 
 
-externStatement : EXTERN (ty=type FUNC | PROC) name=VARIABLE '(' (paramList=parameterList variadic=VariadicParam?)? ')' ';';
+externStatement : EXTERN (ty=type FUNC | PROC) name=VARIABLE '(' ((paramList=parameterList variadic=VariadicParam?)? | ELLIPSIS) ')' ';';
 
 //FIXME: CURRENTLY ALLOWS THINGS LIKE FUNCTIONS IN FUNCTIONS!
 
@@ -150,6 +150,7 @@ RBRC      :     ']'     ;
 SEMICOLON :     ';'     ;
 QUOTE     :     '"'     ;
 COMMA     :     ','     ;
+ELLIPSIS  :     '...'   ;
 
 /* 
  * Types
