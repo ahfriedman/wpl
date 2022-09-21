@@ -45,6 +45,7 @@ using llvm::LLVMContext;
 using llvm::IRBuilder; 
 using llvm::NoFolder; 
 using llvm::Constant; 
+using llvm::ArrayType; 
 
 class CodegenVisitor : WPLBaseVisitor
 {

@@ -118,13 +118,15 @@ class TypeArray : public Type
 {
 private:
     const Type *valueType;
+    int length; 
     // int
     // FIXME: should we have a length defined in here?
 
 public:
-    TypeArray(const Type *v)
+    TypeArray(const Type *v, int l)
     {
         valueType = v;
+        length = l; 
     }
 
     std::string toString() const override
@@ -141,7 +143,7 @@ protected:
         //FIXME: do better!
         if (const TypeArray *p = dynamic_cast<const TypeArray *>(other))
         {
-            return valueType->is(p->valueType);
+            return valueType->is(p->valueType) && this->length == p->length;
         }
 
         return false; 
