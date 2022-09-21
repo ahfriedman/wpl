@@ -105,9 +105,12 @@ std::any SemanticVisitor::visitArrayAccess(WPLParser::ArrayAccessContext *ctx)
     else
     {
         Symbol *sym = opt.value();
-
+        std::cout << "108" << std::endl; 
         if (const TypeArray *arr = dynamic_cast<const TypeArray *>(sym->type))
         {
+            std::cout << "111: " << ctx->getText() << std::endl; 
+            // Symbol * tempSym = new Symbol(ctx->getText(), arr->getValueType()); //FIXME: DO BETTER
+            bindings->bind(ctx, sym); 
             return arr->getValueType();
         }
         else
@@ -143,7 +146,10 @@ std::any SemanticVisitor::visitArrayOrVar(WPLParser::ArrayOrVarContext *ctx)
     }
 
     //FIXME: THIS WON'T WORK AS WE'LL MISS THE BINDINGS!!!
-    return ctx->array->accept(this);
+    const Type * arrType = std::any_cast<const Type*>(ctx->array->accept(this)); 
+    std::cout << "150: " << bindings->getBinding(ctx->array)->identifier << std::endl; 
+    bindings->bind(ctx, bindings->getBinding(ctx->array)); //FIXME: DO BETTER
+    return arrType;
 }
 
 std::any SemanticVisitor::visitIConstExpr(WPLParser::IConstExprContext *ctx)
@@ -548,22 +554,19 @@ std::any SemanticVisitor::visitAssignStatement(WPLParser::AssignStatementContext
     //     errorHandler.addSemanticError(ctx->getStart(), "Expression evaluates to an Types::UNDEFINED type");
     // }
 
-    ctx->to->accept(this);
+    //FIXME: IS THIS SAFE?
+    const Type * type = std::any_cast<const Type*>(ctx->to->accept(this));
 
-    Symbol *opt = bindings->getBinding(ctx->to);
-
-    // std::string varId = ctx->to->getText();
-
-    // std::optional<Symbol *> opt = stmgr->lookup(varId);
+    // Symbol *opt = bindings->getBinding(ctx->to);
 
     // FIXME: need to still do body checks!!!
-    if (opt)
+    if (type)
     {
-        Symbol *symbol = opt; //.value();
+        // Symbol *symbol = opt; //.value();
 
-        if (symbol->type->isNot(exprType))
+        if (type->isNot(exprType))
         {
-            errorHandler.addSemanticError(ctx->getStart(), "Assignment statement expected " + symbol->type->toString() + " but got " + exprType->toString());
+            errorHandler.addSemanticError(ctx->getStart(), "Assignment statement expected " + type->toString() + " but got " + exprType->toString());
         }
     }
     else

@@ -88,6 +88,8 @@ std::any CodegenVisitor::visitInvocation(WPLParser::InvocationContext *ctx)
 
 std::any CodegenVisitor::visitArrayAccess(WPLParser::ArrayAccessContext *ctx)
 {
+    Value * val = std::any_cast<Value*>(ctx->index->accept(this));
+    
     errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED - visitArrayAccess");
     return nullptr;
 }
@@ -453,22 +455,32 @@ std::any CodegenVisitor::visitAssignStatement(WPLParser::AssignStatementContext 
 {
     // FIXME: Might not work perfectly due to no arrays/vars yet.... or strings...
     Value *exprVal = std::any_cast<Value *>(ctx->ex->accept(this));
-    Symbol *varSym = props->getBinding(ctx->to);
 
-    if (varSym == nullptr)
-    {
-        errorHandler.addCodegenError(ctx->getStart(), "Incorrectly processed variable in assignment: " + ctx->to->getText());
-        return nullptr;
-    }
-    // Shouldn't need this in the end....
-    if (varSym->val == nullptr)
-    {
-        errorHandler.addCodegenError(ctx->getStart(), "Improperly initialized variable in assignment: " + ctx->to->getText());
-        return nullptr;
-    }
+    // if (ctx->to->VARIABLE())
+    // {
+        Symbol *varSym = props->getBinding(ctx->to);
 
-    builder->CreateStore(exprVal, varSym->val);
+        if (varSym == nullptr)
+        {
+            errorHandler.addCodegenError(ctx->getStart(), "Incorrectly processed variable in assignment: " + ctx->to->getText());
+            return nullptr;
+        }
+        // Shouldn't need this in the end....
+        if (varSym->val == nullptr)
+        {
+            errorHandler.addCodegenError(ctx->getStart(), "Improperly initialized variable in assignment: " + ctx->to->getText() + "@" + varSym->identifier);
+            std::cout << "IMPROP VAR @ "<< &varSym << std::endl; 
+            return nullptr;
+        }
 
+        builder->CreateStore(exprVal, varSym->val);
+    // }
+    // else 
+    // {
+        //Array access 
+        //FIXME: DO BETER
+
+    // }
     return nullptr;
 }
 
@@ -478,8 +490,8 @@ std::any CodegenVisitor::visitVarDeclStatement(WPLParser::VarDeclStatementContex
 
     for (auto e : ctx->assignments)
     {
-        //FIXME: DOESNT WORK WHEN NO VALUE!!!
-        Value *exVal = (e->ex) ? std::any_cast<Value *>(e->ex->accept(this)) : nullptr;//builder->getInt32(0);
+        // FIXME: DOESNT WORK WHEN NO VALUE!!!
+        Value *exVal = (e->ex) ? std::any_cast<Value *>(e->ex->accept(this)) : nullptr; // builder->getInt32(0);
         for (auto var : e->VARIABLE())
         {
             Symbol *varSymbol = props->getBinding(var);
@@ -490,14 +502,16 @@ std::any CodegenVisitor::visitVarDeclStatement(WPLParser::VarDeclStatementContex
                 return nullptr; // FIXME: DO BETTER
             }
 
-            std::cout << "493 4 " << ctx->getText() << std::endl;  
+            std::cout << "493 4 " << ctx->getText() << std::endl;
             // FIXME: THIS WILL NOT WORK FOR VAR!!! (may have multiple types!)
             llvm::Type *ty = std::any_cast<llvm::Type *>(ctx->ty->accept(this));
-            std::cout << "495 4 " << ctx->getText() << std::endl;  
+            std::cout << "495 4 " << ctx->getText() << std::endl;
             Value *v = builder->CreateAlloca(ty, 0, var->getText());
+
+            std::cout << "Set Val for: " << varSymbol->identifier << "(" << var->getText() << ") @" << &varSymbol << std::endl; 
             varSymbol->val = v;
 
-            if(exVal)
+            if (exVal)
                 builder->CreateStore(exVal, v);
         }
     }
@@ -617,7 +631,7 @@ std::any CodegenVisitor::visitReturnStatement(WPLParser::ReturnStatementContext 
 
 std::any CodegenVisitor::visitType(WPLParser::TypeContext *ctx)
 {
-    llvm::Type * ty;
+    llvm::Type *ty;
     bool valid = false;
 
     // FIXME: VERIFY!
@@ -645,14 +659,14 @@ std::any CodegenVisitor::visitType(WPLParser::TypeContext *ctx)
 
     if (ctx->len)
     {
-        //FIXME: ENSURE POSITIVE
-        uint64_t len = (uint64_t) std::stoi(ctx->len->getText());
-        llvm::Type * arr = ArrayType::get(ty, len); //new llvm::Type::ArrayType(ty, len);
+        // FIXME: ENSURE POSITIVE
+        uint64_t len = (uint64_t)std::stoi(ctx->len->getText());
+        llvm::Type *arr = ArrayType::get(ty, len); // new llvm::Type::ArrayType(ty, len);
 
-        return arr; 
+        return arr;
     }
 
-    return ty; 
+    return ty;
 }
 
 std::any CodegenVisitor::visitBooleanConst(WPLParser::BooleanConstContext *ctx)
@@ -672,7 +686,7 @@ std::any CodegenVisitor::visitBooleanConst(WPLParser::BooleanConstContext *ctx)
 // FIXME: maybe these should be meta/compiler errors
 std::any CodegenVisitor::visitTypeOrVar(WPLParser::TypeOrVarContext *ctx)
 {
-    std::cout << "674 -- " << !!(ctx->type()) << std::endl; 
+    std::cout << "674 -- " << !!(ctx->type()) << std::endl;
     if (ctx->type())
     {
         return ctx->type()->accept(this);
