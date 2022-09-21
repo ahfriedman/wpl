@@ -55,6 +55,9 @@ std::any SemanticVisitor::visitInvocation(WPLParser::InvocationContext *ctx)
         for (unsigned int i = 0; i < ctx->args.size(); i++)//fnParams.size(); i++)
         {
             const Type *providedType = std::any_cast<const Type *>(ctx->args.at(i)->accept(this));
+
+            if(invokeable->isVariadic() && fnParams.size() == 0) continue; //FIXME: DO BETTER, USED FOR VARIADIC
+
             const Type *expectedType = fnParams.at(
                 i < fnParams.size() ? i : (fnParams.size() - 1)
                 );
@@ -394,7 +397,7 @@ std::any SemanticVisitor::visitParameter(WPLParser::ParameterContext *ctx)
 std::any SemanticVisitor::visitExternStatement(WPLParser::ExternStatementContext *ctx)
 {
 
-    bool variadic = ctx->variadic; 
+    bool variadic = ctx->variadic || ctx->ELLIPSIS(); 
 
     std::string id = ctx->name->getText();
 

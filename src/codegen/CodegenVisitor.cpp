@@ -325,7 +325,7 @@ std::any CodegenVisitor::visitExternStatement(WPLParser::ExternStatementContext 
     std::cout << "HERE" << std::endl; 
 
     ArrayRef<llvm::Type *> paramRef = ArrayRef(typeVec);
-    bool isVariadic = ctx->variadic; 
+    bool isVariadic = ctx->variadic || ctx->ELLIPSIS(); 
 
 std::cout << "HERE2" << std::endl; 
 
