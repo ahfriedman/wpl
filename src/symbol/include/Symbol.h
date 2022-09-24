@@ -145,13 +145,14 @@ public:
 
     const Type *getValueType() const { return valueType; }
 
-    //FIXME: ENSURE THESE ARE ALL GOOD ENOUGH!
-    llvm::Type *getLLVMType(llvm::LLVMContext &C) const override { 
-        uint64_t len = (uint64_t)length; 
-        llvm::Type * inner = valueType->getLLVMType(C); 
-        llvm::Type * arr = llvm::ArrayType::get(inner, len);
-        // return llvm::Type::getInt8PtrTy(C); 
-        return arr; 
+    // FIXME: ENSURE THESE ARE ALL GOOD ENOUGH!
+    llvm::Type *getLLVMType(llvm::LLVMContext &C) const override
+    {
+        uint64_t len = (uint64_t)length;
+        llvm::Type *inner = valueType->getLLVMType(C);
+        llvm::Type *arr = llvm::ArrayType::get(inner, len);
+        // return llvm::Type::getInt8PtrTy(C);
+        return arr;
     }
 
 protected:
@@ -229,6 +230,8 @@ public:
         return description.str();
     }
 
+    // FIXME: DO THESE NEED LLVM TYPES???
+
     std::vector<const Type *> getParamTypes() const { return paramTypes; }
     std::optional<const Type *> getReturnType() const { return retType; }
 
@@ -260,6 +263,46 @@ protected:
             return (this->variadic == p->variadic);
         }
         return false;
+    }
+};
+
+
+class TypeInfer : public Type
+{
+private:
+    std::optional<const Type *> valueType; //Actual type acting as 
+
+public:
+    TypeInfer()
+    {
+        valueType = {};
+    }
+
+    std::string toString() const override
+    {
+        // FIXME: DO BETTER
+        return "VAR";
+    }
+
+    std::optional<const Type *> getValueType() const { return valueType; }
+
+    // FIXME: ENSURE THESE ARE ALL GOOD ENOUGH!
+    llvm::Type *getLLVMType(llvm::LLVMContext &C) const override
+    {
+        //FIXME: what happens if we don't get a value type by code gen!!!!
+        if(valueType) return valueType.value()->getLLVMType(C); 
+        return nullptr; 
+    }
+
+protected:
+    bool equals(const Type *other) const override
+    {
+        if(valueType) return valueType.value()->is(other);
+        //FIXME: DO BETTER!!! MAY NEED TO LIMIT THIS TO NOT BE FNS, BOTs, ETC!!!!
+
+        TypeInfer * mthis =  const_cast<TypeInfer*> (this);
+        mthis->valueType = other; 
+        return true;
     }
 };
 

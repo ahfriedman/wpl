@@ -712,13 +712,11 @@ std::any SemanticVisitor::visitBlockStatement(WPLParser::BlockStatementContext *
 
 std::any SemanticVisitor::visitTypeOrVar(WPLParser::TypeOrVarContext *ctx)
 {
-    std::cout << "495" << std::endl;
     if (!(ctx->type()))
     {
-        errorHandler.addSemanticError(ctx->getStart(), "UNIMPLEMENTED: var"); // FIXME: TYPE INFERENC
-        return Types::UNDEFINED;
+        const Type * ans = new TypeInfer(); 
+        return ans; 
     }
-    std::cout << "500" << std::endl;
     return ctx->type()->accept(this);
 }
 
