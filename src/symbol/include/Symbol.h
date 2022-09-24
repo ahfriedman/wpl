@@ -14,6 +14,7 @@
 #include <string>  //Includes strings
 #include <sstream> //Used for string streams
 #include "llvm/IR/Value.h"
+#include "llvm/IR/IRBuilder.h"
 
 
 // Needed for anycasts
@@ -118,13 +119,15 @@ class TypeArray : public Type
 {
 private:
     const Type *valueType;
+    int length; 
     // int
     // FIXME: should we have a length defined in here?
 
 public:
-    TypeArray(const Type *v)
+    TypeArray(const Type *v, int l)
     {
         valueType = v;
+        length = l; 
     }
 
     std::string toString() const override
@@ -141,7 +144,7 @@ protected:
         //FIXME: do better!
         if (const TypeArray *p = dynamic_cast<const TypeArray *>(other))
         {
-            return valueType->is(p->valueType);
+            return valueType->is(p->valueType) && this->length == p->length;
         }
 
         return false; 
@@ -257,7 +260,7 @@ struct Symbol
     std::string identifier; // Mostly needed for our tostring function
     const Type *type;       // Keeps track of the symbol's type
 
-    llvm::Value *val;
+    llvm::AllocaInst *val;
 
     // Constructs a symbol from an ID and symbol type.
     Symbol(std::string id, const Type *t)

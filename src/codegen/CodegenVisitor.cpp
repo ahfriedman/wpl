@@ -59,7 +59,7 @@ std::any CodegenVisitor::visitCompilationUnit(WPLParser::CompilationUnitContext 
     //     builder->CreateCall(progFn, {})
     // );
 
-    //FIXME: WE SEGFAULT IF NOT FOUND!!!
+    // FIXME: WE SEGFAULT IF NOT FOUND!!!
 
     llvm::Function *progFn = module->getFunction("program");
     builder->CreateRet(
@@ -88,8 +88,11 @@ std::any CodegenVisitor::visitInvocation(WPLParser::InvocationContext *ctx)
 
 std::any CodegenVisitor::visitArrayAccess(WPLParser::ArrayAccessContext *ctx)
 {
-    errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED - visitArrayAccess");
-    return nullptr;
+    Value *index = std::any_cast<Value *>(ctx->index->accept(this));
+    llvm::AllocaInst * arrayPtr = props->getBinding(ctx)->val;
+    auto ptr = builder->CreateGEP(arrayPtr, {Int32Zero, index});
+    Value * val = builder->CreateLoad(ptr->getType()->getPointerElementType(), ptr);
+    return val;
 }
 
 std::any CodegenVisitor::visitArrayOrVar(WPLParser::ArrayOrVarContext *ctx)
@@ -112,19 +115,19 @@ std::any CodegenVisitor::visitArrayAccessExpr(WPLParser::ArrayAccessExprContext 
 
 std::any CodegenVisitor::visitSConstExpr(WPLParser::SConstExprContext *ctx)
 {
-    //FIXME: UNESCAPE STRINg
-    std::string full (ctx->s->getText()); 
+    // FIXME: UNESCAPE STRINg
+    std::string full(ctx->s->getText());
     std::string actual = full.substr(1, full.length() - 2);
 
     // std::regex reg("\\\\(.)");
     // std::string out = regex_replace(actual, reg, R"($1)");
 
-    //FIXME: MAKE THIS WORK!!!
+    // FIXME: MAKE THIS WORK!!!
     std::regex basic("\\\\n");
     std::string out = regex_replace(actual, basic, "\n");
 
-    // StringRef ref = actual; 
-    Value * strVal = builder->CreateGlobalStringPtr(out); //For some reason, I can't return this directly...
+    // StringRef ref = actual;
+    Value *strVal = builder->CreateGlobalStringPtr(out); // For some reason, I can't return this directly...
 
     return strVal;
 }
@@ -322,21 +325,21 @@ std::any CodegenVisitor::visitExternStatement(WPLParser::ExternStatementContext 
             typeVec.push_back(type);
         }
     }
-    std::cout << "HERE" << std::endl; 
+    std::cout << "HERE" << std::endl;
 
     ArrayRef<llvm::Type *> paramRef = ArrayRef(typeVec);
-    bool isVariadic = ctx->variadic || ctx->ELLIPSIS(); 
+    bool isVariadic = ctx->variadic || ctx->ELLIPSIS();
 
-std::cout << "HERE2" << std::endl; 
+    std::cout << "HERE2" << std::endl;
 
     FunctionType *fnType = FunctionType::get(
         std::any_cast<llvm::Type *>(ctx->ty->accept(this)), // Int32Ty, //ctx->ty->accept(this), // FIXME: DO BETTER
         paramRef,
         isVariadic);
-std::cout << "HERE3" << std::endl; 
+    std::cout << "HERE3" << std::endl;
     // FIXME: VERIFY CORRECT!
     Function *fn = Function::Create(fnType, GlobalValue::ExternalLinkage, ctx->name->getText(), module);
-std::cout << "HERE4" << std::endl; 
+    std::cout << "HERE4" << std::endl;
     // errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED - visitExternStatement");
     return nullptr;
 }
@@ -453,6 +456,9 @@ std::any CodegenVisitor::visitAssignStatement(WPLParser::AssignStatementContext 
 {
     // FIXME: Might not work perfectly due to no arrays/vars yet.... or strings...
     Value *exprVal = std::any_cast<Value *>(ctx->ex->accept(this));
+
+    // if (ctx->to->VARIABLE())
+    // {
     Symbol *varSym = props->getBinding(ctx->to);
 
     if (varSym == nullptr)
@@ -463,12 +469,29 @@ std::any CodegenVisitor::visitAssignStatement(WPLParser::AssignStatementContext 
     // Shouldn't need this in the end....
     if (varSym->val == nullptr)
     {
-        errorHandler.addCodegenError(ctx->getStart(), "Improperly initialized variable in assignment: " + ctx->to->getText());
+        errorHandler.addCodegenError(ctx->getStart(), "Improperly initialized variable in assignment: " + ctx->to->getText() + "@" + varSym->identifier);
+        std::cout << "IMPROP VAR @ " << &varSym << std::endl;
         return nullptr;
     }
 
-    builder->CreateStore(exprVal, varSym->val);
+    Value * val = varSym->val; 
 
+    if(!ctx->to->VARIABLE())
+    {
+        //Dealing with an array //FIXME: REFACTOR!!!
+        Value * index = std::any_cast<Value*>(ctx->to->array->index->accept(this));
+        val = builder->CreateGEP(val, {Int32Zero, index}); 
+        // val = std::any_cast<Value *>(ctx->to->array->accept(this));
+    }
+
+    builder->CreateStore(exprVal, val);
+    // }
+    // else
+    // {
+    // Array access
+    // FIXME: DO BETER
+
+    // }
     return nullptr;
 }
 
@@ -478,7 +501,8 @@ std::any CodegenVisitor::visitVarDeclStatement(WPLParser::VarDeclStatementContex
 
     for (auto e : ctx->assignments)
     {
-        Value *exVal = std::any_cast<Value *>(e->ex->accept(this));
+        // FIXME: DOESNT WORK WHEN NO VALUE!!!
+        Value *exVal = (e->ex) ? std::any_cast<Value *>(e->ex->accept(this)) : nullptr; // builder->getInt32(0);
         for (auto var : e->VARIABLE())
         {
             Symbol *varSymbol = props->getBinding(var);
@@ -489,13 +513,17 @@ std::any CodegenVisitor::visitVarDeclStatement(WPLParser::VarDeclStatementContex
                 return nullptr; // FIXME: DO BETTER
             }
 
-            //FIXME: THIS WILL NOT WORK FOR VAR!!! (may have multiple types!)
-            llvm::Type* ty = std::any_cast<llvm::Type*>(ctx->ty->accept(this)); 
+            std::cout << "493 4 " << ctx->getText() << std::endl;
+            // FIXME: THIS WILL NOT WORK FOR VAR!!! (may have multiple types!)
+            llvm::Type *ty = std::any_cast<llvm::Type *>(ctx->ty->accept(this));
+            std::cout << "495 4 " << ctx->getText() << std::endl;
+            llvm::AllocaInst *v = builder->CreateAlloca(ty, 0, var->getText());
 
-            Value *v = builder->CreateAlloca(ty, 0, var->getText());
+            std::cout << "Set Val for: " << varSymbol->identifier << "(" << var->getText() << ") @" << &varSymbol << std::endl;
             varSymbol->val = v;
 
-            builder->CreateStore(exVal, v);
+            if (exVal)
+                builder->CreateStore(exVal, v);
         }
     }
     // FIXME: ENSURE CORRECT!!!
@@ -504,46 +532,44 @@ std::any CodegenVisitor::visitVarDeclStatement(WPLParser::VarDeclStatementContex
 
 std::any CodegenVisitor::visitLoopStatement(WPLParser::LoopStatementContext *ctx)
 {
-    //Very similar to conditionals
+    // Very similar to conditionals
 
-    Value * check = std::any_cast<Value *>(ctx->check->accept(this));
+    Value *check = std::any_cast<Value *>(ctx->check->accept(this));
 
-    auto parent = builder->GetInsertBlock()->getParent(); 
+    auto parent = builder->GetInsertBlock()->getParent();
 
-    BasicBlock * loopBlk = BasicBlock::Create(module->getContext(), "loop");
-    BasicBlock * restBlk = BasicBlock::Create(module->getContext(), "rest");
+    BasicBlock *loopBlk = BasicBlock::Create(module->getContext(), "loop");
+    BasicBlock *restBlk = BasicBlock::Create(module->getContext(), "rest");
 
     builder->CreateCondBr(check, loopBlk, restBlk);
-    
-    //Need to add here otherwise we will overwrite it
-    parent->getBasicBlockList().push_back(loopBlk); 
 
-    //In the loop block 
+    // Need to add here otherwise we will overwrite it
+    parent->getBasicBlockList().push_back(loopBlk);
+
+    // In the loop block
     builder->SetInsertPoint(loopBlk);
-    for(auto e : ctx->block()->stmts)
+    for (auto e : ctx->block()->stmts)
     {
-        e->accept(this); 
+        e->accept(this);
     }
-    //Re-calculate the loop condition 
+    // Re-calculate the loop condition
     check = std::any_cast<Value *>(ctx->check->accept(this));
-    //Check if we need to loop back again...
-    loopBlk = builder->GetInsertBlock();  //FIXME: REVIEW
+    // Check if we need to loop back again...
+    loopBlk = builder->GetInsertBlock(); // FIXME: REVIEW
     builder->CreateCondBr(check, loopBlk, restBlk);
 
+    // FIXME: ALLOW _ IN NAMES?
+    //  Out of Loop
 
-//FIXME: ALLOW _ IN NAMES? 
-    // Out of Loop
+    parent->getBasicBlockList().push_back(restBlk);
+    builder->SetInsertPoint(restBlk);
 
-    parent->getBasicBlockList().push_back(restBlk); 
-    builder->SetInsertPoint(restBlk); 
-
-
-    //FIXME: VERIFY!!!
+    // FIXME: VERIFY!!!
     return nullptr;
 }
 
-//FIXME: EXTERNS THAT ARE JUST ...!!!!
-//FIXME: EXTERNS CANT HAVE A SPACE? 
+// FIXME: EXTERNS THAT ARE JUST ...!!!!
+// FIXME: EXTERNS CANT HAVE A SPACE?
 
 std::any CodegenVisitor::visitConditionalStatement(WPLParser::ConditionalStatementContext *ctx)
 {
@@ -616,16 +642,42 @@ std::any CodegenVisitor::visitReturnStatement(WPLParser::ReturnStatementContext 
 
 std::any CodegenVisitor::visitType(WPLParser::TypeContext *ctx)
 {
+    llvm::Type *ty;
+    bool valid = false;
+
     // FIXME: VERIFY!
     if (ctx->TYPE_INT())
-        return Int32Ty;
-    if (ctx->TYPE_BOOL())
-        return Int1Ty; // FIXME: DO BETTER
-    if (ctx->TYPE_STR())
-        return i8p; 
+    {
+        ty = Int32Ty;
+        valid = true;
+    }
+    else if (ctx->TYPE_BOOL())
+    {
+        ty = Int1Ty;
+        valid = true;
+    }
+    else if (ctx->TYPE_STR())
+    {
+        ty = i8p;
+        valid = true;
+    }
 
-    errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED TYPE: " + ctx->getText());
-    return nullptr;
+    if (!valid)
+    {
+        errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED TYPE: " + ctx->getText());
+        return nullptr;
+    }
+
+    if (ctx->len)
+    {
+        // FIXME: ENSURE POSITIVE
+        uint64_t len = (uint64_t)std::stoi(ctx->len->getText());
+        llvm::Type *arr = ArrayType::get(ty, len); // new llvm::Type::ArrayType(ty, len);
+
+        return arr;
+    }
+
+    return ty;
 }
 
 std::any CodegenVisitor::visitBooleanConst(WPLParser::BooleanConstContext *ctx)
@@ -645,9 +697,10 @@ std::any CodegenVisitor::visitBooleanConst(WPLParser::BooleanConstContext *ctx)
 // FIXME: maybe these should be meta/compiler errors
 std::any CodegenVisitor::visitTypeOrVar(WPLParser::TypeOrVarContext *ctx)
 {
-    if(ctx->type())
+    std::cout << "674 -- " << !!(ctx->type()) << std::endl;
+    if (ctx->type())
     {
-        return ctx->type()->accept(this); 
+        return ctx->type()->accept(this);
     }
 
     errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED: TYPE INFERENCE");
