@@ -2,6 +2,14 @@
 extern int func printf(...);
 #extern int func testtwo(...);
 
+int func chayos() {
+    var a, b; 
+
+    a <- b;  # FIXME: WHAT TO DO?
+
+    return -1; 
+}
+
 
 int func idk() { 
     var x; 
