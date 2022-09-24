@@ -774,12 +774,13 @@ std::any CodegenVisitor::visitBooleanConst(WPLParser::BooleanConstContext *ctx)
 // FIXME: maybe these should be meta/compiler errors
 std::any CodegenVisitor::visitTypeOrVar(WPLParser::TypeOrVarContext *ctx)
 {
-    std::cout << "674 -- " << !!(ctx->type()) << std::endl;
+    std::cout << "674 -- " << !!(ctx->type()) << " " << !!props->getBinding(ctx) << std::endl;
     if (ctx->type())
     {
         return ctx->type()->accept(this);
     }
 
+    
     errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED: TYPE INFERENCE");
     return nullptr;
 }
