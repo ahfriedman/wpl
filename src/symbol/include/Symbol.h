@@ -16,7 +16,6 @@
 #include "llvm/IR/Value.h"
 #include "llvm/IR/IRBuilder.h"
 
-
 // Needed for anycasts
 #include <any>
 #include <utility>
@@ -59,9 +58,11 @@ public:
 
     virtual std::string toString() const { return "TOP"; }
 
-    //FIXME: change to is(Not) Subtype? no... still not quite right... hmmm....
+    // FIXME: change to is(Not) Subtype? no... still not quite right... hmmm....
     virtual bool is(const Type *other) const { return this->equals(other); }
     virtual bool isNot(const Type *other) const { return !(this->equals(other)); }
+
+    virtual llvm::Type *getLLVMType(llvm::LLVMContext &C) const { return llvm::Type::getVoidTy(C); }
 
 protected:
     virtual bool equals(const Type *other) const { return true; }
@@ -71,6 +72,8 @@ class TypeInt : public Type
 {
 public:
     std::string toString() const override { return "INT"; }
+
+    llvm::Type *getLLVMType(llvm::LLVMContext &C) const override { return llvm::Type::getInt32Ty(C); }
 
 protected:
     bool equals(const Type *other) const override
@@ -84,6 +87,8 @@ class TypeBool : public Type
 public:
     std::string toString() const override { return "BOOL"; }
 
+    llvm::Type *getLLVMType(llvm::LLVMContext &C) const override { return llvm::Type::getInt1Ty(C); }
+
 protected:
     bool equals(const Type *other) const override
     {
@@ -95,6 +100,8 @@ class TypeStr : public Type
 {
 public:
     std::string toString() const override { return "STR"; }
+
+    llvm::Type *getLLVMType(llvm::LLVMContext &C) const override { return llvm::Type::getInt8PtrTy(C); }
 
 protected:
     bool equals(const Type *other) const override
@@ -119,7 +126,7 @@ class TypeArray : public Type
 {
 private:
     const Type *valueType;
-    int length; 
+    int length;
     // int
     // FIXME: should we have a length defined in here?
 
@@ -127,7 +134,7 @@ public:
     TypeArray(const Type *v, int l)
     {
         valueType = v;
-        length = l; 
+        length = l;
     }
 
     std::string toString() const override
@@ -136,18 +143,27 @@ public:
         return valueType->toString() + "[]";
     }
 
-    const Type* getValueType() const { return valueType; }
+    const Type *getValueType() const { return valueType; }
+
+    //FIXME: ENSURE THESE ARE ALL GOOD ENOUGH!
+    llvm::Type *getLLVMType(llvm::LLVMContext &C) const override { 
+        uint64_t len = (uint64_t)length; 
+        llvm::Type * inner = valueType->getLLVMType(C); 
+        llvm::Type * arr = llvm::ArrayType::get(inner, len);
+        // return llvm::Type::getInt8PtrTy(C); 
+        return arr; 
+    }
 
 protected:
     bool equals(const Type *other) const override
     {
-        //FIXME: do better!
+        // FIXME: do better!
         if (const TypeArray *p = dynamic_cast<const TypeArray *>(other))
         {
             return valueType->is(p->valueType) && this->length == p->length;
         }
 
-        return false; 
+        return false;
     }
 };
 
@@ -156,8 +172,8 @@ class TypeInvoke : public Type
 private:
     std::vector<const Type *> paramTypes;
     std::optional<const Type *> retType;
-    
-    bool variadic = false; 
+
+    bool variadic = false;
 
 public:
     TypeInvoke()
@@ -176,7 +192,7 @@ public:
         paramTypes = p;
         retType = {};
 
-        variadic = v; 
+        variadic = v;
     }
 
     TypeInvoke(std::vector<const Type *> p, const Type *r)
@@ -190,8 +206,8 @@ public:
         paramTypes = p;
         retType = r;
 
-        //FIXME: MAKE SURE AT LEAST ONE PARAMTYPE!!!
-        variadic = v; 
+        // FIXME: MAKE SURE AT LEAST ONE PARAMTYPE!!!
+        variadic = v;
     }
 
     // FIXME: do better
@@ -206,8 +222,8 @@ public:
             description << param->toString() << " ";
         }
 
-        if(variadic)
-            description << "... "; //FIXME: DO BETTER!
+        if (variadic)
+            description << "... "; // FIXME: DO BETTER!
 
         description << (isProc ? "-> BOT" : ("-> " + retType.value()->toString()));
         return description.str();
@@ -268,7 +284,7 @@ struct Symbol
         identifier = id;
         type = t;
 
-        val = nullptr; //FIXME: replace with optional? 
+        val = nullptr; // FIXME: replace with optional?
     }
 
     std::string toString() const

@@ -248,7 +248,7 @@ std::any CodegenVisitor::visitVariableExpr(WPLParser::VariableExprContext *ctx)
     }
 
     // FIXME: ADD TYPES
-    Value *v = builder->CreateLoad(CodegenVisitor::Int32Ty, sym->val, id);
+    Value *v = builder->CreateLoad(sym->type->getLLVMType(module->getContext()), sym->val, id);
 
     return v;
 }
