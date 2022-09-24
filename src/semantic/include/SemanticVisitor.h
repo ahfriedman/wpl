@@ -5,6 +5,8 @@
 #include "PropertyManager.h"
 #include "WPLErrorHandler.h"
 
+#include "TypeVisitor.h"
+
 class SemanticVisitor : WPLBaseVisitor
 {
 

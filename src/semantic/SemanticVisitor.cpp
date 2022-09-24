@@ -12,9 +12,7 @@ std::any SemanticVisitor::visitCompilationUnit(WPLParser::CompilationUnitContext
 
     for (auto e : ctx->stmts)
     {
-        std::cout << "-> " << e->getText() << std::endl;
         e->accept(this);
-        std::cout << "<-" << e->getText() << std::endl;
     }
 
     return Types::UNDEFINED;
@@ -23,7 +21,6 @@ std::any SemanticVisitor::visitCompilationUnit(WPLParser::CompilationUnitContext
 std::any SemanticVisitor::visitInvocation(WPLParser::InvocationContext *ctx)
 {
     // FIXME: should probably make it so that InvokableTypes use BOT instead of optionals...
-    // FIXME: Implemented variadic fns
 
     std::string name = ctx->VARIABLE()->getText();
 
@@ -70,13 +67,6 @@ std::any SemanticVisitor::visitInvocation(WPLParser::InvocationContext *ctx)
                 errorHandler.addSemanticError(ctx->getStart(), errorMsg.str());
             }
         }
-
-        // if(invokeable->isVariadic() && fnParams.size() < ctx->args.size())
-        // {
-        //     const Type * expectedType = fnParams.at(fnParams.size() - 1);
-
-        //     for(unsigned int )
-        // }
 
         return invokeable->getReturnType().has_value() ? invokeable->getReturnType().value() : Types::UNDEFINED;
     }
@@ -152,17 +142,11 @@ std::any SemanticVisitor::visitArrayOrVar(WPLParser::ArrayOrVarContext *ctx)
     return arrType;
 }
 
-std::any SemanticVisitor::visitIConstExpr(WPLParser::IConstExprContext *ctx)
-{
-    return Types::INT;
-}
+std::any SemanticVisitor::visitIConstExpr(WPLParser::IConstExprContext *ctx) { return Types::INT; }
 
 std::any SemanticVisitor::visitArrayAccessExpr(WPLParser::ArrayAccessExprContext *ctx) { return ctx->arrayAccess()->accept(this); }
 
-std::any SemanticVisitor::visitSConstExpr(WPLParser::SConstExprContext *ctx)
-{
-    return Types::STR;
-}
+std::any SemanticVisitor::visitSConstExpr(WPLParser::SConstExprContext *ctx) { return Types::STR; }
 
 std::any SemanticVisitor::visitUnaryExpr(WPLParser::UnaryExprContext *ctx)
 {
