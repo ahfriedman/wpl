@@ -718,6 +718,7 @@ std::any CodegenVisitor::visitReturnStatement(WPLParser::ReturnStatementContext 
 
 std::any CodegenVisitor::visitType(WPLParser::TypeContext *ctx)
 {
+    //FIXME: probably don't need to visit this either...
     llvm::Type *ty;
     bool valid = false;
 
