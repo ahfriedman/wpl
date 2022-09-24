@@ -337,12 +337,13 @@ std::any SemanticVisitor::visitBlock(WPLParser::BlockContext *ctx)
 {
     // FIXME: Probably have to do better with things like type inference!!!
     stmgr->enterScope();
-
+std::cout << "340" << std::endl; 
     for (auto e : ctx->stmts)
     {
+        std::cout << "343 "  << e->getText() << std::endl; 
         e->accept(this);
     }
-
+    std::cout << "345" << std::endl; 
     stmgr->exitScope();
 
     return Types::UNDEFINED;
@@ -478,7 +479,7 @@ std::any SemanticVisitor::visitFuncDef(WPLParser::FuncDefContext *ctx)
             stmgr->addSymbol(paramSymbol);
         }
     }
-
+    std::cout << "481" << std::endl; 
     ctx->block()->accept(this);
 
     if (ctx->block()->stmts.size() == 0 || !dynamic_cast<WPLParser::ReturnStatementContext *>(ctx->block()->stmts.at(ctx->block()->stmts.size() - 1)))
@@ -546,8 +547,8 @@ std::any SemanticVisitor::visitProcDef(WPLParser::ProcDefContext *ctx)
 std::any SemanticVisitor::visitAssignStatement(WPLParser::AssignStatementContext *ctx)
 {
     // This one is the update one!
-    auto exprType = std::any_cast<const Type *>(ctx->ex->accept(this));
-
+    const Type * exprType = std::any_cast<const Type *>(ctx->ex->accept(this));
+    std::cout << "551" << std::endl; 
     // FIXME: DO BETTER W/ Type Inference & such
     // if (exprType == Types::UNDEFINED)
     // {
@@ -556,14 +557,14 @@ std::any SemanticVisitor::visitAssignStatement(WPLParser::AssignStatementContext
 
     //FIXME: IS THIS SAFE?
     const Type * type = std::any_cast<const Type*>(ctx->to->accept(this));
-
+    std::cout << "560" << std::endl; 
     // Symbol *opt = bindings->getBinding(ctx->to);
 
     // FIXME: need to still do body checks!!!
     if (type)
     {
         // Symbol *symbol = opt; //.value();
-
+        std::cout << "567 " << type->toString() << " VS " << exprType->toString() << std::endl; 
         if (type->isNot(exprType))
         {
             errorHandler.addSemanticError(ctx->getStart(), "Assignment statement expected " + type->toString() + " but got " + exprType->toString());
@@ -588,7 +589,8 @@ std::any SemanticVisitor::visitVarDeclStatement(WPLParser::VarDeclStatementConte
     {
         auto exprType = (e->ex) ? std::any_cast<const Type *>(e->ex->accept(this)) : assignType;
         std::cout << "419" << std::endl;
-        if (assignType->isNot(exprType))
+        //Need to check here to prevent var = var issues... //FIXME: WHAT IF WE GOT A VAR = VAR?
+        if (e->ex && assignType->isNot(exprType))
         {
             errorHandler.addSemanticError(e->getStart(), "Expression of type " + exprType->toString() + " cannot be assigned to " + assignType->toString());
         }

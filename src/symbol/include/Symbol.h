@@ -297,11 +297,14 @@ public:
 protected:
     bool equals(const Type *other) const override
     {
+        // std::cout << "SYM 300" << std::endl;
         if(valueType) return valueType.value()->is(other);
         //FIXME: DO BETTER!!! MAY NEED TO LIMIT THIS TO NOT BE FNS, BOTs, ETC!!!!
-
+        std::cout << "SYM 303 - WILL SET AS " << other->toString() << std::endl;
         TypeInfer * mthis =  const_cast<TypeInfer*> (this);
+        std::cout << "SYM 305" << std::endl;
         mthis->valueType = other; 
+        std::cout << "SYM 307" << std::endl;
         return true;
     }
 };

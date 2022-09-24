@@ -3,6 +3,17 @@ extern int func printf(...);
 #extern int func testtwo(...);
 
 
+int func idk() { 
+    var x; 
+    if (1 < 2) {
+        x <- 3; 
+    } else {
+        x <- 2; 
+    }
+
+    return x;
+}
+
 int func branchtest() {
     int[5] a; 
 
