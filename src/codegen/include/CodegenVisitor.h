@@ -124,6 +124,11 @@ public:
     Module * getModule() { return module; }
     void modPrint() { module -> print(llvm::outs(), nullptr); }
 
+protected: 
+
+    static bool blockEndsInReturn(WPLParser::BlockContext* ctx) {
+        return ctx->stmts.size() > 0 && dynamic_cast<WPLParser::ReturnStatementContext*>(ctx->stmts.at(ctx->stmts.size() - 1));
+    }
 private:
     PropertyManager *props;
     WPLErrorHandler errorHandler;

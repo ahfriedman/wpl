@@ -398,9 +398,9 @@ std::any CodegenVisitor::visitFuncDef(WPLParser::FuncDefContext *ctx)
 
     if(ctx->block()->stmts.size() > 0 && dynamic_cast<WPLParser::ReturnStatementContext*>(ctx->block()->stmts.at(ctx->block()->stmts.size() - 1)))
     {
-        builder->CreateRet(
-            std::any_cast<Value *>(last)
-        ); 
+        // builder->CreateRet(
+        //     std::any_cast<Value *>(last)
+        // ); 
     }
 
     // FIXME: VERIFY ENOUGH, NOTHING FOLLOWING, ETC. THIS IS PROBS WRONG!
@@ -461,7 +461,7 @@ std::any CodegenVisitor::visitProcDef(WPLParser::ProcDefContext *ctx)
 
     if(ctx->block()->stmts.size() > 0 && dynamic_cast<WPLParser::ReturnStatementContext*>(ctx->block()->stmts.at(ctx->block()->stmts.size() - 1)))
     {
-        builder->CreateRetVoid(); 
+        // builder->CreateRetVoid(); 
     }
 
     // FIXME: VERIFY ENOUGH, NOTHING FOLLOWING, ETC. THIS IS PROBS WRONG!
@@ -615,7 +615,11 @@ std::any CodegenVisitor::visitConditionalStatement(WPLParser::ConditionalStateme
     }
     // ctx->trueBlk->accept(this); // FIXME: DO BETTER, ALSO CHECK THE DOUBLING UP OF BLOCKS! & MAYBE DO A NULL CHECK!
     // FIXME: HOW WILL THIS WORK WITH RETURNS??
-    builder->CreateBr(restBlk);
+    if(!CodegenVisitor::blockEndsInReturn(ctx->trueBlk))
+    {
+        builder->CreateBr(restBlk);
+    }
+    
     thenBlk = builder->GetInsertBlock(); // REVIEW
 
     // Else block  //FIXME: THIS TREATS IT AS REQUIRED. SHOULD WE DO SOMETHING AB THIS?
@@ -628,7 +632,11 @@ std::any CodegenVisitor::visitConditionalStatement(WPLParser::ConditionalStateme
         lastFalse = e->accept(this);//std::any_cast<Value*>(e->accept(this));
     }
     // ctx->falseBlk->accept(this); // FIXME: SEE ABOVE COMMENTS
-    builder->CreateBr(restBlk);
+
+    if(!CodegenVisitor::blockEndsInReturn(ctx->falseBlk))
+    {
+        builder->CreateBr(restBlk);
+    }
 
     elseBlk = builder->GetInsertBlock();
 
@@ -661,18 +669,18 @@ std::cout << "633" << std::endl;
     // PN->addIncoming(ElseV, ElseBB);
 
     std::cout << "NUM PHIS: " << phis.size() << std::endl; 
-    if(phis.size() > 0)
-    {
-        //FIXME: NEED TO USE CORRECT TYPE!!!
-        llvm::PHINode * p = builder->CreatePHI(Int32Ty, phis.size());
+    // if(phis.size() > 0)
+    // {
+    //     //FIXME: NEED TO USE CORRECT TYPE!!!
+    //     llvm::PHINode * p = builder->CreatePHI(Int32Ty, phis.size());
 
-        for(auto a : phis)
-        {
-            p->addIncoming(a.first, a.second);
-        }
+    //     for(auto a : phis)
+    //     {
+    //         p->addIncoming(a.first, a.second);
+    //     }
 
-        return p; 
-    }
+    //     return p; 
+    // }
 
     // llvm::PHINode * p = builder->CreatePHI(Int32Ty, 2, "iftmp");
     // p->addIncoming()
@@ -697,17 +705,17 @@ std::any CodegenVisitor::visitReturnStatement(WPLParser::ReturnStatementContext 
 {
     if (ctx->expression())
     {
-        // Value * v = builder->CreateRet(
-         Value *  v = std::any_cast<Value *>(ctx->expression()->accept(this)); // FIXME: UNSAFE W/ ERORS
-        // );
+        Value * v = builder->CreateRet(
+         std::any_cast<Value *>(ctx->expression()->accept(this)) // FIXME: UNSAFE W/ ERORS
+        );
         // FIXME: ENSURE NO FOLLOWING CODE
 
         return v;
     }
-    // Value * v = builder->CreateRetVoid();
+    Value * v = builder->CreateRetVoid();
     // FIXME: ENSURE NO FOLLOWING CODE, ENSURE CORRECT!!
-    // return v;
-    return nullptr; //FIXME: DO BETTER?
+    return v;
+    // return nullptr; //FIXME: DO BETTER?
 }
 
 std::any CodegenVisitor::visitType(WPLParser::TypeContext *ctx)
@@ -752,7 +760,8 @@ std::any CodegenVisitor::visitType(WPLParser::TypeContext *ctx)
 
 std::any CodegenVisitor::visitBooleanConst(WPLParser::BooleanConstContext *ctx)
 {
-    return ctx->TRUE() ? builder->getTrue() : builder->getFalse();
+    Value * val = ctx->TRUE() ? builder->getTrue() : builder->getFalse();
+    return val; 
 }
 
 /*
