@@ -72,26 +72,27 @@ std::any CodegenVisitor::visitInvocation(WPLParser::InvocationContext *ctx)
 {
     // FIXME: IMPL VARIADIC - should be ok on this side...
     std::vector<llvm::Value *> args;
-
+    std::cout << "75!" << std::endl;
     for (auto e : ctx->args)
     {
         Value *val = std::any_cast<Value *>(e->accept(this));
         args.push_back(val);
     }
-
+    std::cout << "81!" << std::endl;
     ArrayRef<Value *> ref = ArrayRef(args);
 
     llvm::Function *call = module->getFunction(ctx->VARIABLE()->getText());
 
-    return builder->CreateCall(call, ref);
+    Value *val = builder->CreateCall(call, ref); // Needs to be separate line because, C++
+    return val;
 }
 
 std::any CodegenVisitor::visitArrayAccess(WPLParser::ArrayAccessContext *ctx)
 {
     Value *index = std::any_cast<Value *>(ctx->index->accept(this));
-    llvm::AllocaInst * arrayPtr = props->getBinding(ctx)->val;
+    llvm::AllocaInst *arrayPtr = props->getBinding(ctx)->val;
     auto ptr = builder->CreateGEP(arrayPtr, {Int32Zero, index});
-    Value * val = builder->CreateLoad(ptr->getType()->getPointerElementType(), ptr);
+    Value *val = builder->CreateLoad(ptr->getType()->getPointerElementType(), ptr);
     return val;
 }
 
@@ -388,9 +389,18 @@ std::any CodegenVisitor::visitFuncDef(WPLParser::FuncDefContext *ctx)
     BasicBlock *bBlk = BasicBlock::Create(module->getContext(), "entry", fn); // FIXME: USING ENTRY MAY BE AN ISSUE?
     builder->SetInsertPoint(bBlk);
 
+
+    std::any last = nullptr; 
     for (auto e : ctx->block()->stmts)
     {
-        e->accept(this);
+        last = e->accept(this);
+    }
+
+    if(ctx->block()->stmts.size() > 0 && dynamic_cast<WPLParser::ReturnStatementContext*>(ctx->block()->stmts.at(ctx->block()->stmts.size() - 1)))
+    {
+        builder->CreateRet(
+            std::any_cast<Value *>(last)
+        ); 
     }
 
     // FIXME: VERIFY ENOUGH, NOTHING FOLLOWING, ETC. THIS IS PROBS WRONG!
@@ -442,9 +452,16 @@ std::any CodegenVisitor::visitProcDef(WPLParser::ProcDefContext *ctx)
     BasicBlock *bBlk = BasicBlock::Create(module->getContext(), "entry", fn); // FIXME: USING ENTRY MAY BE AN ISSUE?
     builder->SetInsertPoint(bBlk);
 
+    // std::any last = nullptr; 
+
     for (auto e : ctx->block()->stmts)
     {
         e->accept(this);
+    }
+
+    if(ctx->block()->stmts.size() > 0 && dynamic_cast<WPLParser::ReturnStatementContext*>(ctx->block()->stmts.at(ctx->block()->stmts.size() - 1)))
+    {
+        builder->CreateRetVoid(); 
     }
 
     // FIXME: VERIFY ENOUGH, NOTHING FOLLOWING, ETC. THIS IS PROBS WRONG!
@@ -474,13 +491,13 @@ std::any CodegenVisitor::visitAssignStatement(WPLParser::AssignStatementContext 
         return nullptr;
     }
 
-    Value * val = varSym->val; 
+    Value *val = varSym->val;
 
-    if(!ctx->to->VARIABLE())
+    if (!ctx->to->VARIABLE())
     {
-        //Dealing with an array //FIXME: REFACTOR!!!
-        Value * index = std::any_cast<Value*>(ctx->to->array->index->accept(this));
-        val = builder->CreateGEP(val, {Int32Zero, index}); 
+        // Dealing with an array //FIXME: REFACTOR!!!
+        Value *index = std::any_cast<Value *>(ctx->to->array->index->accept(this));
+        val = builder->CreateGEP(val, {Int32Zero, index});
         // val = std::any_cast<Value *>(ctx->to->array->accept(this));
     }
 
@@ -588,17 +605,29 @@ std::any CodegenVisitor::visitConditionalStatement(WPLParser::ConditionalStateme
     builder->CreateCondBr(cond, thenBlk, elseBlk);
 
     // Then block
+    // parentFn->getBasicBlockList().push_back(thenBlk);
     builder->SetInsertPoint(thenBlk);
-    ctx->trueBlk->accept(this); // FIXME: DO BETTER, ALSO CHECK THE DOUBLING UP OF BLOCKS! & MAYBE DO A NULL CHECK!
+    std::any lastTrue = nullptr; 
+    for (auto e : ctx->trueBlk->stmts)
+    {
+        //FIXME: UNSAFE WITH RETUNING NULL!
+        lastTrue = e->accept(this);//std::any_cast<Value*>(e->accept(this));
+    }
+    // ctx->trueBlk->accept(this); // FIXME: DO BETTER, ALSO CHECK THE DOUBLING UP OF BLOCKS! & MAYBE DO A NULL CHECK!
     // FIXME: HOW WILL THIS WORK WITH RETURNS??
     builder->CreateBr(restBlk);
-
     thenBlk = builder->GetInsertBlock(); // REVIEW
 
     // Else block  //FIXME: THIS TREATS IT AS REQUIRED. SHOULD WE DO SOMETHING AB THIS?
     parentFn->getBasicBlockList().push_back(elseBlk);
     builder->SetInsertPoint(elseBlk);
-    ctx->falseBlk->accept(this); // FIXME: SEE ABOVE COMMENTS
+    std::any lastFalse = nullptr; 
+    for (auto e : ctx->falseBlk->stmts)
+    {
+        //FIXME: UNSAFE W/ RETURNING NULL; 
+        lastFalse = e->accept(this);//std::any_cast<Value*>(e->accept(this));
+    }
+    // ctx->falseBlk->accept(this); // FIXME: SEE ABOVE COMMENTS
     builder->CreateBr(restBlk);
 
     elseBlk = builder->GetInsertBlock();
@@ -607,6 +636,46 @@ std::any CodegenVisitor::visitConditionalStatement(WPLParser::ConditionalStateme
     parentFn->getBasicBlockList().push_back(restBlk);
     builder->SetInsertPoint(restBlk);
 
+
+    std::vector<std::pair<Value*, BasicBlock*>> phis; 
+std::cout << "625" << std::endl; 
+    //FIXME: MAKE SURE NOTHING CAN EXIST AFTER A RET!!!
+    if(ctx->trueBlk->stmts.size() != 0 && dynamic_cast<WPLParser::ReturnStatementContext*>(ctx->trueBlk->stmts.at(ctx->trueBlk->stmts.size() - 1)))
+    {
+        //FIXME: CHECK FOR NULL?
+        Value * tRet = std::any_cast<Value *>(lastTrue);
+        phis.push_back({tRet, thenBlk});
+    }
+std::cout << "633" << std::endl; 
+    if(ctx->falseBlk->stmts.size() != 0 && dynamic_cast<WPLParser::ReturnStatementContext*>(ctx->falseBlk->stmts.at(ctx->falseBlk->stmts.size() - 1)))
+    {
+        Value * fRet = std::any_cast<Value*>(lastFalse);
+        phis.push_back({fRet, elseBlk});
+    }
+    std::cout << "639" << std::endl; 
+    //FIXME: NEED TO DO THIS!!
+    // PHINode *PN =
+    //     Builder.CreatePHI(Type::getDoubleTy(TheContext), 2, "iftmp");
+
+    // PN->addIncoming(ThenV, ThenBB);
+    // PN->addIncoming(ElseV, ElseBB);
+
+    std::cout << "NUM PHIS: " << phis.size() << std::endl; 
+    if(phis.size() > 0)
+    {
+        //FIXME: NEED TO USE CORRECT TYPE!!!
+        llvm::PHINode * p = builder->CreatePHI(Int32Ty, phis.size());
+
+        for(auto a : phis)
+        {
+            p->addIncoming(a.first, a.second);
+        }
+
+        return p; 
+    }
+
+    // llvm::PHINode * p = builder->CreatePHI(Int32Ty, 2, "iftmp");
+    // p->addIncoming()
     // FIXME: ADD PHI STUFF SO RETURNS WORK?
 
     // errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED - visitConditionalStatement");
@@ -628,16 +697,17 @@ std::any CodegenVisitor::visitReturnStatement(WPLParser::ReturnStatementContext 
 {
     if (ctx->expression())
     {
-        builder->CreateRet(
-            std::any_cast<Value *>(ctx->expression()->accept(this)) // FIXME: UNSAFE W/ ERORS
-        );
+        // Value * v = builder->CreateRet(
+         Value *  v = std::any_cast<Value *>(ctx->expression()->accept(this)); // FIXME: UNSAFE W/ ERORS
+        // );
         // FIXME: ENSURE NO FOLLOWING CODE
 
-        return nullptr;
+        return v;
     }
-    builder->CreateRetVoid();
+    // Value * v = builder->CreateRetVoid();
     // FIXME: ENSURE NO FOLLOWING CODE, ENSURE CORRECT!!
-    return nullptr;
+    // return v;
+    return nullptr; //FIXME: DO BETTER?
 }
 
 std::any CodegenVisitor::visitType(WPLParser::TypeContext *ctx)

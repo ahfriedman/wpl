@@ -87,7 +87,8 @@
     "ios": "cpp",
     "queue": "cpp",
     "stack": "cpp",
-    "*.def": "cpp"
+    "*.def": "cpp",
+    "test.C": "cpp"
   },
   "cmake.configureOnOpen": true
 }
