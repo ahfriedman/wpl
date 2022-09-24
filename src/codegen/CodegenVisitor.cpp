@@ -529,8 +529,8 @@ std::any CodegenVisitor::visitVarDeclStatement(WPLParser::VarDeclStatementContex
             }
 
             std::cout << "493 4 " << ctx->getText() << std::endl;
-            // FIXME: THIS WILL NOT WORK FOR VAR!!! (may have multiple types!)
-            llvm::Type *ty = std::any_cast<llvm::Type *>(ctx->ty->accept(this));
+            
+            llvm::Type *ty = varSymbol->type->getLLVMType(module->getContext());//std::any_cast<llvm::Type *>(ctx->ty->accept(this));
             std::cout << "495 4 " << ctx->getText() << std::endl;
             llvm::AllocaInst *v = builder->CreateAlloca(ty, 0, var->getText());
 
@@ -774,14 +774,7 @@ std::any CodegenVisitor::visitBooleanConst(WPLParser::BooleanConstContext *ctx)
 // FIXME: maybe these should be meta/compiler errors
 std::any CodegenVisitor::visitTypeOrVar(WPLParser::TypeOrVarContext *ctx)
 {
-    std::cout << "674 -- " << !!(ctx->type()) << " " << !!props->getBinding(ctx) << std::endl;
-    if (ctx->type())
-    {
-        return ctx->type()->accept(this);
-    }
-
-    
-    errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED: TYPE INFERENCE");
+    errorHandler.addCodegenError(ctx->getStart(), "TypeOrVar fragment should never be visited directly by codegen!");
     return nullptr;
 }
 
