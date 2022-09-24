@@ -88,10 +88,11 @@ std::any CodegenVisitor::visitInvocation(WPLParser::InvocationContext *ctx)
 
 std::any CodegenVisitor::visitArrayAccess(WPLParser::ArrayAccessContext *ctx)
 {
-    Value * val = std::any_cast<Value*>(ctx->index->accept(this));
-    
-    errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED - visitArrayAccess");
-    return nullptr;
+    Value *index = std::any_cast<Value *>(ctx->index->accept(this));
+    llvm::AllocaInst * arrayPtr = props->getBinding(ctx)->val;
+    auto ptr = builder->CreateGEP(arrayPtr, {Int32Zero, index});
+    Value * val = builder->CreateLoad(ptr->getType()->getPointerElementType(), ptr);
+    return val;
 }
 
 std::any CodegenVisitor::visitArrayOrVar(WPLParser::ArrayOrVarContext *ctx)
@@ -458,27 +459,37 @@ std::any CodegenVisitor::visitAssignStatement(WPLParser::AssignStatementContext 
 
     // if (ctx->to->VARIABLE())
     // {
-        Symbol *varSym = props->getBinding(ctx->to);
+    Symbol *varSym = props->getBinding(ctx->to);
 
-        if (varSym == nullptr)
-        {
-            errorHandler.addCodegenError(ctx->getStart(), "Incorrectly processed variable in assignment: " + ctx->to->getText());
-            return nullptr;
-        }
-        // Shouldn't need this in the end....
-        if (varSym->val == nullptr)
-        {
-            errorHandler.addCodegenError(ctx->getStart(), "Improperly initialized variable in assignment: " + ctx->to->getText() + "@" + varSym->identifier);
-            std::cout << "IMPROP VAR @ "<< &varSym << std::endl; 
-            return nullptr;
-        }
+    if (varSym == nullptr)
+    {
+        errorHandler.addCodegenError(ctx->getStart(), "Incorrectly processed variable in assignment: " + ctx->to->getText());
+        return nullptr;
+    }
+    // Shouldn't need this in the end....
+    if (varSym->val == nullptr)
+    {
+        errorHandler.addCodegenError(ctx->getStart(), "Improperly initialized variable in assignment: " + ctx->to->getText() + "@" + varSym->identifier);
+        std::cout << "IMPROP VAR @ " << &varSym << std::endl;
+        return nullptr;
+    }
 
-        builder->CreateStore(exprVal, varSym->val);
+    Value * val = varSym->val; 
+
+    if(!ctx->to->VARIABLE())
+    {
+        //Dealing with an array //FIXME: REFACTOR!!!
+        Value * index = std::any_cast<Value*>(ctx->to->array->index->accept(this));
+        val = builder->CreateGEP(val, {Int32Zero, index}); 
+        // val = std::any_cast<Value *>(ctx->to->array->accept(this));
+    }
+
+    builder->CreateStore(exprVal, val);
     // }
-    // else 
+    // else
     // {
-        //Array access 
-        //FIXME: DO BETER
+    // Array access
+    // FIXME: DO BETER
 
     // }
     return nullptr;
@@ -506,9 +517,9 @@ std::any CodegenVisitor::visitVarDeclStatement(WPLParser::VarDeclStatementContex
             // FIXME: THIS WILL NOT WORK FOR VAR!!! (may have multiple types!)
             llvm::Type *ty = std::any_cast<llvm::Type *>(ctx->ty->accept(this));
             std::cout << "495 4 " << ctx->getText() << std::endl;
-            Value *v = builder->CreateAlloca(ty, 0, var->getText());
+            llvm::AllocaInst *v = builder->CreateAlloca(ty, 0, var->getText());
 
-            std::cout << "Set Val for: " << varSymbol->identifier << "(" << var->getText() << ") @" << &varSymbol << std::endl; 
+            std::cout << "Set Val for: " << varSymbol->identifier << "(" << var->getText() << ") @" << &varSymbol << std::endl;
             varSymbol->val = v;
 
             if (exVal)
