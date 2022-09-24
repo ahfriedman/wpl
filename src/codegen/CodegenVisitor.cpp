@@ -150,9 +150,7 @@ std::any CodegenVisitor::visitUnaryExpr(WPLParser::UnaryExprContext *ctx)
     case WPLParser::NOT:
     {
         Value *v = std::any_cast<Value *>(ctx->ex->accept(this));
-        v = builder->CreateZExtOrTrunc(v, CodegenVisitor::Int1Ty);
-        v = builder->CreateXor(v, Int32One);
-        v = builder->CreateZExtOrTrunc(v, CodegenVisitor::Int32Ty);
+        v = builder->CreateNot(v);
         return v;
     }
     }
