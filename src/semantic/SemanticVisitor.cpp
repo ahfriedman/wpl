@@ -1,6 +1,6 @@
 #include "SemanticVisitor.h"
 
-std::any SemanticVisitor::visitCompilationUnit(WPLParser::CompilationUnitContext *ctx)
+const Type* SemanticVisitor::visitCtx(WPLParser::CompilationUnitContext *ctx)
 {
     // Enter initial scope
     stmgr->enterScope();
@@ -18,7 +18,7 @@ std::any SemanticVisitor::visitCompilationUnit(WPLParser::CompilationUnitContext
     return Types::UNDEFINED;
 }
 
-std::any SemanticVisitor::visitInvocation(WPLParser::InvocationContext *ctx)
+const Type * SemanticVisitor::visitCtx(WPLParser::InvocationContext *ctx)
 {
     // FIXME: should probably make it so that InvokableTypes use BOT instead of optionals...
 
@@ -75,7 +75,7 @@ std::any SemanticVisitor::visitInvocation(WPLParser::InvocationContext *ctx)
     return Types::UNDEFINED;
 }
 
-std::any SemanticVisitor::visitArrayAccess(WPLParser::ArrayAccessContext *ctx)
+const Type * SemanticVisitor::visitCtx(WPLParser::ArrayAccessContext *ctx)
 {
     // FIXME: PROBABLY NEED TO DO SOMETHING HERE WITH BINDINGS INSTEAD!!!
     std::string name = ctx->var->getText();
@@ -113,7 +113,7 @@ std::any SemanticVisitor::visitArrayAccess(WPLParser::ArrayAccessContext *ctx)
     return Types::UNDEFINED;
 }
 
-std::any SemanticVisitor::visitArrayOrVar(WPLParser::ArrayOrVarContext *ctx)
+const Type * SemanticVisitor::visitCtx(WPLParser::ArrayOrVarContext *ctx)
 {
     if (ctx->var)
     {
@@ -142,13 +142,13 @@ std::any SemanticVisitor::visitArrayOrVar(WPLParser::ArrayOrVarContext *ctx)
     return arrType;
 }
 
-std::any SemanticVisitor::visitIConstExpr(WPLParser::IConstExprContext *ctx) { return Types::INT; }
+const Type * SemanticVisitor::visitCtx(WPLParser::IConstExprContext *ctx) { return Types::INT; }
 
-std::any SemanticVisitor::visitArrayAccessExpr(WPLParser::ArrayAccessExprContext *ctx) { return ctx->arrayAccess()->accept(this); }
+const Type * SemanticVisitor::visitCtx(WPLParser::ArrayAccessExprContext *ctx) { return this->visitCtx(ctx->arrayAccess()); }
 
-std::any SemanticVisitor::visitSConstExpr(WPLParser::SConstExprContext *ctx) { return Types::STR; }
+const Type * SemanticVisitor::visitCtx(WPLParser::SConstExprContext *ctx) { return Types::STR; }
 
-std::any SemanticVisitor::visitUnaryExpr(WPLParser::UnaryExprContext *ctx)
+const Type * SemanticVisitor::visitCtx(WPLParser::UnaryExprContext *ctx)
 {
     const Type *innerType = std::any_cast<const Type *>(ctx->ex->accept(this));
 
@@ -173,7 +173,7 @@ std::any SemanticVisitor::visitUnaryExpr(WPLParser::UnaryExprContext *ctx)
     return innerType;
 }
 
-std::any SemanticVisitor::visitBinaryArithExpr(WPLParser::BinaryArithExprContext *ctx)
+const Type * SemanticVisitor::visitCtx(WPLParser::BinaryArithExprContext *ctx)
 {
     // Based on starter
     bool valid = true;
@@ -192,7 +192,7 @@ std::any SemanticVisitor::visitBinaryArithExpr(WPLParser::BinaryArithExprContext
     return (valid) ? Types::INT : Types::UNDEFINED;
 }
 
-std::any SemanticVisitor::visitEqExpr(WPLParser::EqExprContext *ctx)
+const Type * SemanticVisitor::visitCtx(WPLParser::EqExprContext *ctx)
 {
     // FIXME: do better!
     auto right = std::any_cast<const Type *>(ctx->right->accept(this));
@@ -204,7 +204,7 @@ std::any SemanticVisitor::visitEqExpr(WPLParser::EqExprContext *ctx)
     }
     return Types::BOOL;
 }
-std::any SemanticVisitor::visitLogAndExpr(WPLParser::LogAndExprContext *ctx)
+const Type * SemanticVisitor::visitCtx(WPLParser::LogAndExprContext *ctx)
 {
     // Based on starter //FIXME: do better!
     bool valid = true;
@@ -222,7 +222,7 @@ std::any SemanticVisitor::visitLogAndExpr(WPLParser::LogAndExprContext *ctx)
     }
     return (valid) ? Types::BOOL : Types::UNDEFINED;
 }
-std::any SemanticVisitor::visitLogOrExpr(WPLParser::LogOrExprContext *ctx)
+const Type * SemanticVisitor::visitCtx(WPLParser::LogOrExprContext *ctx)
 {
     // Based on starter //FIXME: do better!
     bool valid = true;
@@ -242,12 +242,12 @@ std::any SemanticVisitor::visitLogOrExpr(WPLParser::LogOrExprContext *ctx)
     return valid ? Types::BOOL : Types::UNDEFINED;
 }
 
-std::any SemanticVisitor::visitCallExpr(WPLParser::CallExprContext *ctx)
+const Type * SemanticVisitor::visitCtx(WPLParser::CallExprContext *ctx)
 {
-    return ctx->call->accept(this);
+    return this->visitCtx(ctx->call);//->accept(this);
 }
 
-std::any SemanticVisitor::visitVariableExpr(WPLParser::VariableExprContext *ctx)
+const Type * SemanticVisitor::visitCtx(WPLParser::VariableExprContext *ctx)
 {
     // Based on starter
     std::string id = ctx->v->getText();
@@ -266,7 +266,7 @@ std::any SemanticVisitor::visitVariableExpr(WPLParser::VariableExprContext *ctx)
     return symbol->type;
 }
 
-std::any SemanticVisitor::visitFieldAccessExpr(WPLParser::FieldAccessExprContext *ctx)
+const Type * SemanticVisitor::visitCtx(WPLParser::FieldAccessExprContext *ctx)
 {
     const Type *ty = std::any_cast<const Type *>(ctx->ex->accept(this));
 
@@ -288,12 +288,12 @@ std::any SemanticVisitor::visitFieldAccessExpr(WPLParser::FieldAccessExprContext
     return Types::INT; // FIXME: DO THIS WHOLE THING BETTER
 }
 
-std::any SemanticVisitor::visitParenExpr(WPLParser::ParenExprContext *ctx)
+const Type * SemanticVisitor::visitCtx(WPLParser::ParenExprContext *ctx)
 {
-    return ctx->ex->accept(this);
+    return std::any_cast<const Type*>(ctx->ex->accept(this));
 }
 
-std::any SemanticVisitor::visitBinaryRelExpr(WPLParser::BinaryRelExprContext *ctx)
+const Type * SemanticVisitor::visitCtx(WPLParser::BinaryRelExprContext *ctx)
 {
     // Based on starter //FIXME: do better!
     bool valid = true;
@@ -312,12 +312,12 @@ std::any SemanticVisitor::visitBinaryRelExpr(WPLParser::BinaryRelExprContext *ct
     return valid ? Types::BOOL : Types::UNDEFINED;
 }
 
-std::any SemanticVisitor::visitBConstExpr(WPLParser::BConstExprContext *ctx)
+const Type * SemanticVisitor::visitCtx(WPLParser::BConstExprContext *ctx)
 {
     return Types::BOOL;
 }
 
-std::any SemanticVisitor::visitBlock(WPLParser::BlockContext *ctx)
+const Type * SemanticVisitor::visitCtx(WPLParser::BlockContext *ctx)
 {
     // FIXME: Probably have to do better with things like type inference!!!
     stmgr->enterScope();
@@ -332,7 +332,7 @@ std::cout << "340" << std::endl;
 
     return Types::UNDEFINED;
 }
-std::any SemanticVisitor::visitCondition(WPLParser::ConditionContext *ctx)
+const Type * SemanticVisitor::visitCtx(WPLParser::ConditionContext *ctx)
 {
     auto conditionType = std::any_cast<const Type *>(ctx->ex->accept(this));
 
@@ -344,7 +344,7 @@ std::any SemanticVisitor::visitCondition(WPLParser::ConditionContext *ctx)
     return Types::UNDEFINED;
 }
 
-std::any SemanticVisitor::visitSelectAlternative(WPLParser::SelectAlternativeContext *ctx)
+const Type * SemanticVisitor::visitCtx(WPLParser::SelectAlternativeContext *ctx)
 {
     // FIXME: VERIFY
     ctx->eval->accept(this);
@@ -362,7 +362,7 @@ std::any SemanticVisitor::visitSelectAlternative(WPLParser::SelectAlternativeCon
     return Types::UNDEFINED;
 }
 
-std::any SemanticVisitor::visitParameterList(WPLParser::ParameterListContext *ctx)
+const Type * SemanticVisitor::visitCtx(WPLParser::ParameterListContext *ctx)
 {
     std::cout << "STAR PARAMLIST" << std::endl;
     std::vector<const Type *> params;
@@ -379,13 +379,18 @@ std::any SemanticVisitor::visitParameterList(WPLParser::ParameterListContext *ct
     return type;
 }
 
-std::any SemanticVisitor::visitParameter(WPLParser::ParameterContext *ctx)
+const Type * SemanticVisitor::visitCtx(WPLParser::ParameterContext *ctx)
 {
-    return ctx->ty->accept(this);
+    return this->visitCtx(ctx->ty);//ctx->ty->accept(this);
 }
-//     std::any visitAssignment(WPLParser::AssignmentContext *ctx) override;
 
-std::any SemanticVisitor::visitExternStatement(WPLParser::ExternStatementContext *ctx)
+const Type * SemanticVisitor::visitCtx(WPLParser::AssignmentContext *ctx) 
+{
+    errorHandler.addSemanticError(ctx->getStart(), "Assignment should never be visited directly during type checking!");
+    return Types::UNDEFINED;
+}
+
+const Type * SemanticVisitor::visitCtx(WPLParser::ExternStatementContext *ctx)
 {
 
     bool variadic = ctx->variadic || ctx->ELLIPSIS(); 
@@ -421,7 +426,7 @@ std::any SemanticVisitor::visitExternStatement(WPLParser::ExternStatementContext
     return Types::UNDEFINED;
 };
 
-std::any SemanticVisitor::visitFuncDef(WPLParser::FuncDefContext *ctx)
+const Type * SemanticVisitor::visitCtx(WPLParser::FuncDefContext *ctx)
 {
     std::string funcId = ctx->name->getText();
 
@@ -479,7 +484,7 @@ std::any SemanticVisitor::visitFuncDef(WPLParser::FuncDefContext *ctx)
     return funcType; // FIXME: Should this return nothing?
 }
 
-std::any SemanticVisitor::visitProcDef(WPLParser::ProcDefContext *ctx)
+const Type * SemanticVisitor::visitCtx(WPLParser::ProcDefContext *ctx)
 {
     std::string procId = ctx->name->getText();
 
@@ -528,7 +533,7 @@ std::any SemanticVisitor::visitProcDef(WPLParser::ProcDefContext *ctx)
     return procType;
 }
 
-std::any SemanticVisitor::visitAssignStatement(WPLParser::AssignStatementContext *ctx)
+const Type * SemanticVisitor::visitCtx(WPLParser::AssignStatementContext *ctx)
 {
     // This one is the update one!
     const Type * exprType = std::any_cast<const Type *>(ctx->ex->accept(this));
@@ -562,7 +567,7 @@ std::any SemanticVisitor::visitAssignStatement(WPLParser::AssignStatementContext
     return Types::UNDEFINED; // FIXME: VERIFY
 }
 
-std::any SemanticVisitor::visitVarDeclStatement(WPLParser::VarDeclStatementContext *ctx)
+const Type * SemanticVisitor::visitCtx(WPLParser::VarDeclStatementContext *ctx)
 {
     // FIXME: need lookup in current scope!!!
 
@@ -603,7 +608,7 @@ std::any SemanticVisitor::visitVarDeclStatement(WPLParser::VarDeclStatementConte
     return Types::UNDEFINED;
 }
 
-std::any SemanticVisitor::visitLoopStatement(WPLParser::LoopStatementContext *ctx)
+const Type * SemanticVisitor::visitCtx(WPLParser::LoopStatementContext *ctx)
 {
     ctx->check->accept(this);
     ctx->block()->accept(this);
@@ -611,7 +616,7 @@ std::any SemanticVisitor::visitLoopStatement(WPLParser::LoopStatementContext *ct
     return Types::UNDEFINED;
 }
 
-std::any SemanticVisitor::visitConditionalStatement(WPLParser::ConditionalStatementContext *ctx)
+const Type * SemanticVisitor::visitCtx(WPLParser::ConditionalStatementContext *ctx)
 {
     // FIXME:Type inference!!!
     ctx->check->accept(this);
@@ -626,7 +631,7 @@ std::any SemanticVisitor::visitConditionalStatement(WPLParser::ConditionalStatem
     return Types::UNDEFINED;
 }
 
-std::any SemanticVisitor::visitSelectStatement(WPLParser::SelectStatementContext *ctx)
+const Type * SemanticVisitor::visitCtx(WPLParser::SelectStatementContext *ctx)
 {
     // FIXME: VERIFY
     for (auto e : ctx->cases)
@@ -638,12 +643,12 @@ std::any SemanticVisitor::visitSelectStatement(WPLParser::SelectStatementContext
     return Types::UNDEFINED;
 }
 
-std::any SemanticVisitor::visitCallStatement(WPLParser::CallStatementContext *ctx)
+const Type * SemanticVisitor::visitCtx(WPLParser::CallStatementContext *ctx)
 {
-    return ctx->call->accept(this);
+    return this->visitCtx(ctx->call); ///ctx->call->accept(this);
 }
 
-std::any SemanticVisitor::visitReturnStatement(WPLParser::ReturnStatementContext *ctx)
+const Type * SemanticVisitor::visitCtx(WPLParser::ReturnStatementContext *ctx)
 {
     // FIXME: DO BETTER!!!
 
@@ -691,22 +696,22 @@ std::any SemanticVisitor::visitReturnStatement(WPLParser::ReturnStatementContext
     return Types::UNDEFINED;
 }
 
-std::any SemanticVisitor::visitBlockStatement(WPLParser::BlockStatementContext *ctx)
+const Type * SemanticVisitor::visitCtx(WPLParser::BlockStatementContext *ctx)
 {
-    return ctx->block()->accept(this);
+    return this->visitCtx(ctx->block()); //ctx->block()->accept(this);
 }
 
-std::any SemanticVisitor::visitTypeOrVar(WPLParser::TypeOrVarContext *ctx)
+const Type * SemanticVisitor::visitCtx(WPLParser::TypeOrVarContext *ctx)
 {
     if (!(ctx->type()))
     {
         const Type * ans = new TypeInfer(); 
         return ans; 
     }
-    return ctx->type()->accept(this);
+    return this->visitCtx(ctx->type());//->accept(this);
 }
 
-std::any SemanticVisitor::visitType(WPLParser::TypeContext *ctx)
+const Type * SemanticVisitor::visitCtx(WPLParser::TypeContext *ctx)
 {
 
     const Type * ty = Types::UNDEFINED; 
@@ -746,7 +751,7 @@ std::any SemanticVisitor::visitType(WPLParser::TypeContext *ctx)
     return ty; 
 }
 
-std::any SemanticVisitor::visitBooleanConst(WPLParser::BooleanConstContext *ctx)
+const Type * SemanticVisitor::visitCtx(WPLParser::BooleanConstContext *ctx)
 {
     return Types::BOOL;
 }

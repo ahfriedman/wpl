@@ -2,16 +2,13 @@
 #include "antlr4-runtime.h"
 #include "WPLBaseVisitor.h"
 
-template <class T> class TypeVisitor : WPLBaseVisitor
+template <class T> class TypedVisitor : public WPLBaseVisitor
 {
 public:
 
     T visitCtx(WPLParser::CompilationUnitContext * ctx); 
     
-    std::any visitCompilationUnit(WPLParser::CompilationUnitContext *ctx) override
-    {
-        return visitCtx(ctx);
-    }
+    std::any visitCompilationUnit(WPLParser::CompilationUnitContext *ctx) override { return visitCtx(ctx); }
 
     T visitCtx(WPLParser::InvocationContext * ctx); 
     std::any visitInvocation(WPLParser::InvocationContext *ctx) override { return visitCtx(ctx); }
@@ -126,10 +123,54 @@ public:
     std::any visitBooleanConst(WPLParser::BooleanConstContext *ctx) override { return visitCtx(ctx); }
 };
 
-class DerivedVisitor : WPLBaseVisitor
-{
-public: 
-    int visitCtx(WPLParser::CompilationUnitContext * ctx) {
 
-    }
+/*
+class TypeVisitor : public TypedVisitor<const Type*> 
+{
+    const Type *visitCtx(WPLParser::CompilationUnitContext *ctx);
+    const Type *visitCtx(WPLParser::InvocationContext *ctx);
+    const Type *visitCtx(WPLParser::ArrayAccessContext *ctx);
+    const Type *visitCtx(WPLParser::ArrayOrVarContext *ctx);
+    const Type *visitCtx(WPLParser::IConstExprContext *ctx);
+    const Type *visitCtx(WPLParser::ArrayAccessExprContext *ctx);
+    const Type *visitCtx(WPLParser::SConstExprContext *ctx);
+    const Type *visitCtx(WPLParser::UnaryExprContext *ctx);
+    const Type *visitCtx(WPLParser::BinaryArithExprContext *ctx);
+    const Type *visitCtx(WPLParser::EqExprContext *ctx);
+    const Type *visitCtx(WPLParser::LogAndExprContext *ctx);
+    const Type *visitCtx(WPLParser::LogOrExprContext *ctx);
+    const Type *visitCtx(WPLParser::CallExprContext *ctx);
+    const Type *visitCtx(WPLParser::VariableExprContext *ctx);
+    const Type *visitCtx(WPLParser::FieldAccessExprContext *ctx);
+    const Type *visitCtx(WPLParser::ParenExprContext *ctx);
+    const Type *visitCtx(WPLParser::BinaryRelExprContext *ctx);
+    const Type *visitCtx(WPLParser::BConstExprContext *ctx);
+    const Type *visitCtx(WPLParser::BlockContext *ctx);
+    const Type *visitCtx(WPLParser::ConditionContext *ctx);
+    const Type *visitCtx(WPLParser::SelectAlternativeContext *ctx);
+    const Type *visitCtx(WPLParser::ParameterListContext *ctx);
+    const Type *visitCtx(WPLParser::ParameterContext *ctx);
+    const Type * visitCtx(WPLParser::AssignmentContext *ctx) ;
+    const Type *visitCtx(WPLParser::ExternStatementContext *ctx);
+    const Type *visitCtx(WPLParser::FuncDefContext *ctx);
+    const Type *visitCtx(WPLParser::ProcDefContext *ctx);
+    const Type *visitCtx(WPLParser::AssignStatementContext *ctx);
+    const Type *visitCtx(WPLParser::VarDeclStatementContext *ctx);
+    const Type *visitCtx(WPLParser::LoopStatementContext *ctx);
+    const Type *visitCtx(WPLParser::ConditionalStatementContext *ctx);
+    const Type *visitCtx(WPLParser::SelectStatementContext *ctx);
+    const Type *visitCtx(WPLParser::CallStatementContext *ctx);
+    const Type *visitCtx(WPLParser::ReturnStatementContext *ctx);
+    const Type *visitCtx(WPLParser::BlockStatementContext *ctx);
+    const Type *visitCtx(WPLParser::TypeOrVarContext *ctx);
+    const Type *visitCtx(WPLParser::TypeContext *ctx);
+    const Type *visitCtx(WPLParser::BooleanConstContext *ctx);
 };
+*/
+// class DerivedVisitor : WPLBaseVisitor
+// {
+// public: 
+//     int visitCtx(WPLParser::CompilationUnitContext * ctx) {
+
+//     }
+// };
