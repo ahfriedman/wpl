@@ -7,7 +7,7 @@ const Type* SemanticVisitor::visitCtx(WPLParser::CompilationUnitContext *ctx)
 
     for(auto e : ctx->extens)
     {
-        e->accept(this); 
+        this->visitCtx(e); 
     }
 
     for (auto e : ctx->stmts)
@@ -134,7 +134,7 @@ const Type * SemanticVisitor::visitCtx(WPLParser::ArrayOrVarContext *ctx)
     }
 
     //FIXME: THIS WON'T WORK AS WE'LL MISS THE BINDINGS!!!
-    const Type * arrType = std::any_cast<const Type*>(ctx->array->accept(this)); 
+    const Type * arrType = this->visitCtx(ctx->array);
     bindings->bind(ctx, bindings->getBinding(ctx->array)); //FIXME: DO BETTER
     return arrType;
 }
@@ -241,7 +241,7 @@ const Type * SemanticVisitor::visitCtx(WPLParser::LogOrExprContext *ctx)
 
 const Type * SemanticVisitor::visitCtx(WPLParser::CallExprContext *ctx)
 {
-    return this->visitCtx(ctx->call);//->accept(this);
+    return this->visitCtx(ctx->call);
 }
 
 const Type * SemanticVisitor::visitCtx(WPLParser::VariableExprContext *ctx)
@@ -364,7 +364,7 @@ const Type * SemanticVisitor::visitCtx(WPLParser::ParameterListContext *ctx)
 
     for (auto param : ctx->params)
     {
-        const Type *type = std::any_cast<const Type *>(param->accept(this));
+        const Type *type = this->visitCtx(param);
         params.push_back(type);
     }
 
@@ -374,7 +374,7 @@ const Type * SemanticVisitor::visitCtx(WPLParser::ParameterListContext *ctx)
 
 const Type * SemanticVisitor::visitCtx(WPLParser::ParameterContext *ctx)
 {
-    return this->visitCtx(ctx->ty);//ctx->ty->accept(this);
+    return this->visitCtx(ctx->ty);
 }
 
 const Type * SemanticVisitor::visitCtx(WPLParser::AssignmentContext *ctx) 
@@ -400,13 +400,13 @@ const Type * SemanticVisitor::visitCtx(WPLParser::ExternStatementContext *ctx)
     }
 
     // FIXME: test breaking params somehow!! like using something thats not a type!!!!
-    const Type *ty = (ctx->paramList) ? std::any_cast<const Type *>(ctx->paramList->accept(this))
+    const Type *ty = (ctx->paramList) ? this->visitCtx(ctx->paramList)
                                       : new TypeInvoke();
 
     const TypeInvoke *procType = dynamic_cast<const TypeInvoke *>(ty); // Always true, but needs separate statement to make C happy.
 
     // FIXME: DO BETTER
-    const Type *retType = ctx->ty ? std::any_cast<const Type *>(ctx->ty->accept(this))
+    const Type *retType = ctx->ty ? this->visitCtx(ctx->ty)
                                   : Types::UNDEFINED;
 
     const TypeInvoke *funcType = (ctx->ty) ? new TypeInvoke(procType->getParamTypes(), retType, variadic)
@@ -435,11 +435,11 @@ const Type * SemanticVisitor::visitCtx(WPLParser::FuncDefContext *ctx)
     }
 
     // FIXME: test breaking params somehow!! like using something thats not a type!!!!
-    const Type *ty = (ctx->paramList) ? std::any_cast<const Type *>(ctx->paramList->accept(this))
+    const Type *ty = (ctx->paramList) ? this->visitCtx(ctx->paramList)
                                       : new TypeInvoke();
 
     const TypeInvoke *procType = dynamic_cast<const TypeInvoke *>(ty); // Always true, but needs separate statement to make C happy.
-    const Type *retType = std::any_cast<const Type *>(ctx->ty->accept(this));
+    const Type *retType = this->visitCtx(ctx->ty);
 
     const TypeInvoke *funcType = new TypeInvoke(procType->getParamTypes(), retType);
 
@@ -455,14 +455,14 @@ const Type * SemanticVisitor::visitCtx(WPLParser::FuncDefContext *ctx)
     {
         for (auto param : ctx->paramList->params)
         {
-            const Type *paramType = std::any_cast<const Type *>(param->ty->accept(this));
+            const Type *paramType = this->visitCtx(param->ty);
             Symbol *paramSymbol = new Symbol(param->name->getText(), paramType);
 
             stmgr->addSymbol(paramSymbol);
         }
     }
 
-    ctx->block()->accept(this);
+    this->visitCtx(ctx->block());
 
     if (ctx->block()->stmts.size() == 0 || !dynamic_cast<WPLParser::ReturnStatementContext *>(ctx->block()->stmts.at(ctx->block()->stmts.size() - 1)))
     {
@@ -492,7 +492,7 @@ const Type * SemanticVisitor::visitCtx(WPLParser::ProcDefContext *ctx)
     }
 
     // FIXME: test breaking params somehow!! like using something thats not a type!!!!
-    const Type *procType = (ctx->paramList) ? std::any_cast<const Type *>(ctx->paramList->accept(this))
+    const Type *procType = (ctx->paramList) ? this->visitCtx(ctx->paramList)
                                             : new TypeInvoke();
 
     Symbol *procSymbol = new Symbol(procId, procType);
@@ -509,14 +509,14 @@ const Type * SemanticVisitor::visitCtx(WPLParser::ProcDefContext *ctx)
     {
         for (auto param : ctx->paramList->params)
         {
-            const Type *paramType = std::any_cast<const Type *>(param->ty->accept(this));
+            const Type *paramType = this->visitCtx(param->ty);
             Symbol *paramSymbol = new Symbol(param->name->getText(), paramType);
 
             stmgr->addSymbol(paramSymbol);
         }
     }
 
-    ctx->block()->accept(this);
+    this->visitCtx(ctx->block());
 
     // Double scope for params.... should maybe make this a function....
     stmgr->exitScope();
@@ -538,7 +538,7 @@ const Type * SemanticVisitor::visitCtx(WPLParser::AssignStatementContext *ctx)
     // }
 
     //FIXME: IS THIS SAFE?
-    const Type * type = std::any_cast<const Type*>(ctx->to->accept(this));
+    const Type * type = this->visitCtx(ctx->to);
     
     // Symbol *opt = bindings->getBinding(ctx->to);
 
@@ -564,7 +564,7 @@ const Type * SemanticVisitor::visitCtx(WPLParser::VarDeclStatementContext *ctx)
     // FIXME: need lookup in current scope!!!
 
     // FIXME: make sure this lookup checks undefined!!!
-    auto assignType = std::any_cast<const Type *>(ctx->typeOrVar()->accept(this));
+    const Type * assignType = this->visitCtx(ctx->typeOrVar());
 
     for (auto e : ctx->assignments)
     {
@@ -601,8 +601,8 @@ const Type * SemanticVisitor::visitCtx(WPLParser::VarDeclStatementContext *ctx)
 
 const Type * SemanticVisitor::visitCtx(WPLParser::LoopStatementContext *ctx)
 {
-    ctx->check->accept(this);
-    ctx->block()->accept(this);
+    this->visitCtx(ctx->check);
+    this->visitCtx(ctx->block());
 
     return Types::UNDEFINED;
 }
@@ -610,13 +610,13 @@ const Type * SemanticVisitor::visitCtx(WPLParser::LoopStatementContext *ctx)
 const Type * SemanticVisitor::visitCtx(WPLParser::ConditionalStatementContext *ctx)
 {
     // FIXME:Type inference!!!
-    ctx->check->accept(this);
+    this->visitCtx(ctx->check);
 
-    ctx->trueBlk->accept(this);
+    this->visitCtx(ctx->trueBlk);
 
     if (ctx->falseBlk)
     {
-        ctx->falseBlk->accept(this);
+        this->visitCtx(ctx->falseBlk);
     }
 
     return Types::UNDEFINED;
@@ -628,7 +628,7 @@ const Type * SemanticVisitor::visitCtx(WPLParser::SelectStatementContext *ctx)
     for (auto e : ctx->cases)
     {
         // FIXME: do better?
-        e->accept(this);
+        this->visitCtx(e); 
     }
 
     return Types::UNDEFINED;
@@ -636,7 +636,7 @@ const Type * SemanticVisitor::visitCtx(WPLParser::SelectStatementContext *ctx)
 
 const Type * SemanticVisitor::visitCtx(WPLParser::CallStatementContext *ctx)
 {
-    return this->visitCtx(ctx->call); ///ctx->call->accept(this);
+    return this->visitCtx(ctx->call);
 }
 
 const Type * SemanticVisitor::visitCtx(WPLParser::ReturnStatementContext *ctx)
@@ -689,7 +689,7 @@ const Type * SemanticVisitor::visitCtx(WPLParser::ReturnStatementContext *ctx)
 
 const Type * SemanticVisitor::visitCtx(WPLParser::BlockStatementContext *ctx)
 {
-    return this->visitCtx(ctx->block()); //ctx->block()->accept(this);
+    return this->visitCtx(ctx->block());
 }
 
 const Type * SemanticVisitor::visitCtx(WPLParser::TypeOrVarContext *ctx)
@@ -699,7 +699,7 @@ const Type * SemanticVisitor::visitCtx(WPLParser::TypeOrVarContext *ctx)
         const Type * ans = new TypeInfer(); 
         return ans; 
     }
-    return this->visitCtx(ctx->type());//->accept(this);
+    return this->visitCtx(ctx->type());
 }
 
 const Type * SemanticVisitor::visitCtx(WPLParser::TypeContext *ctx)
