@@ -663,7 +663,8 @@ const Type * SemanticVisitor::visitCtx(WPLParser::ReturnStatementContext *ctx)
         {
             const Type *valType = std::any_cast<const Type *>(ctx->expression()->accept(this));
 
-            if (sym.value()->type->isNot(valType))
+            //FIXME: VERIFY ORDER CORRECT
+            if (valType->isNot(sym.value()->type))
             {
                 errorHandler.addSemanticError(ctx->getStart(), "Expected return type of " + sym.value()->type->toString() + " but got " + valType->toString());
                 return Types::UNDEFINED;
