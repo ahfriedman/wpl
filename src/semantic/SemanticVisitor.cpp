@@ -95,10 +95,8 @@ const Type * SemanticVisitor::visitCtx(WPLParser::ArrayAccessContext *ctx)
     else
     {
         Symbol *sym = opt.value();
-        std::cout << "108" << std::endl; 
         if (const TypeArray *arr = dynamic_cast<const TypeArray *>(sym->type))
         {
-            std::cout << "111: " << ctx->getText() << std::endl; 
             // Symbol * tempSym = new Symbol(ctx->getText(), arr->getValueType()); //FIXME: DO BETTER
             bindings->bind(ctx, sym); 
             return arr->getValueType();
@@ -137,7 +135,6 @@ const Type * SemanticVisitor::visitCtx(WPLParser::ArrayOrVarContext *ctx)
 
     //FIXME: THIS WON'T WORK AS WE'LL MISS THE BINDINGS!!!
     const Type * arrType = std::any_cast<const Type*>(ctx->array->accept(this)); 
-    std::cout << "150: " << bindings->getBinding(ctx->array)->identifier << std::endl; 
     bindings->bind(ctx, bindings->getBinding(ctx->array)); //FIXME: DO BETTER
     return arrType;
 }
@@ -321,13 +318,12 @@ const Type * SemanticVisitor::visitCtx(WPLParser::BlockContext *ctx)
 {
     // FIXME: Probably have to do better with things like type inference!!!
     stmgr->enterScope();
-std::cout << "340" << std::endl; 
+
     for (auto e : ctx->stmts)
     {
-        std::cout << "343 "  << e->getText() << std::endl; 
         e->accept(this);
     }
-    std::cout << "345" << std::endl; 
+
     stmgr->exitScope();
 
     return Types::UNDEFINED;
@@ -364,7 +360,6 @@ const Type * SemanticVisitor::visitCtx(WPLParser::SelectAlternativeContext *ctx)
 
 const Type * SemanticVisitor::visitCtx(WPLParser::ParameterListContext *ctx)
 {
-    std::cout << "STAR PARAMLIST" << std::endl;
     std::vector<const Type *> params;
 
     for (auto param : ctx->params)
@@ -372,8 +367,6 @@ const Type * SemanticVisitor::visitCtx(WPLParser::ParameterListContext *ctx)
         const Type *type = std::any_cast<const Type *>(param->accept(this));
         params.push_back(type);
     }
-
-    std::cout << "END PARAMLIST" << std::endl;
 
     const Type *type = new TypeInvoke(params); // Needs to be two separate lines for sake of const?
     return type;
@@ -468,7 +461,7 @@ const Type * SemanticVisitor::visitCtx(WPLParser::FuncDefContext *ctx)
             stmgr->addSymbol(paramSymbol);
         }
     }
-    std::cout << "481" << std::endl; 
+
     ctx->block()->accept(this);
 
     if (ctx->block()->stmts.size() == 0 || !dynamic_cast<WPLParser::ReturnStatementContext *>(ctx->block()->stmts.at(ctx->block()->stmts.size() - 1)))
@@ -537,7 +530,7 @@ const Type * SemanticVisitor::visitCtx(WPLParser::AssignStatementContext *ctx)
 {
     // This one is the update one!
     const Type * exprType = std::any_cast<const Type *>(ctx->ex->accept(this));
-    std::cout << "551" << std::endl; 
+
     // FIXME: DO BETTER W/ Type Inference & such
     // if (exprType == Types::UNDEFINED)
     // {
@@ -546,14 +539,13 @@ const Type * SemanticVisitor::visitCtx(WPLParser::AssignStatementContext *ctx)
 
     //FIXME: IS THIS SAFE?
     const Type * type = std::any_cast<const Type*>(ctx->to->accept(this));
-    std::cout << "560" << std::endl; 
+    
     // Symbol *opt = bindings->getBinding(ctx->to);
 
     // FIXME: need to still do body checks!!!
     if (type)
     {
         // Symbol *symbol = opt; //.value();
-        std::cout << "567 " << type->toString() << " VS " << exprType->toString() << std::endl; 
         if (type->isNot(exprType))
         {
             errorHandler.addSemanticError(ctx->getStart(), "Assignment statement expected " + type->toString() + " but got " + exprType->toString());
@@ -573,11 +565,11 @@ const Type * SemanticVisitor::visitCtx(WPLParser::VarDeclStatementContext *ctx)
 
     // FIXME: make sure this lookup checks undefined!!!
     auto assignType = std::any_cast<const Type *>(ctx->typeOrVar()->accept(this));
-    std::cout << "415" << ctx->getText() << std::endl;
+
     for (auto e : ctx->assignments)
     {
         auto exprType = (e->ex) ? std::any_cast<const Type *>(e->ex->accept(this)) : assignType;
-        std::cout << "419" << std::endl;
+
         //Need to check here to prevent var = var issues... //FIXME: WHAT IF WE GOT A VAR = VAR?
         if (e->ex && assignType->isNot(exprType))
         {
@@ -604,7 +596,6 @@ const Type * SemanticVisitor::visitCtx(WPLParser::VarDeclStatementContext *ctx)
             }
         }
     }
-    std::cout << "570" << std::endl;
     return Types::UNDEFINED;
 }
 
