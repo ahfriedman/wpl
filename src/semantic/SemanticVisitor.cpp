@@ -662,9 +662,6 @@ const Type *SemanticVisitor::visitCtx(WPLParser::AssignStatementContext *ctx)
 
 const Type *SemanticVisitor::visitCtx(WPLParser::VarDeclStatementContext *ctx)
 {
-    // FIXME: need lookup in current scope!!!
-
-    // FIXME: make sure this lookup checks undefined!!!
     const Type *assignType = this->visitCtx(ctx->typeOrVar());
 
     for (auto e : ctx->assignments)
@@ -681,7 +678,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::VarDeclStatementContext *ctx)
         {
             std::string id = var->getText();
 
-            std::optional<Symbol *> symOpt = stmgr->lookup(id);
+            std::optional<Symbol *> symOpt = stmgr->lookupInCurrentScope(id);
 
             if (symOpt)
             {

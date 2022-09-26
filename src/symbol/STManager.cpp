@@ -62,6 +62,18 @@ std::optional<Symbol*> STManager::lookup(std::string id) {
     return {};
 }
 
+std::optional<Symbol*> STManager::lookupInCurrentScope(std::string id) {
+    std::optional<Scope*> opt = currentScope; 
+
+    if(opt) {
+        Scope* scope = opt.value(); 
+        std::optional<Symbol*> sym = scope->lookup(id);
+        if(sym) return sym; 
+    }
+
+    return {};
+}
+
 //Directly from sample
 std::string STManager::toString() const {
   std::ostringstream description;
