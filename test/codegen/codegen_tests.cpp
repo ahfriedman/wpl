@@ -16,7 +16,7 @@
 
 TEST_CASE("Development Codegen Tests", "[codegen]")
 {
-    antlr4::ANTLRInputStream input("int func program() {return -1; }");
+    antlr4::ANTLRInputStream input("int func program() { return -1; }");
     WPLLexer lexer(&input);
     antlr4::CommonTokenStream tokens(&lexer);
     WPLParser parser(&tokens);
@@ -35,6 +35,36 @@ TEST_CASE("Development Codegen Tests", "[codegen]")
         CHECK("foo" == cv->getErrors());
     }
     CHECK_FALSE(cv->hasErrors());
-    
+
     REQUIRE(llvmIrToSHA256(cv->getModule()) == "5176d9cbe3d5f39bad703b71f652afd972037c5cb97818fa01297aa2bb185188");
+}
+
+
+
+TEST_CASE("programs/test2 - Scopes, multiple assignments, equality (non-arrays)", "[codegen]")
+{
+    std::fstream *inStream = new std::fstream("/home/shared/programs/test2.wpl");
+    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+
+    WPLLexer lexer(input);
+    antlr4::CommonTokenStream tokens(&lexer);
+    WPLParser parser(&tokens);
+    parser.removeErrorListeners();
+    WPLParser::CompilationUnitContext *tree = NULL;
+    REQUIRE_NOTHROW(tree = parser.compilationUnit());
+    REQUIRE(tree != NULL);
+    STManager *stm = new STManager();
+    PropertyManager *pm = new PropertyManager();
+    SemanticVisitor *sv = new SemanticVisitor(stm, pm);
+    sv->visitCompilationUnit(tree);
+    CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll");
+    cv->visitCompilationUnit(tree);
+
+    if (cv->hasErrors())
+    {
+        CHECK("foo" == cv->getErrors());
+    }
+    CHECK_FALSE(cv->hasErrors());
+
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "70170b49a60e08f2dd0e8f32af6c6b00d43f79762885e151aaf4685959008e23");
 }

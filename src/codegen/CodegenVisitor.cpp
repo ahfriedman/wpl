@@ -310,7 +310,7 @@ std::optional<Value *> CodegenVisitor::TvisitFieldAccessExpr(WPLParser::FieldAcc
 
         return v; 
     }
-    
+
     errorHandler.addCodegenError(ctx->getStart(), "Given non-array type in TvisitFieldAccessExpr!");
     return {};
 }
@@ -785,6 +785,23 @@ std::optional<Value *> CodegenVisitor::TvisitBooleanConst(WPLParser::BooleanCons
     return val;
 }
 
+
+std::optional<Value *> CodegenVisitor::TvisitBlockStatement(WPLParser::BlockStatementContext *ctx)
+{
+    return this->TvisitBlock(ctx->block());
+}
+
+std::optional<Value *> CodegenVisitor::TvisitBlock(WPLParser::BlockContext *ctx)
+{
+    for(auto e : ctx->stmts)
+    {
+        e->accept(this); 
+    }
+
+    return {};
+}
+
+
 /*
  *
  * UNUSED VISITORS
@@ -816,18 +833,6 @@ std::optional<Value *> CodegenVisitor::TvisitParameterList(WPLParser::ParameterL
 std::optional<Value *> CodegenVisitor::TvisitParameter(WPLParser::ParameterContext *ctx)
 {
     errorHandler.addCodegenError(ctx->getStart(), "Unknown error: Codegen should not have to visit parameter!");
-    return {};
-}
-
-std::optional<Value *> CodegenVisitor::TvisitBlock(WPLParser::BlockContext *ctx)
-{
-    errorHandler.addCodegenError(ctx->getStart(), "Unknown error: Codegen should not directly visit block!");
-    return {};
-}
-
-std::optional<Value *> CodegenVisitor::TvisitBlockStatement(WPLParser::BlockStatementContext *ctx)
-{
-    errorHandler.addCodegenError(ctx->getStart(), "Unknown error: Codegen should not directly visit block statement!");
     return {};
 }
 
