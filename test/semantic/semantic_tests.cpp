@@ -7,7 +7,7 @@
 
 #include "test_error_handlers.h"
 
-TEST_CASE("Development tests", "[semantic]")
+TEST_CASE("Development Semantic tests", "[semantic]")
 {
   antlr4::ANTLRInputStream input("42;");
   WPLLexer lexer(&input);
