@@ -89,7 +89,8 @@
     "stack": "cpp",
     "*.def": "cpp",
     "test.C": "cpp",
-    "version": "cpp"
+    "version": "cpp",
+    "*.cp": "cpp"
   },
   "cmake.configureOnOpen": true
 }
