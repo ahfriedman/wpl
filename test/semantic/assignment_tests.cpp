@@ -36,7 +36,7 @@ TEST_CASE("Basic Assignments", "[semantic]")
     std::optional<Symbol *> opt = stmgr->lookup("a");
 
     CHECK(opt.has_value());
-    CHECK(opt.value()->type->is(Types::INT));
+    CHECK(opt.value()->type->isSubtype(Types::INT));
   }
 }
 
@@ -66,7 +66,7 @@ TEST_CASE("Assignment: Int Expr", "[semantic]")
   std::optional<Symbol *> opt = stmgr->lookup("a");
 
   CHECK(opt.has_value());
-  CHECK(opt.value()->type->is(Types::INT));
+  CHECK(opt.value()->type->isSubtype(Types::INT));
 }
 
 TEST_CASE("Assignment: Bool const", "[semantic]")
@@ -95,7 +95,7 @@ TEST_CASE("Assignment: Bool const", "[semantic]")
   std::optional<Symbol *> opt = stmgr->lookup("a");
 
   CHECK(opt.has_value());
-  CHECK(opt.value()->type->is(Types::BOOL));
+  CHECK(opt.value()->type->isSubtype(Types::BOOL));
 }
 
 TEST_CASE("Assignment: Bool expr", "[semantic]")
@@ -124,7 +124,7 @@ TEST_CASE("Assignment: Bool expr", "[semantic]")
   std::optional<Symbol *> opt = stmgr->lookup("a");
 
   CHECK(opt.has_value());
-  CHECK(opt.value()->type->is(Types::BOOL));
+  CHECK(opt.value()->type->isSubtype(Types::BOOL));
 }
 
 TEST_CASE("Assignment: String const", "[semantic]")
@@ -153,7 +153,7 @@ TEST_CASE("Assignment: String const", "[semantic]")
   std::optional<Symbol *> opt = stmgr->lookup("a");
 
   CHECK(opt.has_value());
-  CHECK(opt.value()->type->is(Types::STR));
+  CHECK(opt.value()->type->isSubtype(Types::STR));
 }
 
 //FIXME: CAN PARENS BE USED ON STRINGS?

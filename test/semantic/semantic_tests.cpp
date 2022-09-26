@@ -76,10 +76,11 @@ TEST_CASE("Visit Type - INT", "[semantic]")
 
   const Type *ty = std::any_cast<const Type *>(sv->visitType(tree));
 
-  REQUIRE(ty->is(Types::INT));
+  REQUIRE(ty->isSubtype(Types::INT));
 }
 
-TEST_CASE("Test Type Equality", "[semantic]")
+
+TEST_CASE("Test Type Equality - Subtypes", "[semantic]")
 {
   Type *TOP = new Type();
   Type *INT = new TypeInt();
@@ -89,60 +90,127 @@ TEST_CASE("Test Type Equality", "[semantic]")
 
   SECTION("Top Type tests")
   {
-    REQUIRE(TOP->is(TOP));
-    REQUIRE_FALSE(TOP->isNot(TOP));
+    REQUIRE(TOP->isSubtype(TOP));
 
-    REQUIRE(TOP->is(INT));
-    REQUIRE_FALSE(TOP->isNot(INT));
+    REQUIRE(TOP->isNotSubtype(INT));
+    REQUIRE_FALSE(TOP->isSubtype(INT));
 
-    REQUIRE(TOP->is(BOOL));
-    REQUIRE_FALSE(TOP->isNot(BOOL));
+    REQUIRE(TOP->isNotSubtype(BOOL));
+    REQUIRE_FALSE(TOP->isSubtype(BOOL));
 
-    REQUIRE(TOP->is(STR));
+    REQUIRE(TOP->isNotSubtype(STR));
 
-    REQUIRE(TOP->is(BOT));
+    REQUIRE(TOP->isNotSubtype(BOT));
   }
 
   SECTION("Int Type tests")
   {
-    REQUIRE(INT->isNot(TOP));
-    REQUIRE_FALSE(INT->is(TOP));
+    REQUIRE(INT->isSubtype(TOP));
+    REQUIRE_FALSE(INT->isNotSubtype(TOP));
 
-    REQUIRE(INT->is(INT));
-    // REQUIRE(INT->is(TypeInt()));
+    REQUIRE(INT->isSubtype(INT));
+    // REQUIRE(INT->isNotSubtype(TypeInt()));
 
-    REQUIRE(INT->isNot(BOOL));
+    REQUIRE(INT->isNotSubtype(BOOL));
 
-    REQUIRE(INT->isNot(STR));
+    REQUIRE(INT->isNotSubtype(STR));
 
-    REQUIRE(INT->isNot(BOT));
+    REQUIRE(INT->isNotSubtype(BOT));
   }
 
   SECTION("Bool Type Tests")
   {
-    REQUIRE(BOOL->isNot(TOP));
-    REQUIRE(BOOL->isNot(INT));
-    REQUIRE(BOOL->isNot(STR));
-    REQUIRE(BOOL->is(BOOL));
-    REQUIRE(BOOL->isNot(BOT));
+    REQUIRE(BOOL->isSubtype(TOP));
+    REQUIRE(BOOL->isNotSubtype(INT));
+    REQUIRE(BOOL->isNotSubtype(STR));
+    REQUIRE(BOOL->isSubtype(BOOL));
+    REQUIRE(BOOL->isNotSubtype(BOT));
   }
 
   SECTION("Str Type Tests")
   {
-    REQUIRE(STR->isNot(TOP));
-    REQUIRE(STR->isNot(INT));
-    REQUIRE(STR->is(STR));
-    REQUIRE(STR->isNot(BOOL));
-    REQUIRE(STR->isNot(BOT));
+    REQUIRE(STR->isSubtype(TOP));
+    REQUIRE(STR->isNotSubtype(INT));
+    REQUIRE(STR->isSubtype(STR));
+    REQUIRE(STR->isNotSubtype(BOOL));
+    REQUIRE(STR->isNotSubtype(BOT));
   }
 
   SECTION("Bot Type Tests")
   {
-    REQUIRE(BOT->isNot(TOP));
-    REQUIRE(BOT->isNot(INT));
-    REQUIRE(BOT->isNot(STR));
-    REQUIRE(BOT->isNot(BOOL));
-    REQUIRE(BOT->isNot(BOT));
+    REQUIRE(BOT->isSubtype(TOP));
+    REQUIRE_FALSE(BOT->isSubtype(INT));
+    REQUIRE_FALSE(BOT->isSubtype(STR));
+    REQUIRE_FALSE(BOT->isSubtype(BOOL));
+    REQUIRE_FALSE(BOT->isSubtype(BOT));
+  }
+  // Why is PL easier to read in mono fonts?
+}
+
+TEST_CASE("Test Type Equality - Supertype", "[semantic]")
+{
+  Type *TOP = new Type();
+  Type *INT = new TypeInt();
+  Type *BOOL = new TypeBool();
+  Type *STR = new TypeStr();
+  Type *BOT = new TypeBot();
+
+  SECTION("Top Type tests")
+  {
+    REQUIRE(TOP->isSupertype(TOP));
+    REQUIRE_FALSE(TOP->isNotSupertype(TOP));
+
+    REQUIRE(TOP->isSupertype(INT));
+    REQUIRE_FALSE(TOP->isNotSupertype(INT));
+
+    REQUIRE(TOP->isSupertype(BOOL));
+    REQUIRE_FALSE(TOP->isNotSupertype(BOOL));
+
+    REQUIRE(TOP->isSupertype(STR));
+
+    REQUIRE(TOP->isSupertype(BOT));
+  }
+
+  SECTION("Int Type tests")
+  {
+    REQUIRE(INT->isNotSupertype(TOP));
+    REQUIRE_FALSE(INT->isSupertype(TOP));
+
+    REQUIRE(INT->isSupertype(INT));
+    // REQUIRE(INT->isSupertype(TypeInt()));
+
+    REQUIRE(INT->isNotSupertype(BOOL));
+
+    REQUIRE(INT->isNotSupertype(STR));
+
+    REQUIRE(INT->isNotSupertype(BOT));
+  }
+
+  SECTION("Bool Type Tests")
+  {
+    REQUIRE(BOOL->isNotSupertype(TOP));
+    REQUIRE(BOOL->isNotSupertype(INT));
+    REQUIRE(BOOL->isNotSupertype(STR));
+    REQUIRE(BOOL->isSupertype(BOOL));
+    REQUIRE(BOOL->isNotSupertype(BOT));
+  }
+
+  SECTION("Str Type Tests")
+  {
+    REQUIRE(STR->isNotSupertype(TOP));
+    REQUIRE(STR->isNotSupertype(INT));
+    REQUIRE(STR->isSupertype(STR));
+    REQUIRE(STR->isNotSupertype(BOOL));
+    REQUIRE(STR->isNotSupertype(BOT));
+  }
+
+  SECTION("Bot Type Tests")
+  {
+    REQUIRE(BOT->isNotSupertype(TOP));
+    REQUIRE(BOT->isNotSupertype(INT));
+    REQUIRE(BOT->isNotSupertype(STR));
+    REQUIRE(BOT->isNotSupertype(BOOL));
+    REQUIRE(BOT->isNotSupertype(BOT));
   }
   // Why is PL easier to read in mono fonts?
 }

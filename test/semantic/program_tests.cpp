@@ -7,6 +7,10 @@
 
 #include "test_error_handlers.h"
 
+
+//FIXME: DO BETTER TYPE INF TESTS (INLUDING NEGATIVE + NEVER DEFINED)
+//FIXME: MAKE SURE WE CANT DEFINE FUNCTIONS IN FUNCTIONS, RETURN EARLy, ETC/
+
 // FIXME: REQUIRE END IN RETURN
 
 TEST_CASE("Sample Progam one", "[semantic]")
@@ -16,7 +20,7 @@ TEST_CASE("Sample Progam one", "[semantic]")
       " * We know that n is odd, so just start with 3\n"
       " *)\n"
       "boolean func isPrime(int n) {\n"
-      " int i <- 3;\n" //FIXME: MOVE BACK TO TYPE INFERENCE
+      " int i <- 3;\n"
       " while (i < n) do { \n"
       "   if (n / i * i = n) then { return false; } \n"
       "   i <- i + 2;\n"
@@ -25,7 +29,109 @@ TEST_CASE("Sample Progam one", "[semantic]")
       "}\n"
       "\n"
       "int func program() {\n"
-      " int current <- 3;       \n" // FIXME SWITCH TO TYPE INFERENCE
+      " int current <- 3;       \n" 
+      " int nPrimes <- 2;       # explicit type \n"
+      " while current < 100 do { \n"
+      "   if isPrime(current) then { nPrimes <- nPrimes + 1;}\n"
+      "   current <- current + 2;\n"
+      " }\n"
+      " return nPrimes;\n"
+      "}");
+  WPLLexer lexer(&input);
+  // lexer.removeErrorListeners();
+  // lexer.addErrorListener(new TestErrorListener());
+  antlr4::CommonTokenStream tokens(&lexer);
+  WPLParser parser(&tokens);
+  parser.removeErrorListeners();
+  parser.addErrorListener(new TestErrorListener());
+
+  WPLParser::CompilationUnitContext *tree = NULL;
+  REQUIRE_NOTHROW(tree = parser.compilationUnit());
+  REQUIRE(tree != NULL);
+
+  // Any errors should be syntax errors.
+  // FIXME: Should probably confirm the above statement through testing for syntax errors
+  REQUIRE(tree->getText() != "");
+
+  STManager *stmgr = new STManager();
+  SemanticVisitor *sv = new SemanticVisitor(stmgr, new PropertyManager());
+
+  sv->visitCompilationUnit(tree);
+
+  std::cout << stmgr->toString() << std::endl;
+  std::cout << sv->getErrors() << std::endl; 
+
+  CHECK_FALSE(sv->hasErrors());
+}
+
+TEST_CASE("Sample Progam one w/ Inf", "[semantic]")
+{
+  antlr4::ANTLRInputStream input(
+      "(* \n"
+      " * We know that n is odd, so just start with 3\n"
+      " *)\n"
+      "boolean func isPrime(int n) {\n"
+      " var i <- 3;\n"
+      " while (i < n) do { \n"
+      "   if (n / i * i = n) then { return false; } \n"
+      "   i <- i + 2;\n"
+      " }\n"
+      " return true;\n"
+      "}\n"
+      "\n"
+      "int func program() {\n"
+      " var current <- 3;       \n" 
+      " int nPrimes <- 2;       # explicit type \n"
+      " while current < 100 do { \n"
+      "   if isPrime(current) then { nPrimes <- nPrimes + 1;}\n"
+      "   current <- current + 2;\n"
+      " }\n"
+      " return nPrimes;\n"
+      "}");
+  WPLLexer lexer(&input);
+  // lexer.removeErrorListeners();
+  // lexer.addErrorListener(new TestErrorListener());
+  antlr4::CommonTokenStream tokens(&lexer);
+  WPLParser parser(&tokens);
+  parser.removeErrorListeners();
+  parser.addErrorListener(new TestErrorListener());
+
+  WPLParser::CompilationUnitContext *tree = NULL;
+  REQUIRE_NOTHROW(tree = parser.compilationUnit());
+  REQUIRE(tree != NULL);
+
+  // Any errors should be syntax errors.
+  // FIXME: Should probably confirm the above statement through testing for syntax errors
+  REQUIRE(tree->getText() != "");
+
+  STManager *stmgr = new STManager();
+  SemanticVisitor *sv = new SemanticVisitor(stmgr, new PropertyManager());
+
+  sv->visitCompilationUnit(tree);
+
+  std::cout << stmgr->toString() << std::endl;
+  std::cout << sv->getErrors() << std::endl; 
+
+  CHECK_FALSE(sv->hasErrors());
+}
+
+TEST_CASE("Block", "[semantic]")
+{
+  antlr4::ANTLRInputStream input(
+      "boolean func isPrime(int n) {\n"
+      " var i <- 3;\n"
+      " while (i < n) do { \n"
+      "   if (n / i * i = n) then { return false; } \n"
+      "   i <- i + 2;\n"
+      "   {\n"
+      "     int i <- 0;\n" //FIXME: TEST THIS CASE IN WPLC
+      "   }\n"
+      " }\n"
+      " return true;\n"
+      "}\n"
+      "\n"
+      "int func program() {\n"
+      " var current <- 3;       \n" 
       " int nPrimes <- 2;       # explicit type \n"
       " while current < 100 do { \n"
       "   if isPrime(current) then { nPrimes <- nPrimes + 1;}\n"

@@ -26,6 +26,8 @@ class STManager {
     // Symbol* addSymbol(std::string id, SymType t);
     std::optional<Symbol*> lookup(std::string id);
 
+    std::optional<Symbol*> lookupInCurrentScope(std::string id);
+
     // Miscellaneous (useful for testing)
     std::optional<Scope*> getCurrentScope() { 
       if(currentScope) return std::optional<Scope*> {currentScope.value()};

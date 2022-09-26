@@ -88,7 +88,8 @@
     "queue": "cpp",
     "stack": "cpp",
     "*.def": "cpp",
-    "test.C": "cpp"
+    "test.C": "cpp",
+    "version": "cpp"
   },
   "cmake.configureOnOpen": true
 }

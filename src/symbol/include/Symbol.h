@@ -57,57 +57,46 @@ public:
     virtual ~Type() = default;
 
     virtual std::string toString() const { return "TOP"; }
+    virtual bool isSubtype(const Type* other) const; 
+    virtual bool isNotSubtype(const Type *other) const { return !(isSubtype(other)); }
 
-    // FIXME: change to is(Not) Subtype? no... still not quite right... hmmm....
-    virtual bool is(const Type *other) const { return this->equals(other); }
-    virtual bool isNot(const Type *other) const { return !(this->equals(other)); }
+    virtual bool isSupertype(const Type* other) const { return isSupertypeFor(other); }
+    virtual bool isNotSupertype(const Type* other) const { return !isSupertypeFor(other); }
 
     virtual llvm::Type *getLLVMType(llvm::LLVMContext &C) const { return llvm::Type::getVoidTy(C); }
 
 protected:
-    virtual bool equals(const Type *other) const { return true; }
+    virtual bool isSupertypeFor(const Type *other) const { return true; }
 };
 
 class TypeInt : public Type
 {
 public:
     std::string toString() const override { return "INT"; }
-
     llvm::Type *getLLVMType(llvm::LLVMContext &C) const override { return llvm::Type::getInt32Ty(C); }
 
 protected:
-    bool equals(const Type *other) const override
-    {
-        return dynamic_cast<const TypeInt *>(other);
-    }
+    bool isSupertypeFor(const Type *other) const override;
 };
 
 class TypeBool : public Type
 {
 public:
     std::string toString() const override { return "BOOL"; }
-
     llvm::Type *getLLVMType(llvm::LLVMContext &C) const override { return llvm::Type::getInt1Ty(C); }
 
 protected:
-    bool equals(const Type *other) const override
-    {
-        return dynamic_cast<const TypeBool *>(other);
-    }
+    bool isSupertypeFor(const Type *other) const override;
 };
 
 class TypeStr : public Type
 {
 public:
     std::string toString() const override { return "STR"; }
-
     llvm::Type *getLLVMType(llvm::LLVMContext &C) const override { return llvm::Type::getInt8PtrTy(C); }
 
 protected:
-    bool equals(const Type *other) const override
-    {
-        return dynamic_cast<const TypeStr *>(other);
-    }
+    bool isSupertypeFor(const Type *other) const override;
 };
 
 class TypeBot : public Type
@@ -116,10 +105,7 @@ public:
     std::string toString() const override { return "BOT"; }
 
 protected:
-    bool equals(const Type *other) const override
-    {
-        return false;
-    }
+    bool isSupertypeFor(const Type *other) const override;
 };
 
 class TypeArray : public Type
@@ -145,22 +131,23 @@ public:
 
     const Type *getValueType() const { return valueType; }
 
-    //FIXME: ENSURE THESE ARE ALL GOOD ENOUGH!
-    llvm::Type *getLLVMType(llvm::LLVMContext &C) const override { 
-        uint64_t len = (uint64_t)length; 
-        llvm::Type * inner = valueType->getLLVMType(C); 
-        llvm::Type * arr = llvm::ArrayType::get(inner, len);
-        // return llvm::Type::getInt8PtrTy(C); 
-        return arr; 
+    // FIXME: ENSURE THESE ARE ALL GOOD ENOUGH!
+    llvm::Type *getLLVMType(llvm::LLVMContext &C) const override
+    {
+        uint64_t len = (uint64_t)length;
+        llvm::Type *inner = valueType->getLLVMType(C);
+        llvm::Type *arr = llvm::ArrayType::get(inner, len);
+        // return llvm::Type::getInt8PtrTy(C);
+        return arr;
     }
 
 protected:
-    bool equals(const Type *other) const override
+    bool isSupertypeFor(const Type *other) const override
     {
         // FIXME: do better!
         if (const TypeArray *p = dynamic_cast<const TypeArray *>(other))
         {
-            return valueType->is(p->valueType) && this->length == p->length;
+            return valueType->isSubtype(p->valueType) && this->length == p->length;
         }
 
         return false;
@@ -229,13 +216,15 @@ public:
         return description.str();
     }
 
+    // FIXME: DO THESE NEED LLVM TYPES???
+
     std::vector<const Type *> getParamTypes() const { return paramTypes; }
     std::optional<const Type *> getReturnType() const { return retType; }
 
     bool isVariadic() const { return variadic; }
 
 protected:
-    bool equals(const Type *other) const override
+    bool isSupertypeFor(const Type *other) const override
     {
         if (const TypeInvoke *p = dynamic_cast<const TypeInvoke *>(other))
         {
@@ -245,7 +234,7 @@ protected:
             // FIXME: ensure good enough! Probbaly is wrong for arrays--esp if not given len!!!
             for (unsigned int i = 0; i < this->paramTypes.size(); i++)
             {
-                if (this->paramTypes.at(i)->isNot(p->paramTypes.at(i)))
+                if (this->paramTypes.at(i)->isNotSubtype(p->paramTypes.at(i)))
                     return false;
             }
 
@@ -254,12 +243,55 @@ protected:
                 return false;
             if (this->retType.has_value())
             {
-                return this->retType.value()->is(p->retType.value());
+                return this->retType.value()->isSubtype(p->retType.value());
             }
 
             return (this->variadic == p->variadic);
         }
         return false;
+    }
+};
+
+
+class TypeInfer : public Type
+{
+private:
+    std::optional<const Type *> valueType; //Actual type acting as 
+
+public:
+    TypeInfer()
+    {
+        valueType = {};
+    }
+
+    std::string toString() const override
+    {
+        // FIXME: DO BETTER
+        return "VAR";
+    }
+
+    std::optional<const Type *> getValueType() const { return valueType; }
+
+    // FIXME: ENSURE THESE ARE ALL GOOD ENOUGH!
+    llvm::Type *getLLVMType(llvm::LLVMContext &C) const override
+    {
+        //FIXME: what happens if we don't get a value type by code gen!!!!
+        if(valueType) return valueType.value()->getLLVMType(C); 
+        return nullptr; 
+    }
+
+protected:
+    bool isSupertypeFor(const Type *other) const override
+    {
+        // std::cout << "SYM 300" << std::endl;
+        if(valueType) return valueType.value()->isSubtype(other);
+        //FIXME: DO BETTER!!! MAY NEED TO LIMIT THIS TO NOT BE FNS, BOTs, ETC!!!!
+        std::cout << "SYM 303 - WILL SET AS " << other->toString() << std::endl;
+        TypeInfer * mthis =  const_cast<TypeInfer*> (this);
+        std::cout << "SYM 305" << std::endl;
+        mthis->valueType = other; 
+        std::cout << "SYM 307" << std::endl;
+        return true;
     }
 };
 
