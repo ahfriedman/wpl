@@ -173,28 +173,37 @@ const Type * SemanticVisitor::visitCtx(WPLParser::UnaryExprContext *ctx)
     return innerType;
 }
 
+/**
+ * @brief Visits a Binary Arithmetic Expression ensuring LHS and RHS are INT. 
+ * 
+ * @param ctx The BinaryArithExprContext to Visit
+ * @return const Type* INT if lhs and rhs are INT; UNDEFINED otherwise. 
+ */
 const Type * SemanticVisitor::visitCtx(WPLParser::BinaryArithExprContext *ctx)
 {
     // Based on starter
     bool valid = true;
+
     auto left = std::any_cast<const Type *>(ctx->left->accept(this));
     if (left->isNot(Types::INT))
     {
         errorHandler.addSemanticError(ctx->getStart(), "INT left expression expected, but was " + left->toString());
         valid = false;
     }
+
     auto right = std::any_cast<const Type *>(ctx->right->accept(this));
     if (right->isNot(Types::INT))
     {
         errorHandler.addSemanticError(ctx->getStart(), "INT right expression expected, but was " + right->toString());
         valid = false;
     }
+
     return (valid) ? Types::INT : Types::UNDEFINED;
 }
 
 const Type * SemanticVisitor::visitCtx(WPLParser::EqExprContext *ctx)
 {
-    // FIXME: do better!
+    // FIXME: do better! WILL THIS EVEN WORK FOR ARRAYS, STRINGS, ETC?
     auto right = std::any_cast<const Type *>(ctx->right->accept(this));
     auto left = std::any_cast<const Type *>(ctx->left->accept(this));
     if (right->isNot(left))
@@ -204,27 +213,16 @@ const Type * SemanticVisitor::visitCtx(WPLParser::EqExprContext *ctx)
     }
     return Types::BOOL;
 }
+
+/**
+ * @brief Visits a Logical And Expression ensuring LHS and RHS are BOOL. 
+ * 
+ * @param ctx The LogAndExprContext to Visit
+ * @return const Type* BOOL if lhs and rhs are BOOL; UNDEFINED otherwise. 
+ */
 const Type * SemanticVisitor::visitCtx(WPLParser::LogAndExprContext *ctx)
 {
-    // Based on starter //FIXME: do better!
-    bool valid = true;
-    auto left = std::any_cast<const Type *>(ctx->left->accept(this));
-    if (left->isNot(Types::BOOL))
-    {
-        errorHandler.addSemanticError(ctx->getStart(), "BOOL left expression expected, but was " + left->toString());
-        valid = false;
-    }
-    auto right = std::any_cast<const Type *>(ctx->right->accept(this));
-    if (right->isNot(Types::BOOL))
-    {
-        errorHandler.addSemanticError(ctx->getStart(), "BOOL right expression expected, but was " + right->toString());
-        valid = false;
-    }
-    return (valid) ? Types::BOOL : Types::UNDEFINED;
-}
-const Type * SemanticVisitor::visitCtx(WPLParser::LogOrExprContext *ctx)
-{
-    // Based on starter //FIXME: do better!
+    // Based on starter 
     bool valid = true;
 
     auto left = std::any_cast<const Type *>(ctx->left->accept(this));
@@ -233,19 +231,47 @@ const Type * SemanticVisitor::visitCtx(WPLParser::LogOrExprContext *ctx)
         errorHandler.addSemanticError(ctx->getStart(), "BOOL left expression expected, but was " + left->toString());
         valid = false;
     }
+
     auto right = std::any_cast<const Type *>(ctx->right->accept(this));
     if (right->isNot(Types::BOOL))
     {
         errorHandler.addSemanticError(ctx->getStart(), "BOOL right expression expected, but was " + right->toString());
         valid = false;
     }
+
+    return (valid) ? Types::BOOL : Types::UNDEFINED;
+}
+
+/**
+ * @brief Visits a Logical Or Expression ensuring LHS and RHS are BOOL. 
+ * 
+ * @param ctx The LogOrExprContext to Visit
+ * @return const Type* BOOL if lhs and rhs are BOOL; UNDEFINED otherwise. 
+ */
+const Type * SemanticVisitor::visitCtx(WPLParser::LogOrExprContext *ctx)
+{
+    // Based on starter
+    bool valid = true;
+
+    auto left = std::any_cast<const Type *>(ctx->left->accept(this));
+    if (left->isNot(Types::BOOL))
+    {
+        errorHandler.addSemanticError(ctx->getStart(), "BOOL left expression expected, but was " + left->toString());
+        valid = false;
+    }
+
+    auto right = std::any_cast<const Type *>(ctx->right->accept(this));
+    if (right->isNot(Types::BOOL))
+    {
+        errorHandler.addSemanticError(ctx->getStart(), "BOOL right expression expected, but was " + right->toString());
+        valid = false;
+    }
+
     return valid ? Types::BOOL : Types::UNDEFINED;
 }
 
-const Type * SemanticVisitor::visitCtx(WPLParser::CallExprContext *ctx)
-{
-    return this->visitCtx(ctx->call);
-}
+//Passthrough to visitInvocation
+const Type * SemanticVisitor::visitCtx(WPLParser::CallExprContext *ctx) { return this->visitCtx(ctx->call); }
 
 const Type * SemanticVisitor::visitCtx(WPLParser::VariableExprContext *ctx)
 {
@@ -266,11 +292,18 @@ const Type * SemanticVisitor::visitCtx(WPLParser::VariableExprContext *ctx)
     return symbol->type;
 }
 
+/**
+ * @brief Visits a FieldAccessExprContext---Currently limited to array lengths
+ * 
+ * @param ctx the FieldAccessExprContext to visit
+ * @return const Type* INT if correctly used to test array length; UNDEFINED if any errors.
+ */
 const Type * SemanticVisitor::visitCtx(WPLParser::FieldAccessExprContext *ctx)
 {
-    std::cout << "FIELD ACCESS?? " << std::endl; 
+    //Determine the type of the expression we are visiting
     const Type *ty = std::any_cast<const Type *>(ctx->ex->accept(this));
 
+    //Currently we only support arrays, so if its not an array, report an error.
     if (const TypeArray *a = dynamic_cast<const TypeArray *>(ty))
     {
     }
@@ -280,33 +313,40 @@ const Type * SemanticVisitor::visitCtx(WPLParser::FieldAccessExprContext *ctx)
         return Types::UNDEFINED;
     }
 
+    //As only supported operation is length, ensure that is the requested operation
     if (ctx->field->getText() != "length")
     {
         errorHandler.addSemanticError(ctx->getStart(), "Unsupported operation on " + ty->toString() + ": " + ctx->field->getText());
         return Types::UNDEFINED;
     }
 
-    return Types::INT; // FIXME: DO THIS WHOLE THING BETTER
+    return Types::INT;
 }
 
-const Type * SemanticVisitor::visitCtx(WPLParser::ParenExprContext *ctx)
-{
-    return std::any_cast<const Type*>(ctx->ex->accept(this));
-}
+//Passthrough to expression
+const Type * SemanticVisitor::visitCtx(WPLParser::ParenExprContext *ctx) { return std::any_cast<const Type*>(ctx->ex->accept(this)); }
 
+/**
+ * @brief Visits a BinaryRelational Expression ensuring both lhs and rhs are INT.
+ * 
+ * @param ctx The BinaryRelExprContext to visit.
+ * @return const Type* BOOL if lhs and rhs INT; UNDEFINED otherwise.
+ */
 const Type * SemanticVisitor::visitCtx(WPLParser::BinaryRelExprContext *ctx)
 {
-    // Based on starter //FIXME: do better!
+    // Based on starter 
     bool valid = true;
+
     auto left = std::any_cast<const Type *>(ctx->left->accept(this));
+    
     if (left->isNot(Types::INT))
     {
         errorHandler.addSemanticError(ctx->getStart(), "INT left expression expected, but was " + left->toString());
         valid = false;
     }
-    std::cout << "304 " << ctx->getText() << std::endl; 
+    
     auto right = std::any_cast<const Type *>(ctx->right->accept(this));
-    std::cout << "305" << std::endl; 
+    
     if (right->isNot(Types::INT))
     {
         errorHandler.addSemanticError(ctx->getStart(), "INT right expression expected, but was " + right->toString() + " in " + ctx->getText());
@@ -315,10 +355,7 @@ const Type * SemanticVisitor::visitCtx(WPLParser::BinaryRelExprContext *ctx)
     return valid ? Types::BOOL : Types::UNDEFINED;
 }
 
-const Type * SemanticVisitor::visitCtx(WPLParser::BConstExprContext *ctx)
-{
-    return Types::BOOL;
-}
+const Type * SemanticVisitor::visitCtx(WPLParser::BConstExprContext *ctx) { return Types::BOOL; }
 
 const Type * SemanticVisitor::visitCtx(WPLParser::BlockContext *ctx)
 {
@@ -334,6 +371,13 @@ const Type * SemanticVisitor::visitCtx(WPLParser::BlockContext *ctx)
 
     return Types::UNDEFINED;
 }
+
+/**
+ * @brief Visits a condition's expression ensuring that it is of type BOOL. 
+ * 
+ * @param ctx The ConditionContext to visit
+ * @return const Type* Always returns UNDEFINED as to prevent assignments
+ */
 const Type * SemanticVisitor::visitCtx(WPLParser::ConditionContext *ctx)
 {
     auto conditionType = std::any_cast<const Type *>(ctx->ex->accept(this));
@@ -364,6 +408,12 @@ const Type * SemanticVisitor::visitCtx(WPLParser::SelectAlternativeContext *ctx)
     return Types::UNDEFINED;
 }
 
+/**
+ * @brief Constructs a TypeInvoke based on the parameter types and assumes a return type of BOT.
+ * 
+ * @param ctx The ParameterListContext to process. 
+ * @return const Type* TypeInvoke representing the parameter types. 
+ */
 const Type * SemanticVisitor::visitCtx(WPLParser::ParameterListContext *ctx)
 {
     std::vector<const Type *> params;
@@ -374,15 +424,14 @@ const Type * SemanticVisitor::visitCtx(WPLParser::ParameterListContext *ctx)
         params.push_back(type);
     }
 
-    const Type *type = new TypeInvoke(params); // Needs to be two separate lines for sake of const?
+    const Type *type = new TypeInvoke(params); // Needs to be two separate lines b/c of how C++ handles returns?
     return type;
 }
 
-const Type * SemanticVisitor::visitCtx(WPLParser::ParameterContext *ctx)
-{
-    return this->visitCtx(ctx->ty);
-}
+//Passthrough to visit the inner expression
+const Type * SemanticVisitor::visitCtx(WPLParser::ParameterContext *ctx) { return this->visitCtx(ctx->ty); }
 
+//Unused
 const Type * SemanticVisitor::visitCtx(WPLParser::AssignmentContext *ctx) 
 {
     errorHandler.addSemanticError(ctx->getStart(), "Assignment should never be visited directly during type checking!");
@@ -562,7 +611,8 @@ const Type * SemanticVisitor::visitCtx(WPLParser::AssignStatementContext *ctx)
         errorHandler.addSemanticError(ctx->getStart(), "Cannot assign to undefined variable: " + ctx->to->getText());
     }
 
-    return Types::UNDEFINED; // FIXME: VERIFY
+    //Return UNDEFINED because this is a statement, and UNDEFINED cannot be assigned to anything
+    return Types::UNDEFINED;
 }
 
 const Type * SemanticVisitor::visitCtx(WPLParser::VarDeclStatementContext *ctx)
@@ -598,34 +648,39 @@ const Type * SemanticVisitor::visitCtx(WPLParser::VarDeclStatementContext *ctx)
                 Symbol *symbol = new Symbol(id, exprType); // Done with exprType for later inferencing purposes
                 stmgr->addSymbol(symbol);
                 bindings->bind(var, symbol); 
-                // bindings->bind() //FIXME: What to do about bindings????
             }
         }
     }
+    //Return UNDEFINED because this is a statement, and UNDEFINED cannot be assigned to anything
     return Types::UNDEFINED;
 }
 
 const Type * SemanticVisitor::visitCtx(WPLParser::LoopStatementContext *ctx)
 {
-    std::cout << "HELLO? " << ctx->check->getText() << std::endl;
-    this->visitCtx(ctx->check);
-    this->visitCtx(ctx->block());
+    this->visitCtx(ctx->check); //Visiting check will make sure we have a boolean condition
+    this->visitCtx(ctx->block()); //Visiting block to make sure everything type checks there as well
 
+    //Return UNDEFINED because this is a statement, and UNDEFINED cannot be assigned to anything
     return Types::UNDEFINED;
 }
 
 const Type * SemanticVisitor::visitCtx(WPLParser::ConditionalStatementContext *ctx)
 {
     // FIXME:Type inference!!!
+
+    // Automatically handles checking that we have a valid condition
     this->visitCtx(ctx->check);
 
+    //Type check the then/true block
     this->visitCtx(ctx->trueBlk);
 
+    //If we have an else block, then type check it
     if (ctx->falseBlk)
     {
         this->visitCtx(ctx->falseBlk);
     }
 
+    //Return UNDEFINED because this is a statement, and UNDEFINED cannot be assigned to anything
     return Types::UNDEFINED;
 }
 
@@ -638,13 +693,12 @@ const Type * SemanticVisitor::visitCtx(WPLParser::SelectStatementContext *ctx)
         this->visitCtx(e); 
     }
 
+    //Return UNDEFINED because this is a statement, and UNDEFINED cannot be assigned to anything
     return Types::UNDEFINED;
 }
 
-const Type * SemanticVisitor::visitCtx(WPLParser::CallStatementContext *ctx)
-{
-    return this->visitCtx(ctx->call);
-}
+// Passthrough to visit invocation
+const Type * SemanticVisitor::visitCtx(WPLParser::CallStatementContext *ctx) { return this->visitCtx(ctx->call); }
 
 const Type * SemanticVisitor::visitCtx(WPLParser::ReturnStatementContext *ctx)
 {
@@ -695,18 +749,19 @@ const Type * SemanticVisitor::visitCtx(WPLParser::ReturnStatementContext *ctx)
     return Types::UNDEFINED;
 }
 
-const Type * SemanticVisitor::visitCtx(WPLParser::BlockStatementContext *ctx)
-{
-    return this->visitCtx(ctx->block());
-}
+//Passthrough to visitBlock
+const Type * SemanticVisitor::visitCtx(WPLParser::BlockStatementContext *ctx) { return this->visitCtx(ctx->block()); }
 
 const Type * SemanticVisitor::visitCtx(WPLParser::TypeOrVarContext *ctx)
 {
+    //If we don't have a type context, then we know that we must be doing inference
     if (!(ctx->type()))
     {
         const Type * ans = new TypeInfer(); 
         return ans; 
     }
+    
+    //If we do have a type, then visit that context. 
     return this->visitCtx(ctx->type());
 }
 
@@ -750,7 +805,4 @@ const Type * SemanticVisitor::visitCtx(WPLParser::TypeContext *ctx)
     return ty; 
 }
 
-const Type * SemanticVisitor::visitCtx(WPLParser::BooleanConstContext *ctx)
-{
-    return Types::BOOL;
-}
+const Type * SemanticVisitor::visitCtx(WPLParser::BooleanConstContext *ctx) { return Types::BOOL; }
