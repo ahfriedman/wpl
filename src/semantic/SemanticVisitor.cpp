@@ -176,9 +176,8 @@ const Type *SemanticVisitor::visitCtx(WPLParser::ArrayOrVarContext *ctx)
         return symbol->type;
     }
 
-    // FIXME: THIS WON'T WORK AS WE'LL MISS THE BINDINGS!!!
     const Type *arrType = this->visitCtx(ctx->array);
-    bindings->bind(ctx, bindings->getBinding(ctx->array)); // FIXME: DO BETTER
+    bindings->bind(ctx, bindings->getBinding(ctx->array)); // FIXME: DO BETTER; Seems hacky to be passing like this!
     return arrType;
 }
 
@@ -407,7 +406,6 @@ const Type *SemanticVisitor::visitCtx(WPLParser::BConstExprContext *ctx) { retur
 
 const Type *SemanticVisitor::visitCtx(WPLParser::BlockContext *ctx)
 {
-    // FIXME: Probably have to do better with things like type inference!!!
     stmgr->enterScope();
 
     for (auto e : ctx->stmts)
@@ -577,7 +575,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::FuncDefContext *ctx)
 
     bindings->bind(ctx, funcSymbol);
 
-    return funcType; // FIXME: Should this return nothing?
+    return funcType; // TODO: Could *probably* return UNDEFINED, but doesnt have to. We don't have a way of storing functions anyways...
 }
 
 const Type *SemanticVisitor::visitCtx(WPLParser::ProcDefContext *ctx)
@@ -755,8 +753,6 @@ const Type *SemanticVisitor::visitCtx(WPLParser::CallStatementContext *ctx) { re
 
 const Type *SemanticVisitor::visitCtx(WPLParser::ReturnStatementContext *ctx)
 {
-    // FIXME: DO BETTER!!!
-
     /*
      * Lookup the @RETURN symbol which can ONLY be defined by entering FUNC/PROC
      */
