@@ -5,7 +5,7 @@ include(ANTLR)
 include(Symbol)
 include(Semantic)
 include(Utility)
-#include(Codegen)
+include(Codegen)
 include(LLVM)
 
 find_package(LLVM REQUIRED CONFIG)
@@ -19,7 +19,7 @@ include(HandleLLVMOptions)
 include(cmake/LexParseTests.cmake)
 include(cmake/SymbolTests.cmake)
 include(cmake/SemanticTests.cmake)
-#include(cmake/CodegenTests.cmake)
+include(cmake/CodegenTests.cmake)
 
 ### Set up all tests to be run
 add_executable(
@@ -27,7 +27,7 @@ add_executable(
   ${LEXPARSE_TESTS}
   ${SYMBOL_TESTS}
   ${SEMANTIC_TESTS}
-#  ${CODEGEN_TESTS}
+  ${CODEGEN_TESTS}
 )
 
 add_dependencies(tests 
@@ -35,7 +35,7 @@ add_dependencies(tests
   sym_lib 
   semantic_lib
   utility_lib
-#   codegen_lib
+  codegen_lib
   )
 
 target_include_directories(tests PUBLIC 
@@ -43,7 +43,7 @@ target_include_directories(tests PUBLIC
   ${SYMBOL_INCLUDE} 
   ${SEMANTIC_INCLUDE}
   ${UTILITY_INCLUDE}
-#   ${CODEGEN_INCLUDE}
+  ${CODEGEN_INCLUDE}
   ${LLVM_BINARY_DIR}/include
   ${LLVM_INCLUDE_DIR}
   )
@@ -56,7 +56,7 @@ target_link_libraries(tests
   sym_lib
   semantic_lib
   utility_lib
-#   codegen_lib
+  codegen_lib
   ${LLVM_LIBS}
   Catch2::Catch2WithMain
 )

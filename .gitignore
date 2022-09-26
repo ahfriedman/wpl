@@ -59,3 +59,7 @@ main
 testoutput/
 testdata/*.ll
 testdata/*.bc
+
+programs/*.ll
+programs/*.c
+a.out
