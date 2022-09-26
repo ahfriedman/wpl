@@ -686,7 +686,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::VarDeclStatementContext *ctx)
             }
             else
             {
-                // FIXME: may cause issues with reusing exprType!!! VERIFY VARS DONT HAVE PARODY
+                // FIXME: may cause issues with reusing exprType!!! VERIFY VARS DONT HAVE PARODY IN CODE GEN!!
                 Symbol *symbol = new Symbol(id, exprType); // Done with exprType for later inferencing purposes
                 stmgr->addSymbol(symbol);
                 bindings->bind(var, symbol);
