@@ -121,7 +121,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::ArrayAccessContext *ctx)
      */
 
     const Type *exprType = std::any_cast<const Type *>(ctx->index->accept(this));
-    if (exprType->isNotSubtype(Types::INT)) // FIXME: HAVE have to flip these..... after all, this would allow a TOP through!
+    if (exprType->isNotSubtype(Types::INT))
     {
         errorHandler.addSemanticError(ctx->getStart(), "Array access index expected type INT but got " + exprType->toString());
     }
@@ -251,7 +251,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::BinaryArithExprContext *ctx)
 
 const Type *SemanticVisitor::visitCtx(WPLParser::EqExprContext *ctx)
 {
-    // FIXME: do better! WILL THIS EVEN WORK FOR ARRAYS, STRINGS, ETC?
+    // FIXME: do better! WILL THIS EVEN WORK FOR ARRAYS, STRINGS, ETC? AND WHICH SIDE DETERMINES WHICH? SHOULD IT BE SUB OR SUPER?
     auto right = std::any_cast<const Type *>(ctx->right->accept(this));
     auto left = std::any_cast<const Type *>(ctx->left->accept(this));
     if (right->isNotSubtype(left))
@@ -648,7 +648,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::AssignStatementContext *ctx)
     if (type)
     {
         // Symbol *symbol = opt; //.value();
-        if (type->isNotSubtype(exprType))
+        if (exprType->isNotSubtype(type))
         {
             errorHandler.addSemanticError(ctx->getStart(), "Assignment statement expected " + type->toString() + " but got " + exprType->toString());
         }
@@ -674,7 +674,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::VarDeclStatementContext *ctx)
         auto exprType = (e->ex) ? std::any_cast<const Type *>(e->ex->accept(this)) : assignType;
 
         // Need to check here to prevent var = var issues... //FIXME: WHAT IF WE GOT A VAR = VAR?
-        if (e->ex && assignType->isNotSubtype(exprType))
+        if (e->ex && exprType->isNotSubtype(assignType))
         {
             errorHandler.addSemanticError(e->getStart(), "Expression of type " + exprType->toString() + " cannot be assigned to " + assignType->toString());
         }
@@ -785,7 +785,6 @@ const Type *SemanticVisitor::visitCtx(WPLParser::ReturnStatementContext *ctx)
         //As the return type is not a BOT, we have to make sure that it is the correct type to return
         
 
-        // FIXME: VERIFY ORDER CORRECT
         if (valType->isNotSubtype(sym.value()->type))
         {
             errorHandler.addSemanticError(ctx->getStart(), "Expected return type of " + sym.value()->type->toString() + " but got " + valType->toString());
