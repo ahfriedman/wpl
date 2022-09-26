@@ -291,7 +291,27 @@ std::optional<Value *> CodegenVisitor::TvisitVariableExpr(WPLParser::VariableExp
 
 std::optional<Value *> CodegenVisitor::TvisitFieldAccessExpr(WPLParser::FieldAccessExprContext *ctx)
 {
-    errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED - visitFieldAccessExpr");
+    //This is ONLY array length for now... 
+    Symbol * sym = props->getBinding(ctx->ex); 
+
+    if(!sym || !sym->val)
+    {
+        errorHandler.addCodegenError(ctx->getStart(), "Improperly initialized array access symbol.");
+        return {}; 
+    }
+
+    llvm::Type * ty = sym->val->getType();
+
+    if(llvm::ArrayType* at =  static_cast<llvm::ArrayType*>(ty))
+    {
+        int i = at->getNumElements(); //FIXME: WRONG TYPES!!
+
+        Value * v = builder->getInt32(i); 
+
+        return v; 
+    }
+    
+    errorHandler.addCodegenError(ctx->getStart(), "Given non-array type in TvisitFieldAccessExpr!");
     return {};
 }
 
