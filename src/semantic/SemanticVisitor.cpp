@@ -158,8 +158,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::ArrayOrVarContext *ctx)
 {
     if (ctx->var)
     {
-        // FIXME: SAME AS VAR
-        //  Based on starter
+        //  Based on starter; Same as VAR
         std::string id = ctx->var->getText();
 
         std::optional<Symbol *> opt = stmgr->lookup(id);
