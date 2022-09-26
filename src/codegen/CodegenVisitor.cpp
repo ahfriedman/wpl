@@ -284,6 +284,7 @@ std::optional<Value *> CodegenVisitor::TvisitVariableExpr(WPLParser::VariableExp
 
 std::optional<Value *> CodegenVisitor::TvisitFieldAccessExpr(WPLParser::FieldAccessExprContext *ctx)
 {
+    //FIXME: use something like this to remove array length from sym table?
     //This is ONLY array length for now... 
     Symbol * sym = props->getBinding(ctx->ex); 
 
