@@ -90,6 +90,7 @@ str func otherbranchthree() {
 
 int func program() {
     printf("Hello World!\n");
+    # printf(); 
     int [50] a; 
     int c; 
 

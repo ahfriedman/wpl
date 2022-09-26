@@ -40,7 +40,7 @@ TEST_CASE("Basic if", "[semantic][conditional]")
   // std::optional<Symbol *> opt = stmgr->lookup("a");
 
   // CHECK(opt.has_value());
-  // CHECK(opt.value()->type->is(Types::INT));
+  // CHECK(opt.value()->type->isSubtypeOf(Types::INT));
 }
 
 TEST_CASE("Basic if 2", "[semantic][conditional]")
@@ -76,7 +76,7 @@ TEST_CASE("Basic if 2", "[semantic][conditional]")
   // std::optional<Symbol *> opt = stmgr->lookup("a");
 
   // CHECK(opt.has_value());
-  // CHECK(opt.value()->type->is(Types::INT));
+  // CHECK(opt.value()->type->isSubtypeOf(Types::INT));
 }
 
 TEST_CASE("If Example 1", "[semantic][conditional]")
@@ -114,7 +114,7 @@ TEST_CASE("If Example 1", "[semantic][conditional]")
   // std::optional<Symbol *> opt = stmgr->lookup("a");
 
   // CHECK(opt.has_value());
-  // CHECK(opt.value()->type->is(Types::INT));
+  // CHECK(opt.value()->type->isSubtypeOf(Types::INT));
 }
 
 TEST_CASE("If Example 1-2", "[semantic][conditional]")
@@ -153,7 +153,7 @@ TEST_CASE("If Example 1-2", "[semantic][conditional]")
   // std::optional<Symbol *> opt = stmgr->lookup("a");
 
   // CHECK(opt.has_value());
-  // CHECK(opt.value()->type->is(Types::INT));
+  // CHECK(opt.value()->type->isSubtypeOf(Types::INT));
 }
 
 TEST_CASE("If Example 1-3", "[semantic][conditional]")
@@ -193,7 +193,7 @@ TEST_CASE("If Example 1-3", "[semantic][conditional]")
   // std::optional<Symbol *> opt = stmgr->lookup("a");
 
   // CHECK(opt.has_value());
-  // CHECK(opt.value()->type->is(Types::INT));
+  // CHECK(opt.value()->type->isSubtypeOf(Types::INT));
 }
 
 TEST_CASE("If Example 1-4", "[semantic][conditional]")
@@ -233,7 +233,7 @@ TEST_CASE("If Example 1-4", "[semantic][conditional]")
   // std::optional<Symbol *> opt = stmgr->lookup("a");
 
   // CHECK(opt.has_value());
-  // CHECK(opt.value()->type->is(Types::INT));
+  // CHECK(opt.value()->type->isSubtypeOf(Types::INT));
 }
 
 TEST_CASE("If Example 1-5", "[semantic][conditional]")
@@ -273,5 +273,5 @@ TEST_CASE("If Example 1-5", "[semantic][conditional]")
   // std::optional<Symbol *> opt = stmgr->lookup("a");
 
   // CHECK(opt.has_value());
-  // CHECK(opt.value()->type->is(Types::INT));
+  // CHECK(opt.value()->type->isSubtypeOf(Types::INT));
 }

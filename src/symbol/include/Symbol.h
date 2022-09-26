@@ -57,57 +57,46 @@ public:
     virtual ~Type() = default;
 
     virtual std::string toString() const { return "TOP"; }
+    virtual bool isSubtype(const Type* other) const; 
+    virtual bool isNotSubtype(const Type *other) const { return !(isSubtype(other)); }
 
-    // FIXME: change to is(Not) Subtype? no... still not quite right... hmmm....
-    virtual bool is(const Type *other) const { return this->equals(other); }
-    virtual bool isNot(const Type *other) const { return !(this->equals(other)); }
+    virtual bool isSupertype(const Type* other) const { return isSupertypeFor(other); }
+    virtual bool isNotSupertype(const Type* other) const { return !isSupertypeFor(other); }
 
     virtual llvm::Type *getLLVMType(llvm::LLVMContext &C) const { return llvm::Type::getVoidTy(C); }
 
 protected:
-    virtual bool equals(const Type *other) const { return true; }
+    virtual bool isSupertypeFor(const Type *other) const { return true; }
 };
 
 class TypeInt : public Type
 {
 public:
     std::string toString() const override { return "INT"; }
-
     llvm::Type *getLLVMType(llvm::LLVMContext &C) const override { return llvm::Type::getInt32Ty(C); }
 
 protected:
-    bool equals(const Type *other) const override
-    {
-        return dynamic_cast<const TypeInt *>(other);
-    }
+    bool isSupertypeFor(const Type *other) const override;
 };
 
 class TypeBool : public Type
 {
 public:
     std::string toString() const override { return "BOOL"; }
-
     llvm::Type *getLLVMType(llvm::LLVMContext &C) const override { return llvm::Type::getInt1Ty(C); }
 
 protected:
-    bool equals(const Type *other) const override
-    {
-        return dynamic_cast<const TypeBool *>(other);
-    }
+    bool isSupertypeFor(const Type *other) const override;
 };
 
 class TypeStr : public Type
 {
 public:
     std::string toString() const override { return "STR"; }
-
     llvm::Type *getLLVMType(llvm::LLVMContext &C) const override { return llvm::Type::getInt8PtrTy(C); }
 
 protected:
-    bool equals(const Type *other) const override
-    {
-        return dynamic_cast<const TypeStr *>(other);
-    }
+    bool isSupertypeFor(const Type *other) const override;
 };
 
 class TypeBot : public Type
@@ -116,10 +105,7 @@ public:
     std::string toString() const override { return "BOT"; }
 
 protected:
-    bool equals(const Type *other) const override
-    {
-        return false;
-    }
+    bool isSupertypeFor(const Type *other) const override;
 };
 
 class TypeArray : public Type
@@ -156,12 +142,12 @@ public:
     }
 
 protected:
-    bool equals(const Type *other) const override
+    bool isSupertypeFor(const Type *other) const override
     {
         // FIXME: do better!
         if (const TypeArray *p = dynamic_cast<const TypeArray *>(other))
         {
-            return valueType->is(p->valueType) && this->length == p->length;
+            return valueType->isSubtype(p->valueType) && this->length == p->length;
         }
 
         return false;
@@ -238,7 +224,7 @@ public:
     bool isVariadic() const { return variadic; }
 
 protected:
-    bool equals(const Type *other) const override
+    bool isSupertypeFor(const Type *other) const override
     {
         if (const TypeInvoke *p = dynamic_cast<const TypeInvoke *>(other))
         {
@@ -248,7 +234,7 @@ protected:
             // FIXME: ensure good enough! Probbaly is wrong for arrays--esp if not given len!!!
             for (unsigned int i = 0; i < this->paramTypes.size(); i++)
             {
-                if (this->paramTypes.at(i)->isNot(p->paramTypes.at(i)))
+                if (this->paramTypes.at(i)->isNotSubtype(p->paramTypes.at(i)))
                     return false;
             }
 
@@ -257,7 +243,7 @@ protected:
                 return false;
             if (this->retType.has_value())
             {
-                return this->retType.value()->is(p->retType.value());
+                return this->retType.value()->isSubtype(p->retType.value());
             }
 
             return (this->variadic == p->variadic);
@@ -295,10 +281,10 @@ public:
     }
 
 protected:
-    bool equals(const Type *other) const override
+    bool isSupertypeFor(const Type *other) const override
     {
         // std::cout << "SYM 300" << std::endl;
-        if(valueType) return valueType.value()->is(other);
+        if(valueType) return valueType.value()->isSubtype(other);
         //FIXME: DO BETTER!!! MAY NEED TO LIMIT THIS TO NOT BE FNS, BOTs, ETC!!!!
         std::cout << "SYM 303 - WILL SET AS " << other->toString() << std::endl;
         TypeInfer * mthis =  const_cast<TypeInfer*> (this);

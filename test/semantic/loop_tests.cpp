@@ -42,7 +42,7 @@ TEST_CASE("Undefined Params", "[semantic][loop]")
   // std::optional<Symbol *> opt = stmgr->lookup("a");
 
   // CHECK(opt.has_value());
-  // CHECK(opt.value()->type->is(Types::INT));
+  // CHECK(opt.value()->type->isSubtype(Types::INT));
 }
 
 
@@ -81,7 +81,7 @@ TEST_CASE("Undefined Params 2", "[semantic][loop]")
   // std::optional<Symbol *> opt = stmgr->lookup("a");
 
   // CHECK(opt.has_value());
-  // CHECK(opt.value()->type->is(Types::INT));
+  // CHECK(opt.value()->type->isSubtype(Types::INT));
 }
 
 
@@ -120,7 +120,7 @@ TEST_CASE("Check example", "[semantic][loop]")
   // std::optional<Symbol *> opt = stmgr->lookup("a");
 
   // CHECK(opt.has_value());
-  // CHECK(opt.value()->type->is(Types::INT));
+  // CHECK(opt.value()->type->isSubtype(Types::INT));
 }
 
 TEST_CASE("Check example - adv", "[semantic][loop]")
@@ -164,14 +164,14 @@ TEST_CASE("Check example - adv", "[semantic][loop]")
   {
     std::optional<Symbol *> opt = stmgr->lookup("i");
     CHECK(opt.has_value());
-    CHECK(opt.value()->type->is(Types::INT));
+    CHECK(opt.value()->type->isSubtype(Types::INT));
   }
 
 
   {
     std::optional<Symbol *> opt = stmgr->lookup("sum");
     CHECK(opt.has_value());
-    CHECK(opt.value()->type->is(Types::INT));
+    CHECK(opt.value()->type->isSubtype(Types::INT));
   }
 
   {
@@ -209,7 +209,7 @@ TEST_CASE("Sit & Spin", "[semantic][loop]")
   // std::optional<Symbol *> opt = stmgr->lookup("a");
 
   // CHECK(opt.has_value());
-  // CHECK(opt.value()->type->is(Types::INT));
+  // CHECK(opt.value()->type->isSubtype(Types::INT));
 }
 
 TEST_CASE("Int condition", "[semantic][loop]")
@@ -241,7 +241,7 @@ TEST_CASE("Int condition", "[semantic][loop]")
   // std::optional<Symbol *> opt = stmgr->lookup("a");
 
   // CHECK(opt.has_value());
-  // CHECK(opt.value()->type->is(Types::INT));
+  // CHECK(opt.value()->type->isSubtype(Types::INT));
 }
 
 TEST_CASE("Int condition 2", "[semantic][loop]")
@@ -273,7 +273,7 @@ TEST_CASE("Int condition 2", "[semantic][loop]")
   // std::optional<Symbol *> opt = stmgr->lookup("a");
 
   // CHECK(opt.has_value());
-  // CHECK(opt.value()->type->is(Types::INT));
+  // CHECK(opt.value()->type->isSubtype(Types::INT));
 }
 
 TEST_CASE("str condition", "[semantic][loop]")
@@ -305,7 +305,7 @@ TEST_CASE("str condition", "[semantic][loop]")
   // std::optional<Symbol *> opt = stmgr->lookup("a");
 
   // CHECK(opt.has_value());
-  // CHECK(opt.value()->type->is(Types::INT));
+  // CHECK(opt.value()->type->isSubtype(Types::INT));
 }
 
 TEST_CASE("Boolean Expr", "[semantic][loop]")
@@ -337,5 +337,5 @@ TEST_CASE("Boolean Expr", "[semantic][loop]")
   // std::optional<Symbol *> opt = stmgr->lookup("a");
 
   // CHECK(opt.has_value());
-  // CHECK(opt.value()->type->is(Types::INT));
+  // CHECK(opt.value()->type->isSubtype(Types::INT));
 }

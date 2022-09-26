@@ -59,7 +59,8 @@ const Type *SemanticVisitor::visitCtx(WPLParser::InvocationContext *ctx)
          * to allow for this invocation.
          */
         if (
-            (!invokeable->isVariadic() && fnParams.size() != ctx->args.size()) || (invokeable->isVariadic() && fnParams.size() > ctx->args.size()) // FIXME: verify correct
+            (!invokeable->isVariadic() && fnParams.size() != ctx->args.size()) 
+            || (invokeable->isVariadic() && fnParams.size() > ctx->args.size())
         )
         {
             std::ostringstream errorMsg;
@@ -95,7 +96,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::InvocationContext *ctx)
                 i < fnParams.size() ? i : (fnParams.size() - 1));
 
             // If the types do not match, report an error.
-            if (providedType->isNot(expectedType))
+            if (providedType->isNotSubtype(expectedType))
             {
                 std::ostringstream errorMsg;
                 errorMsg << "Argument " << i << " provided to " << name << " expected " << expectedType->toString() << " but got " << providedType->toString();
@@ -120,7 +121,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::ArrayAccessContext *ctx)
      */
 
     const Type *exprType = std::any_cast<const Type *>(ctx->index->accept(this));
-    if (exprType->isNot(Types::INT)) // FIXME: HAVE have to flip these..... after all, this would allow a TOP through!
+    if (exprType->isNotSubtype(Types::INT)) // FIXME: HAVE have to flip these..... after all, this would allow a TOP through!
     {
         errorHandler.addSemanticError(ctx->getStart(), "Array access index expected type INT but got " + exprType->toString());
     }
@@ -202,14 +203,14 @@ const Type *SemanticVisitor::visitCtx(WPLParser::UnaryExprContext *ctx)
     switch (ctx->op->getType())
     {
     case WPLParser::MINUS:
-        if (innerType->isNot(Types::INT))
+        if (innerType->isNotSubtype(Types::INT))
         {
             errorHandler.addSemanticError(ctx->getStart(), "INT expected in unary minus, but got " + innerType->toString());
             return Types::UNDEFINED;
         }
         break;
     case WPLParser::NOT:
-        if (innerType->isNot(Types::BOOL))
+        if (innerType->isNotSubtype(Types::BOOL))
         {
             errorHandler.addSemanticError(ctx->getStart(), "BOOL expected in unary not, but got " + innerType->toString());
             return Types::UNDEFINED;
@@ -232,14 +233,14 @@ const Type *SemanticVisitor::visitCtx(WPLParser::BinaryArithExprContext *ctx)
     bool valid = true;
 
     auto left = std::any_cast<const Type *>(ctx->left->accept(this));
-    if (left->isNot(Types::INT))
+    if (left->isNotSubtype(Types::INT))
     {
         errorHandler.addSemanticError(ctx->getStart(), "INT left expression expected, but was " + left->toString());
         valid = false;
     }
 
     auto right = std::any_cast<const Type *>(ctx->right->accept(this));
-    if (right->isNot(Types::INT))
+    if (right->isNotSubtype(Types::INT))
     {
         errorHandler.addSemanticError(ctx->getStart(), "INT right expression expected, but was " + right->toString());
         valid = false;
@@ -253,7 +254,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::EqExprContext *ctx)
     // FIXME: do better! WILL THIS EVEN WORK FOR ARRAYS, STRINGS, ETC?
     auto right = std::any_cast<const Type *>(ctx->right->accept(this));
     auto left = std::any_cast<const Type *>(ctx->left->accept(this));
-    if (right->isNot(left))
+    if (right->isNotSubtype(left))
     {
         errorHandler.addSemanticError(ctx->getStart(), "Both sides of '=' must have the same type");
         return Types::UNDEFINED;
@@ -273,14 +274,14 @@ const Type *SemanticVisitor::visitCtx(WPLParser::LogAndExprContext *ctx)
     bool valid = true;
 
     auto left = std::any_cast<const Type *>(ctx->left->accept(this));
-    if (left->isNot(Types::BOOL))
+    if (left->isNotSubtype(Types::BOOL))
     {
         errorHandler.addSemanticError(ctx->getStart(), "BOOL left expression expected, but was " + left->toString());
         valid = false;
     }
 
     auto right = std::any_cast<const Type *>(ctx->right->accept(this));
-    if (right->isNot(Types::BOOL))
+    if (right->isNotSubtype(Types::BOOL))
     {
         errorHandler.addSemanticError(ctx->getStart(), "BOOL right expression expected, but was " + right->toString());
         valid = false;
@@ -301,14 +302,14 @@ const Type *SemanticVisitor::visitCtx(WPLParser::LogOrExprContext *ctx)
     bool valid = true;
 
     auto left = std::any_cast<const Type *>(ctx->left->accept(this));
-    if (left->isNot(Types::BOOL))
+    if (left->isNotSubtype(Types::BOOL))
     {
         errorHandler.addSemanticError(ctx->getStart(), "BOOL left expression expected, but was " + left->toString());
         valid = false;
     }
 
     auto right = std::any_cast<const Type *>(ctx->right->accept(this));
-    if (right->isNot(Types::BOOL))
+    if (right->isNotSubtype(Types::BOOL))
     {
         errorHandler.addSemanticError(ctx->getStart(), "BOOL right expression expected, but was " + right->toString());
         valid = false;
@@ -386,7 +387,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::BinaryRelExprContext *ctx)
 
     auto left = std::any_cast<const Type *>(ctx->left->accept(this));
 
-    if (left->isNot(Types::INT))
+    if (left->isNotSubtype(Types::INT))
     {
         errorHandler.addSemanticError(ctx->getStart(), "INT left expression expected, but was " + left->toString());
         valid = false;
@@ -394,7 +395,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::BinaryRelExprContext *ctx)
 
     auto right = std::any_cast<const Type *>(ctx->right->accept(this));
 
-    if (right->isNot(Types::INT))
+    if (right->isNotSubtype(Types::INT))
     {
         errorHandler.addSemanticError(ctx->getStart(), "INT right expression expected, but was " + right->toString() + " in " + ctx->getText());
         valid = false;
@@ -429,7 +430,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::ConditionContext *ctx)
 {
     auto conditionType = std::any_cast<const Type *>(ctx->ex->accept(this));
 
-    if (conditionType->isNot(Types::BOOL))
+    if (conditionType->isNotSubtype(Types::BOOL))
     {
         errorHandler.addSemanticError(ctx->getStart(), "Condition expected BOOL, but was given " + conditionType->toString());
     }
@@ -647,7 +648,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::AssignStatementContext *ctx)
     if (type)
     {
         // Symbol *symbol = opt; //.value();
-        if (type->isNot(exprType))
+        if (type->isNotSubtype(exprType))
         {
             errorHandler.addSemanticError(ctx->getStart(), "Assignment statement expected " + type->toString() + " but got " + exprType->toString());
         }
@@ -673,7 +674,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::VarDeclStatementContext *ctx)
         auto exprType = (e->ex) ? std::any_cast<const Type *>(e->ex->accept(this)) : assignType;
 
         // Need to check here to prevent var = var issues... //FIXME: WHAT IF WE GOT A VAR = VAR?
-        if (e->ex && assignType->isNot(exprType))
+        if (e->ex && assignType->isNotSubtype(exprType))
         {
             errorHandler.addSemanticError(e->getStart(), "Expression of type " + exprType->toString() + " cannot be assigned to " + assignType->toString());
         }
@@ -785,7 +786,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::ReturnStatementContext *ctx)
         
 
         // FIXME: VERIFY ORDER CORRECT
-        if (valType->isNot(sym.value()->type))
+        if (valType->isNotSubtype(sym.value()->type))
         {
             errorHandler.addSemanticError(ctx->getStart(), "Expected return type of " + sym.value()->type->toString() + " but got " + valType->toString());
             return Types::UNDEFINED;
