@@ -797,6 +797,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::ReturnStatementContext *ctx)
     }
     else
     {
+        //We do not have an expression to return, so make sure that the return type is also a BOT.
         if (const TypeBot *b = dynamic_cast<const TypeBot *>(sym.value()->type))
         {
             return Types::UNDEFINED;
