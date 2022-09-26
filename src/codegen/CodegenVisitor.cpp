@@ -2,19 +2,6 @@
 
 std::optional<Value *> CodegenVisitor::TvisitCompilationUnit(WPLParser::CompilationUnitContext *ctx)
 {
-    // External functions --- Temporary thing
-    // auto printf_prototype = FunctionType::get(i8p, true);
-    // auto printf_fn = Function::Create(printf_prototype, Function::ExternalLinkage, "printf", module);
-    // FunctionCallee printExpr(printf_prototype, printf_fn);
-
-    // Main function --- FIXME: WE DON'T DO THIS IN FINAL VERSION!!!
-    // FunctionType *mainFuncType = FunctionType::get(Int32Ty, {Int32Ty, Int8PtrPtrTy}, false);
-    // Function *mainFunc = Function::Create(mainFuncType, GlobalValue::ExternalLinkage, "main", module);
-
-    // // Create block to attach to main
-    // BasicBlock *bBlk = BasicBlock::Create(module->getContext(), "entry", mainFunc);
-    // builder->SetInsertPoint(bBlk);
-
     for (auto e : ctx->extens)
     {
         e->accept(this);
@@ -26,8 +13,6 @@ std::optional<Value *> CodegenVisitor::TvisitCompilationUnit(WPLParser::Compilat
         // Generate code for statement
         e->accept(this);
     }
-
-    // builder->CreateRet(Int32Zero);
 
     /*
      * Create main to invoke program
@@ -42,41 +27,33 @@ std::optional<Value *> CodegenVisitor::TvisitCompilationUnit(WPLParser::Compilat
     BasicBlock *bBlk = BasicBlock::Create(module->getContext(), "entry", mainFunc);
     builder->SetInsertPoint(bBlk);
 
-    // auto progType = FunctionType::get(Int32Ty, true);
-    // auto progFn = Function::Create(progType, Function::ExternalLinkage, "program", module);
-    // FunctionCallee progCall(progType, progFn);
-
-    // builder->CreateRet(
-    //     builder->CreateCall(progFn, {})
-    // );
-
     // FIXME: WE SEGFAULT IF NOT FOUND!!!
 
     llvm::Function *progFn = module->getFunction("program");
-    builder->CreateRet(
-        builder->CreateCall(progFn, {}));
+    builder->CreateRet(builder->CreateCall(progFn, {}));
 
     return {};
 }
 
 std::optional<Value *> CodegenVisitor::TvisitInvocation(WPLParser::InvocationContext *ctx)
 {
-    // FIXME: IMPL VARIADIC - should be ok on this side...
+    //Create the argument vector
     std::vector<llvm::Value *> args;
-    std::cout << "75!" << std::endl;
+
+    //Populate the argument vector, breaking out of compilation if any argument fails to generate. 
     for (auto e : ctx->args)
     {
         std::optional<Value *> valOpt = std::any_cast<std::optional<Value *>>(e->accept(this));
         if (!valOpt)
         {
             errorHandler.addCodegenError(e->getStart(), "Failed to generate code");
-            return {}; // FIXME: DO BETTER?
+            return {};
         }
         args.push_back(valOpt.value());
     }
-    std::cout << "81!" << std::endl;
-    ArrayRef<Value *> ref = ArrayRef(args);
 
+    //Convert to an array ref, then find and execute the call. 
+    ArrayRef<Value *> ref = ArrayRef(args);
     llvm::Function *call = module->getFunction(ctx->VARIABLE()->getText());
 
     Value *val = builder->CreateCall(call, ref); // Needs to be separate line because, C++
@@ -85,13 +62,16 @@ std::optional<Value *> CodegenVisitor::TvisitInvocation(WPLParser::InvocationCon
 
 std::optional<Value *> CodegenVisitor::TvisitArrayAccess(WPLParser::ArrayAccessContext *ctx)
 {
+    //Attempt to get the index Value
     std::optional<Value *> index = std::any_cast<std::optional<Value *>>(ctx->index->accept(this));
 
     if (!index)
     {
+        errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code in TvisitArrayAccess for index!");
         return {};
     }
 
+    //Create the expression pointer
     llvm::AllocaInst *arrayPtr = props->getBinding(ctx)->val;
     auto ptr = builder->CreateGEP(arrayPtr, {Int32Zero, index.value()});
     Value *val = builder->CreateLoad(ptr->getType()->getPointerElementType(), ptr);
@@ -234,6 +214,14 @@ std::optional<Value *> CodegenVisitor::TvisitEqExpr(WPLParser::EqExprContext *ct
     return {};
 }
 
+/**
+ * @brief Generates code for Logical Ands
+ * 
+ * Tested in: test2.wpl
+ * 
+ * @param ctx LogAndExprContext to generate this from
+ * @return std::optional<Value *> The resulting value or {} if errors. 
+ */
 std::optional<Value *> CodegenVisitor::TvisitLogAndExpr(WPLParser::LogAndExprContext *ctx)
 {
     std::optional<Value *> lhs = std::any_cast<std::optional<Value *>>(ctx->left->accept(this));
@@ -247,9 +235,17 @@ std::optional<Value *> CodegenVisitor::TvisitLogAndExpr(WPLParser::LogAndExprCon
 
     Value *IR = builder->CreateAnd(lhs.value(), rhs.value());
     Value *v = builder->CreateZExtOrTrunc(IR, Int1Ty);
-    return v; // FIXME: VERIFY!!!
+    return v;
 }
 
+/**
+ * @brief Generates code for Logical Ors. 
+ * 
+ * Tested in: test2.wpl
+ * 
+ * @param ctx Context to generate code from
+ * @return std::optional<Value *> The resulting value or {} if errors. 
+ */
 std::optional<Value *> CodegenVisitor::TvisitLogOrExpr(WPLParser::LogOrExprContext *ctx)
 {
     std::optional<Value *> lhs = std::any_cast<std::optional<Value *>>(ctx->left->accept(this));
@@ -263,13 +259,11 @@ std::optional<Value *> CodegenVisitor::TvisitLogOrExpr(WPLParser::LogOrExprConte
 
     Value *IR = builder->CreateOr(lhs.value(), rhs.value());
     Value *v = builder->CreateZExtOrTrunc(IR, Int1Ty);
-    return v; // FIXME: VERIFY!!!
+    return v;
 }
 
-std::optional<Value *> CodegenVisitor::TvisitCallExpr(WPLParser::CallExprContext *ctx)
-{
-    return this->TvisitInvocation(ctx->call);
-}
+// Passthrough to TvisitInvocation
+std::optional<Value *> CodegenVisitor::TvisitCallExpr(WPLParser::CallExprContext *ctx) { return this->TvisitInvocation(ctx->call); }
 
 std::optional<Value *> CodegenVisitor::TvisitVariableExpr(WPLParser::VariableExprContext *ctx)
 {
@@ -280,12 +274,11 @@ std::optional<Value *> CodegenVisitor::TvisitVariableExpr(WPLParser::VariableExp
     if (!sym)
     {
         errorHandler.addCodegenError(ctx->getStart(), "Undefined variable access: " + id);
-        return {}; // FIXME: these nulptrs are causing bad anycasts.
+        return {};
     }
 
     // FIXME: ADD TYPES
     Value *v = builder->CreateLoad(sym->type->getLLVMType(module->getContext()), sym->val, id);
-
     return v;
 }
 
@@ -357,10 +350,8 @@ std::optional<Value *> CodegenVisitor::TvisitBinaryRelExpr(WPLParser::BinaryRelE
     return v;
 }
 
-std::optional<Value *> CodegenVisitor::TvisitBConstExpr(WPLParser::BConstExprContext *ctx)
-{
-    return this->TvisitBooleanConst(ctx->booleanConst());
-}
+//Passthrough to TvisitBooleanConst
+std::optional<Value *> CodegenVisitor::TvisitBConstExpr(WPLParser::BConstExprContext *ctx) { return this->TvisitBooleanConst(ctx->booleanConst()); }
 
 std::optional<Value *> CodegenVisitor::TvisitCondition(WPLParser::ConditionContext *ctx)
 {
@@ -377,7 +368,6 @@ std::optional<Value *> CodegenVisitor::TvisitSelectAlternative(WPLParser::Select
 
 std::optional<Value *> CodegenVisitor::TvisitExternStatement(WPLParser::ExternStatementContext *ctx)
 {
-    // FIXME: VARIADIC - Should be OK here now...
     std::vector<llvm::Type *> typeVec;
 
     if (ctx->paramList)
@@ -388,28 +378,21 @@ std::optional<Value *> CodegenVisitor::TvisitExternStatement(WPLParser::ExternSt
             typeVec.push_back(type);
         }
     }
-    std::cout << "HERE" << std::endl;
 
     ArrayRef<llvm::Type *> paramRef = ArrayRef(typeVec);
     bool isVariadic = ctx->variadic || ctx->ELLIPSIS();
 
-    std::cout << "HERE2" << std::endl;
-
     FunctionType *fnType = FunctionType::get(
-        CodegenVisitor::llvmTypeFor(ctx->ty), // FIXME: DO BETTER
+        CodegenVisitor::llvmTypeFor(ctx->ty), 
         paramRef,
         isVariadic);
-    std::cout << "HERE3" << std::endl;
-    // FIXME: VERIFY CORRECT!
+    
     Function::Create(fnType, GlobalValue::ExternalLinkage, ctx->name->getText(), module);
-    std::cout << "HERE4" << std::endl;
-    // errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED - visitExternStatement");
     return {};
 }
 
 std::optional<Value *> CodegenVisitor::TvisitFuncDef(WPLParser::FuncDefContext *ctx)
 {
-
     std::vector<llvm::Type *> typeVec;
 
     Symbol *sym = props->getBinding(ctx);
@@ -421,14 +404,6 @@ std::optional<Value *> CodegenVisitor::TvisitFuncDef(WPLParser::FuncDefContext *
 
     const TypeInvoke *inv = dynamic_cast<const TypeInvoke *>(sym->type);
 
-    /*
-        for(const Type * t : inv->getParamTypes())
-        {
-            //FIXME: NEED A WAY TO get the type!!!
-            typeVec.push_back(t);
-        }
-    */
-
     if (ctx->paramList)
     {
         for (auto e : ctx->paramList->params)
@@ -440,11 +415,10 @@ std::optional<Value *> CodegenVisitor::TvisitFuncDef(WPLParser::FuncDefContext *
     ArrayRef<llvm::Type *> paramRef = ArrayRef(typeVec);
 
     FunctionType *fnType = FunctionType::get(
-        CodegenVisitor::llvmTypeFor(ctx->ty), // FIXME: DO BETTER
+        CodegenVisitor::llvmTypeFor(ctx->ty),
         paramRef,
         false);
 
-    // FIXME: VERIFY CORRECT!
     Function *fn = Function::Create(fnType, GlobalValue::ExternalLinkage, ctx->name->getText(), module);
 
     // Create block
@@ -483,14 +457,6 @@ std::optional<Value *> CodegenVisitor::TvisitProcDef(WPLParser::ProcDefContext *
 
     const TypeInvoke *inv = dynamic_cast<const TypeInvoke *>(sym->type);
 
-    /*
-        for(const Type * t : inv->getParamTypes())
-        {
-            //FIXME: NEED A WAY TO get the type!!!
-            typeVec.push_back(t);
-        }
-    */
-
     if (ctx->paramList)
     {
         for (auto e : ctx->paramList->params)
@@ -506,7 +472,7 @@ std::optional<Value *> CodegenVisitor::TvisitProcDef(WPLParser::ProcDefContext *
         paramRef,
         false);
 
-    // FIXME: VERIFY CORRECT!
+
     Function *fn = Function::Create(fnType, GlobalValue::ExternalLinkage, ctx->name->getText(), module);
 
     // Create block
@@ -541,8 +507,7 @@ std::optional<Value *> CodegenVisitor::TvisitAssignStatement(WPLParser::AssignSt
         return {};
     }
 
-    // if (ctx->to->VARIABLE())
-    // {
+
     Symbol *varSym = props->getBinding(ctx->to);
 
     if (varSym == nullptr)
@@ -574,13 +539,7 @@ std::optional<Value *> CodegenVisitor::TvisitAssignStatement(WPLParser::AssignSt
     }
 
     builder->CreateStore(exprVal.value(), val);
-    // }
-    // else
-    // {
-    // Array access
-    // FIXME: DO BETER
 
-    // }
     return {};
 }
 
@@ -605,7 +564,7 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
             if (!varSymbol)
             {
                 errorHandler.addCodegenError(ctx->getStart(), "Issue creating variable: " + var->getText());
-                return {}; // FIXME: DO BETTER
+                return {};
             }
 
             std::cout << "493 4 " << ctx->getText() << !!varSymbol->type << std::endl;
@@ -621,7 +580,7 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
                 builder->CreateStore(exVal.value(), v);
         }
     }
-    // FIXME: ENSURE CORRECT!!!
+    
     return {};
 }
 
@@ -670,7 +629,6 @@ std::optional<Value *> CodegenVisitor::TvisitLoopStatement(WPLParser::LoopStatem
     parent->getBasicBlockList().push_back(restBlk);
     builder->SetInsertPoint(restBlk);
 
-    // FIXME: VERIFY!!!
     return {};
 }
 
@@ -749,10 +707,8 @@ std::optional<Value *> CodegenVisitor::TvisitSelectStatement(WPLParser::SelectSt
     return {};
 }
 
-std::optional<Value *> CodegenVisitor::TvisitCallStatement(WPLParser::CallStatementContext *ctx)
-{
-    return this->TvisitInvocation(ctx->call);
-}
+//Passthrough function
+std::optional<Value *> CodegenVisitor::TvisitCallStatement(WPLParser::CallStatementContext *ctx) { return this->TvisitInvocation(ctx->call); }
 
 std::optional<Value *> CodegenVisitor::TvisitReturnStatement(WPLParser::ReturnStatementContext *ctx)
 {
@@ -776,7 +732,6 @@ std::optional<Value *> CodegenVisitor::TvisitReturnStatement(WPLParser::ReturnSt
     Value *v = builder->CreateRetVoid();
     // FIXME: ENSURE NO FOLLOWING CODE, ENSURE CORRECT!!
     return v;
-    // return nullptr; //FIXME: DO BETTER?
 }
 
 std::optional<Value *> CodegenVisitor::TvisitBooleanConst(WPLParser::BooleanConstContext *ctx)
@@ -786,10 +741,8 @@ std::optional<Value *> CodegenVisitor::TvisitBooleanConst(WPLParser::BooleanCons
 }
 
 
-std::optional<Value *> CodegenVisitor::TvisitBlockStatement(WPLParser::BlockStatementContext *ctx)
-{
-    return this->TvisitBlock(ctx->block());
-}
+//Passthrough function
+std::optional<Value *> CodegenVisitor::TvisitBlockStatement(WPLParser::BlockStatementContext *ctx) { return this->TvisitBlock(ctx->block()); }
 
 std::optional<Value *> CodegenVisitor::TvisitBlock(WPLParser::BlockContext *ctx)
 {
