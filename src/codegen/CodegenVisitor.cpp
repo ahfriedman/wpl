@@ -25,14 +25,6 @@ std::optional<Value *> CodegenVisitor::TvisitCompilationUnit(WPLParser::Compilat
     {
         // Generate code for statement
         e->accept(this);
-
-        // Log expression for debugging purposes
-        // auto txt = e->getText();
-        StringRef formatRef = "Processed %s\n";
-        auto gFormat = builder->CreateGlobalStringPtr(formatRef, "fmtStr");
-        // StringRef ref = txt;
-        // auto fmt = builder->CreateGlobalStringPtr(ref, "exprStr");
-        // builder->CreateCall(printf_fn, {gFormat, fmt});
     }
 
     // builder->CreateRet(Int32Zero);
@@ -389,7 +381,7 @@ std::optional<Value *> CodegenVisitor::TvisitExternStatement(WPLParser::ExternSt
         isVariadic);
     std::cout << "HERE3" << std::endl;
     // FIXME: VERIFY CORRECT!
-    Function *fn = Function::Create(fnType, GlobalValue::ExternalLinkage, ctx->name->getText(), module);
+    Function::Create(fnType, GlobalValue::ExternalLinkage, ctx->name->getText(), module);
     std::cout << "HERE4" << std::endl;
     // errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED - visitExternStatement");
     return {};
@@ -404,7 +396,7 @@ std::optional<Value *> CodegenVisitor::TvisitFuncDef(WPLParser::FuncDefContext *
     if (!sym)
     {
         errorHandler.addCodegenError(ctx->getStart(), "Unbound function: " + ctx->name->getText());
-        return nullptr;
+        return {};
     }
 
     const TypeInvoke *inv = dynamic_cast<const TypeInvoke *>(sym->type);
@@ -466,7 +458,7 @@ std::optional<Value *> CodegenVisitor::TvisitProcDef(WPLParser::ProcDefContext *
     if (!sym)
     {
         errorHandler.addCodegenError(ctx->getStart(), "Unbound function: " + ctx->name->getText());
-        return nullptr;
+        return {};
     }
 
     const TypeInvoke *inv = dynamic_cast<const TypeInvoke *>(sym->type);
@@ -515,7 +507,7 @@ std::optional<Value *> CodegenVisitor::TvisitProcDef(WPLParser::ProcDefContext *
 
     // FIXME: VERIFY ENOUGH, NOTHING FOLLOWING, ETC. THIS IS PROBS WRONG!
 
-    return nullptr;
+    return {};
 }
 
 std::optional<Value *> CodegenVisitor::TvisitAssignStatement(WPLParser::AssignStatementContext *ctx)
@@ -593,7 +585,7 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
             if (!varSymbol)
             {
                 errorHandler.addCodegenError(ctx->getStart(), "Issue creating variable: " + var->getText());
-                return nullptr; // FIXME: DO BETTER
+                return {}; // FIXME: DO BETTER
             }
 
             std::cout << "493 4 " << ctx->getText() << !!varSymbol->type << std::endl;
@@ -610,7 +602,7 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
         }
     }
     // FIXME: ENSURE CORRECT!!!
-    return nullptr;
+    return {};
 }
 
 std::optional<Value *> CodegenVisitor::TvisitLoopStatement(WPLParser::LoopStatementContext *ctx)
@@ -621,7 +613,7 @@ std::optional<Value *> CodegenVisitor::TvisitLoopStatement(WPLParser::LoopStatem
 
     if (!check)
     {
-        errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code for: " + ctx->check->toString());
+        errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code for: " + ctx->check->getText());
         return {};
     }
 
@@ -645,7 +637,7 @@ std::optional<Value *> CodegenVisitor::TvisitLoopStatement(WPLParser::LoopStatem
     check = this->TvisitCondition(ctx->check);
     if (!check)
     {
-        errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code for: " + ctx->check->toString());
+        errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code for: " + ctx->check->getText());
         return {};
     }
     // Check if we need to loop back again...
@@ -659,7 +651,7 @@ std::optional<Value *> CodegenVisitor::TvisitLoopStatement(WPLParser::LoopStatem
     builder->SetInsertPoint(restBlk);
 
     // FIXME: VERIFY!!!
-    return nullptr;
+    return {};
 }
 
 // FIXME: EXTERNS THAT ARE JUST ...!!!!
@@ -672,7 +664,7 @@ std::optional<Value *> CodegenVisitor::TvisitConditionalStatement(WPLParser::Con
 
     if (!cond)
     {
-        errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code for: " + ctx->check->toString());
+        errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code for: " + ctx->check->getText());
         return {};
     }
 

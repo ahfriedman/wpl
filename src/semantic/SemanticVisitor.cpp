@@ -2,6 +2,9 @@
 
 const Type* SemanticVisitor::visitCtx(WPLParser::CompilationUnitContext *ctx)
 {
+
+    std::cout << ctx->getText() << std::endl;
+    
     // Enter initial scope
     stmgr->enterScope();
 
@@ -265,6 +268,7 @@ const Type * SemanticVisitor::visitCtx(WPLParser::VariableExprContext *ctx)
 
 const Type * SemanticVisitor::visitCtx(WPLParser::FieldAccessExprContext *ctx)
 {
+    std::cout << "FIELD ACCESS?? " << std::endl; 
     const Type *ty = std::any_cast<const Type *>(ctx->ex->accept(this));
 
     if (const TypeArray *a = dynamic_cast<const TypeArray *>(ty))
@@ -300,10 +304,12 @@ const Type * SemanticVisitor::visitCtx(WPLParser::BinaryRelExprContext *ctx)
         errorHandler.addSemanticError(ctx->getStart(), "INT left expression expected, but was " + left->toString());
         valid = false;
     }
+    std::cout << "304 " << ctx->getText() << std::endl; 
     auto right = std::any_cast<const Type *>(ctx->right->accept(this));
+    std::cout << "305" << std::endl; 
     if (right->isNot(Types::INT))
     {
-        errorHandler.addSemanticError(ctx->getStart(), "INT right expression expected, but was " + right->toString());
+        errorHandler.addSemanticError(ctx->getStart(), "INT right expression expected, but was " + right->toString() + " in " + ctx->getText());
         valid = false;
     }
     return valid ? Types::BOOL : Types::UNDEFINED;
@@ -601,6 +607,7 @@ const Type * SemanticVisitor::visitCtx(WPLParser::VarDeclStatementContext *ctx)
 
 const Type * SemanticVisitor::visitCtx(WPLParser::LoopStatementContext *ctx)
 {
+    std::cout << "HELLO? " << ctx->check->getText() << std::endl;
     this->visitCtx(ctx->check);
     this->visitCtx(ctx->block());
 

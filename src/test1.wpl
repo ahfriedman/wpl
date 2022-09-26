@@ -3,7 +3,7 @@ extern int func printf(...);
 #extern int func testtwo(...);
 
 int func chayos() {
-    var a, b; 
+    var a, b <- 1; 
 
     a <- b;  # FIXME: WHAT TO DO?
 
@@ -27,7 +27,7 @@ int func branchtest() {
 
     var count <- 0; 
 
-    while count < 5 do {
+    while count < a.length do {
         a[count] <- count; 
         printf("a[%i] = %i\n", count, count); 
         count <- count + 1; 
