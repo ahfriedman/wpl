@@ -2,22 +2,22 @@
 
 const Type* SemanticVisitor::visitCtx(WPLParser::CompilationUnitContext *ctx)
 {
-
-    std::cout << ctx->getText() << std::endl;
-    
     // Enter initial scope
     stmgr->enterScope();
 
+    //Visit externs first; they will report any errors if they have any.
     for(auto e : ctx->extens)
     {
         this->visitCtx(e); 
     }
 
+    //Visit the statements contained in the unit
     for (auto e : ctx->stmts)
     {
         e->accept(this);
     }
 
+    //Return UNDEFINED as this should be viewed as a statement and not something assignable
     return Types::UNDEFINED;
 }
 
@@ -25,8 +25,10 @@ const Type * SemanticVisitor::visitCtx(WPLParser::InvocationContext *ctx)
 {
     // FIXME: should probably make it so that InvokableTypes use BOT instead of optionals...
 
+    /*
+     * Look up the symbol to make sure that it is defined
+     */
     std::string name = ctx->VARIABLE()->getText();
-
     std::optional<Symbol *> opt = stmgr->lookup(name);
 
     if (!opt)
@@ -35,12 +37,28 @@ const Type * SemanticVisitor::visitCtx(WPLParser::InvocationContext *ctx)
         return Types::UNDEFINED;
     }
 
+
+    /*
+     * Given that the symbol is defined, check that it is a FUNC/PROC (something that we can invoke)
+     */
     Symbol *sym = opt.value();
 
     if (const TypeInvoke *invokeable = dynamic_cast<const TypeInvoke *>(sym->type))
     {
+        /*
+         * The symbol is something we can invoke, so check that we provide it with valid parameters
+         */
         std::vector<const Type *> fnParams = invokeable->getParamTypes();
 
+        /*
+         *  If the symbol is NOT a variadic and the number of arguments we provide 
+         *      are not the same as the number in the invokable's definition 
+         *  OR the symbol IS a variadic and the number of arguments in the
+         *      invokable's definition is greater than the number we provide,
+         * 
+         * THEN we have an error as we do not provide a valid number of arguments
+         * to allow for this invocation. 
+         */
         if (
             (!invokeable->isVariadic() && fnParams.size() != ctx->args.size())
             || (invokeable->isVariadic() && fnParams.size() > ctx->args.size()) //FIXME: verify correct
@@ -49,19 +67,36 @@ const Type * SemanticVisitor::visitCtx(WPLParser::InvocationContext *ctx)
             std::ostringstream errorMsg;
             errorMsg << "Invocation of " << name << " expected " << fnParams.size() << " argument(s), but got " << ctx->args.size();
             errorHandler.addSemanticError(ctx->getStart(), errorMsg.str());
-            return Types::UNDEFINED;
+            return Types::UNDEFINED; //TODO: Could change this to the return type to catch more errors?
         }
 
-        for (unsigned int i = 0; i < ctx->args.size(); i++)//fnParams.size(); i++)
+        //FIXME: TEST VARIADIC(...) WITH NO ARGS!!!
+
+        /*
+         * Now that we have a valid number of parameters, we can make sure that
+         * they have the correct types as per our arguments. 
+         * 
+         * To do this, we first loop through the number of parameters that WE provide
+         * as this should be AT LEAST the same number as in the definition. 
+         */
+        for (unsigned int i = 0; i < ctx->args.size(); i++)
         {
+            //Get the type of the current argument
             const Type *providedType = std::any_cast<const Type *>(ctx->args.at(i)->accept(this));
 
-            if(invokeable->isVariadic() && fnParams.size() == 0) continue; //FIXME: DO BETTER, USED FOR VARIADIC
+            //If the invokable is variadic and has no specified type parameters, then we can 
+            //skip over subsequent checks--we just needed to run type checking on each parameter.
+            if(invokeable->isVariadic() && fnParams.size() == 0) continue;
 
+            //Loop up the expected type. This is either the type at the 
+            //ith index OR the last type specified by the function 
+            //if i > fnParams.size() as that would imply we are 
+            //checking a variadic
             const Type *expectedType = fnParams.at(
                 i < fnParams.size() ? i : (fnParams.size() - 1)
                 );
 
+            //If the types do not match, report an error. 
             if (providedType->isNot(expectedType))
             {
                 std::ostringstream errorMsg;
@@ -71,9 +106,11 @@ const Type * SemanticVisitor::visitCtx(WPLParser::InvocationContext *ctx)
             }
         }
 
+        //Return the type of the invokable or BOT if it has none. 
         return invokeable->getReturnType().has_value() ? invokeable->getReturnType().value() : Types::UNDEFINED;
     }
 
+    // Symbol was not an invokeable type, so report an error & return UNDEFINED.
     errorHandler.addSemanticError(ctx->getStart(), "Can only invoke PROC and FUNC, not " + name + " : " + sym->type->toString());
     return Types::UNDEFINED;
 }
