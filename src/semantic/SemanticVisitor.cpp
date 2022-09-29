@@ -444,6 +444,9 @@ const Type *SemanticVisitor::visitCtx(WPLParser::ConditionContext *ctx)
 
 const Type *SemanticVisitor::visitCtx(WPLParser::SelectAlternativeContext *ctx)
 {
+    //Need to have this b/c we may define variables
+    stmgr->enterScope();
+
     // FIXME: VERIFY
     ctx->eval->accept(this);
 
@@ -456,6 +459,8 @@ const Type *SemanticVisitor::visitCtx(WPLParser::SelectAlternativeContext *ctx)
     {
         errorHandler.addSemanticError(ctx->getStart(), "Select alternative expected BOOL but got " + checkType->toString());
     }
+
+    this->safeExitScope(ctx); 
 
     return Types::UNDEFINED;
 }
