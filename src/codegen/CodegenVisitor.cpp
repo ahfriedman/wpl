@@ -284,24 +284,22 @@ std::optional<Value *> CodegenVisitor::TvisitVariableExpr(WPLParser::VariableExp
 
 std::optional<Value *> CodegenVisitor::TvisitFieldAccessExpr(WPLParser::FieldAccessExprContext *ctx)
 {
-    //This is ONLY array length for now... 
-    Symbol * sym = props->getBinding(ctx->ex); 
 
-    if(!sym || !sym->val)
+    //This is ONLY array length for now... 
+    Symbol * sym = props->getBinding(ctx->ex);  //FIXME: DO WE NEED TO VISIT? -> I guess not currently b/c all type stuff, but probably should and/or remove and change it to VAR?
+
+    if(!sym || !sym->val || !sym->type)
     {
         errorHandler.addCodegenError(ctx->getStart(), "Improperly initialized array access symbol.");
         return {}; 
     }
 
-    llvm::Type * ty = sym->val->getType();
 
-    if(llvm::ArrayType* at =  static_cast<llvm::ArrayType*>(ty))
+    if(const TypeArray* ar = dynamic_cast<const TypeArray*>(sym->type))
     {
-        int i = at->getNumElements(); //FIXME: WRONG TYPES!!
+        Value * v = builder->getInt32(ar->getLength());
 
-        Value * v = builder->getInt32(i); 
-
-        return v; 
+        return v;  
     }
 
     errorHandler.addCodegenError(ctx->getStart(), "Given non-array type in TvisitFieldAccessExpr!");
@@ -519,7 +517,7 @@ std::optional<Value *> CodegenVisitor::TvisitAssignStatement(WPLParser::AssignSt
     if (varSym->val == nullptr)
     {
         errorHandler.addCodegenError(ctx->getStart(), "Improperly initialized variable in assignment: " + ctx->to->getText() + "@" + varSym->identifier);
-        std::cout << "IMPROP VAR @ " << &varSym << std::endl;
+        std::cout << "IMPROP VAR @ " << varSym << std::endl;
         return {};
     }
 
@@ -535,7 +533,11 @@ std::optional<Value *> CodegenVisitor::TvisitAssignStatement(WPLParser::AssignSt
             errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code for: " + ctx->to->getText());
         }
 
-        val = builder->CreateGEP(val, {Int32Zero, index.value()});
+        Value * built = builder->CreateGEP(val, {Int32Zero, index.value()});
+
+        std::cout << "551 " << built << std::endl;
+
+        val = built; //builder->CreateGEP(val, {Int32Zero, index.value()});
     }
 
     builder->CreateStore(exprVal.value(), val);
@@ -573,7 +575,9 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
             std::cout << "495 4 " << ctx->getText() << std::endl;
             llvm::AllocaInst *v = builder->CreateAlloca(ty, 0, var->getText());
 
-            std::cout << "Set Val for: " << varSymbol->identifier << "(" << var->getText() << ") @" << &varSymbol << std::endl;
+            std::cout << "Set Val for: " << varSymbol->identifier << "(" << var->getText() << ") @" << varSymbol << std::endl;
+
+            std::cout << " META: " << v->isArrayAllocation() << " AND " << v->getArraySize() << std::endl; 
             varSymbol->val = v;
 
             if (e->ex)

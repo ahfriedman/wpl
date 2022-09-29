@@ -146,6 +146,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::ArrayAccessContext *ctx)
     Symbol *sym = opt.value();
     if (const TypeArray *arr = dynamic_cast<const TypeArray *>(sym->type))
     {
+        std::cout << "Bind @ Array Access" << std::endl; 
         bindings->bind(ctx, sym);
         return arr->getValueType(); // Return type of array
     }
@@ -172,11 +173,13 @@ const Type *SemanticVisitor::visitCtx(WPLParser::ArrayOrVarContext *ctx)
 
         Symbol *symbol = opt.value();
 
+        std::cout << "Bind @ Array or Var" << std::endl; 
         bindings->bind(ctx, symbol);
         return symbol->type;
     }
 
     const Type *arrType = this->visitCtx(ctx->array);
+    std::cout << "SV - Bubble up!" << std::endl; 
     bindings->bind(ctx, bindings->getBinding(ctx->array)); // FIXME: DO BETTER; Seems hacky to be passing like this!
     return arrType;
 }
@@ -335,6 +338,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::VariableExprContext *ctx)
 
     Symbol *symbol = opt.value();
 
+    std::cout << "Bind @ Variable" << std::endl; 
     bindings->bind(ctx, symbol);
     return symbol->type;
 }
@@ -349,6 +353,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::FieldAccessExprContext *ctx)
 {
     // Determine the type of the expression we are visiting
     const Type *ty = std::any_cast<const Type *>(ctx->ex->accept(this));
+    std::cout << "SV354 - Finish FA EX visit - " << bindings->getBinding(ctx->ex)->val << std::endl; 
 
     // Currently we only support arrays, so if its not an array, report an error.
     if (const TypeArray *a = dynamic_cast<const TypeArray *>(ty))
@@ -688,6 +693,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::VarDeclStatementContext *ctx)
             {
                 Symbol *symbol = new Symbol(id, exprType); // Done with exprType for later inferencing purposes
                 stmgr->addSymbol(symbol);
+                std::cout << "Bind @ varDecl" << std::endl; 
                 bindings->bind(var, symbol);
             }
         }
