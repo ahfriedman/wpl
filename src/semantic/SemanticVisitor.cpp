@@ -615,8 +615,6 @@ const Type *SemanticVisitor::visitCtx(WPLParser::LoopStatementContext *ctx)
 
 const Type *SemanticVisitor::visitCtx(WPLParser::ConditionalStatementContext *ctx)
 {
-    // FIXME:Type inference!!!
-
     // Automatically handles checking that we have a valid condition
     this->visitCtx(ctx->check);
 
