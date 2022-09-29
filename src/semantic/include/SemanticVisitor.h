@@ -117,6 +117,11 @@ public:
                 break; 
             }
             if(dynamic_cast<WPLParser::ReturnStatementContext *>(e)) foundReturn = true; 
+
+            if(dynamic_cast<WPLParser::FuncDefContext*>(e) || dynamic_cast<WPLParser::ProcDefContext*>(e))
+            {
+                errorHandler.addSemanticError(ctx->getStart(), "Currenly, nested PROC/FUNCs are not supported by codegen.");
+            }
         }
 
         if(newScope)
