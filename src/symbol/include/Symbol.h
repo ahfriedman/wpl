@@ -131,6 +131,9 @@ public:
 
     const Type *getValueType() const { return valueType; }
 
+
+    int getLength() const { return length; }
+
     // FIXME: ENSURE THESE ARE ALL GOOD ENOUGH!
     llvm::Type *getLLVMType(llvm::LLVMContext &C) const override
     {
@@ -267,6 +270,11 @@ public:
     std::string toString() const override
     {
         // FIXME: DO BETTER
+        if(valueType)
+        {
+            // std::cout << "VAR/" << valueType.value()->toString() << std::endl;
+            return "{VAR/" + valueType.value()->toString() + "}";
+        }
         return "VAR";
     }
 
@@ -285,12 +293,23 @@ protected:
     {
         // std::cout << "SYM 300" << std::endl;
         if(valueType) return valueType.value()->isSubtype(other);
-        //FIXME: DO BETTER!!! MAY NEED TO LIMIT THIS TO NOT BE FNS, BOTs, ETC!!!!
-        std::cout << "SYM 303 - WILL SET AS " << other->toString() << std::endl;
+
         TypeInfer * mthis =  const_cast<TypeInfer*> (this);
-        std::cout << "SYM 305" << std::endl;
+
+        if(const TypeInfer * oinf = dynamic_cast<const TypeInfer*>(other))
+        {
+            if(oinf->valueType)
+            {
+                mthis->valueType = oinf->valueType; //other; 
+                return true; 
+            }
+
+            //Cannot assign undefined
+            return false;
+        }
+
         mthis->valueType = other; 
-        std::cout << "SYM 307" << std::endl;
+
         return true;
     }
 };

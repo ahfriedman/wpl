@@ -11,6 +11,7 @@ class PropertyManager {
 
     // Bind the symbol to the node
     void bind(antlr4::tree::ParseTree *ctx, Symbol* symbol) {
+      std::cout << "BIND: " << ctx->getText() << " TO " << symbol->toString() << "@" << symbol << std::endl; 
       bindings.put(ctx, symbol);
     }
 

@@ -7,13 +7,18 @@
 
 #include "test_error_handlers.h"
 
-//FIXME: MOVE INFERENCE TESTS FROM PROG TO HERE!!!
 
-TEST_CASE("Basic if", "[semantic][conditional]")
+TEST_CASE("Basic select", "[semantic][conditional]")
 {
+  //FIXME: should select allow 0 cases then throw an error semantically?
   antlr4::ANTLRInputStream input(
-    "if true {"  
-    "}"
+    R""""(
+      select {
+        false : int a <- 2;
+
+
+      }
+    )""""
   );
   WPLLexer lexer(&input);
   // lexer.removeErrorListeners();
@@ -44,12 +49,66 @@ TEST_CASE("Basic if", "[semantic][conditional]")
   // CHECK(opt.value()->type->isSubtypeOf(Types::INT));
 }
 
-TEST_CASE("Basic if 2", "[semantic][conditional]")
+
+
+TEST_CASE("Basic select inf error 1", "[semantic][conditional]")
 {
+  //FIXME: should select allow 0 cases then throw an error semantically?
   antlr4::ANTLRInputStream input(
-    "if ~true {"  
-    "} else {"
-    "}"
+    R""""(
+      var a; 
+
+      select {
+        false : a <- true; 
+        true : a <- 10; 
+        
+
+      }
+    )""""
+  );
+  WPLLexer lexer(&input);
+  // lexer.removeErrorListeners();
+  // lexer.addErrorListener(new TestErrorListener());
+  antlr4::CommonTokenStream tokens(&lexer);
+  WPLParser parser(&tokens);
+  parser.removeErrorListeners();
+  parser.addErrorListener(new TestErrorListener());
+
+  WPLParser::CompilationUnitContext *tree = NULL;
+  REQUIRE_NOTHROW(tree = parser.compilationUnit());
+  REQUIRE(tree != NULL);
+  REQUIRE(tree->getText() != "");
+
+  STManager *stmgr = new STManager();
+  SemanticVisitor *sv = new SemanticVisitor(stmgr, new PropertyManager());
+
+  sv->visitCompilationUnit(tree);
+
+  //FIXME: CHECK MORE PRECISELY 
+  CHECK(sv->hasErrors());
+
+  // CHECK_FALSE(sv->hasErrors());
+
+  // std::optional<Symbol *> opt = stmgr->lookup("a");
+
+  // CHECK(opt.has_value());
+  // CHECK(opt.value()->type->isSubtypeOf(Types::INT));
+}
+
+TEST_CASE("Basic select inf 1", "[semantic][conditional]")
+{
+  //FIXME: should select allow 0 cases then throw an error semantically?
+  antlr4::ANTLRInputStream input(
+    R""""(
+      var a; 
+
+      select {
+        false : boolean a <- true; 
+        true : a <- 10; 
+        
+
+      }
+    )""""
   );
   WPLLexer lexer(&input);
   // lexer.removeErrorListeners();
@@ -80,14 +139,20 @@ TEST_CASE("Basic if 2", "[semantic][conditional]")
   // CHECK(opt.value()->type->isSubtypeOf(Types::INT));
 }
 
-TEST_CASE("If Example 1", "[semantic][conditional]")
+TEST_CASE("Basic select inf 2", "[semantic][conditional]")
 {
+  //FIXME: should select allow 0 cases then throw an error semantically?
   antlr4::ANTLRInputStream input(
-    "if a < b {"
-    " isNegative <- true;"  
-    "} else {"
-    " isNegative <- false;"
-    "}"
+    R""""(
+      var a; 
+
+      select {
+        false : a <- true; 
+        true : int a <- 10; 
+        
+
+      }
+    )""""
   );
   WPLLexer lexer(&input);
   // lexer.removeErrorListeners();
@@ -107,8 +172,9 @@ TEST_CASE("If Example 1", "[semantic][conditional]")
 
   sv->visitCompilationUnit(tree);
 
+  std::cout << sv->getErrors() << std::endl; 
   //FIXME: CHECK MORE PRECISELY 
-  CHECK(sv->hasErrors());
+  CHECK_FALSE(sv->hasErrors());
 
   // CHECK_FALSE(sv->hasErrors());
 
@@ -118,135 +184,20 @@ TEST_CASE("If Example 1", "[semantic][conditional]")
   // CHECK(opt.value()->type->isSubtypeOf(Types::INT));
 }
 
-TEST_CASE("If Example 1-2", "[semantic][conditional]")
+TEST_CASE("Basic select inf 3", "[semantic][conditional]")
 {
+  //FIXME: should select allow 0 cases then throw an error semantically?
   antlr4::ANTLRInputStream input(
-    "int a, b <- 0;"
-    "if a < b {"
-    " isNegative <- true;"  
-    "} else {"
-    " isNegative <- false;"
-    "}"
-  );
-  WPLLexer lexer(&input);
-  // lexer.removeErrorListeners();
-  // lexer.addErrorListener(new TestErrorListener());
-  antlr4::CommonTokenStream tokens(&lexer);
-  WPLParser parser(&tokens);
-  parser.removeErrorListeners();
-  parser.addErrorListener(new TestErrorListener());
+    R""""(
+      var a; 
 
-  WPLParser::CompilationUnitContext *tree = NULL;
-  REQUIRE_NOTHROW(tree = parser.compilationUnit());
-  REQUIRE(tree != NULL);
-  REQUIRE(tree->getText() != "");
+      select {
+        false : a <- 11; 
+        true : a <- 10; 
+        
 
-  STManager *stmgr = new STManager();
-  SemanticVisitor *sv = new SemanticVisitor(stmgr, new PropertyManager());
-
-  sv->visitCompilationUnit(tree);
-
-  //FIXME: CHECK MORE PRECISELY 
-  CHECK(sv->hasErrors());
-
-  // CHECK_FALSE(sv->hasErrors());
-
-  // std::optional<Symbol *> opt = stmgr->lookup("a");
-
-  // CHECK(opt.has_value());
-  // CHECK(opt.value()->type->isSubtypeOf(Types::INT));
-}
-
-TEST_CASE("If Example 1-3", "[semantic][conditional]")
-{
-  antlr4::ANTLRInputStream input(
-    "int a, b <- 0;"
-    "int isNegative;" //FIXME: HANDLE THINGS W/O VALUES BETTER!
-    "if a < b {"
-    " isNegative <- true;"  
-    "} else {"
-    " isNegative <- false;"
-    "}"
-  );
-  WPLLexer lexer(&input);
-  // lexer.removeErrorListeners();
-  // lexer.addErrorListener(new TestErrorListener());
-  antlr4::CommonTokenStream tokens(&lexer);
-  WPLParser parser(&tokens);
-  parser.removeErrorListeners();
-  parser.addErrorListener(new TestErrorListener());
-
-  WPLParser::CompilationUnitContext *tree = NULL;
-  REQUIRE_NOTHROW(tree = parser.compilationUnit());
-  REQUIRE(tree != NULL);
-  REQUIRE(tree->getText() != "");
-
-  STManager *stmgr = new STManager();
-  SemanticVisitor *sv = new SemanticVisitor(stmgr, new PropertyManager());
-
-  sv->visitCompilationUnit(tree);
-
-  //FIXME: CHECK MORE PRECISELY 
-  CHECK(sv->hasErrors());
-
-  // CHECK_FALSE(sv->hasErrors());
-
-  // std::optional<Symbol *> opt = stmgr->lookup("a");
-
-  // CHECK(opt.has_value());
-  // CHECK(opt.value()->type->isSubtypeOf(Types::INT));
-}
-
-TEST_CASE("If Example 1-4", "[semantic][conditional]")
-{
-  antlr4::ANTLRInputStream input(
-    "int a, b <- 0;"
-    "int isNegative <- 1;"
-    "if a < b {"
-    " isNegative <- true;"  
-    "} else {"
-    " isNegative <- false;"
-    "}"
-  );
-  WPLLexer lexer(&input);
-  // lexer.removeErrorListeners();
-  // lexer.addErrorListener(new TestErrorListener());
-  antlr4::CommonTokenStream tokens(&lexer);
-  WPLParser parser(&tokens);
-  parser.removeErrorListeners();
-  parser.addErrorListener(new TestErrorListener());
-
-  WPLParser::CompilationUnitContext *tree = NULL;
-  REQUIRE_NOTHROW(tree = parser.compilationUnit());
-  REQUIRE(tree != NULL);
-  REQUIRE(tree->getText() != "");
-
-  STManager *stmgr = new STManager();
-  SemanticVisitor *sv = new SemanticVisitor(stmgr, new PropertyManager());
-
-  sv->visitCompilationUnit(tree);
-
-  //FIXME: CHECK MORE PRECISELY 
-  CHECK(sv->hasErrors());
-
-  // CHECK_FALSE(sv->hasErrors());
-
-  // std::optional<Symbol *> opt = stmgr->lookup("a");
-
-  // CHECK(opt.has_value());
-  // CHECK(opt.value()->type->isSubtypeOf(Types::INT));
-}
-
-TEST_CASE("If Example 1-5", "[semantic][conditional]")
-{
-  antlr4::ANTLRInputStream input(
-    "int a, b <- 0;"
-    "boolean isNegative;"
-    "if a < b {"
-    " isNegative <- true;"  
-    "} else {"
-    " isNegative <- false;"
-    "}"
+      }
+    )""""
   );
   WPLLexer lexer(&input);
   // lexer.removeErrorListeners();

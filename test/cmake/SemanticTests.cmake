@@ -6,4 +6,5 @@ set(SEMANTIC_TESTS
   semantic/conditional_tests.cpp
   semantic/procedure_tests.cpp 
   semantic/program_tests.cpp
+  semantic/select_tests.cpp
 )
