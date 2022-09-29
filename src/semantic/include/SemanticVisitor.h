@@ -101,6 +101,30 @@ public:
     std::any visitType(WPLParser::TypeContext *ctx) override { return visitCtx(ctx); }
     std::any visitBooleanConst(WPLParser::BooleanConstContext *ctx) override { return visitCtx(ctx); }
 
+    const Type* safeVisitBlock(WPLParser::BlockContext* ctx, bool newScope)
+    {
+        if(newScope)
+            stmgr->enterScope();
+
+        bool foundReturn = false; 
+        for(auto e : ctx->stmts)
+        {
+
+            e->accept(this);
+
+            if(foundReturn) {
+                errorHandler.addSemanticError(ctx->getStart(), "Dead code.");
+                break; 
+            }
+            if(dynamic_cast<WPLParser::ReturnStatementContext *>(e)) foundReturn = true; 
+        }
+
+        if(newScope)
+            this->safeExitScope(ctx); 
+
+        return Types::UNDEFINED; 
+    }
+
     //FIXME: USES NULLS!
     const Type * visitInvokeable(antlr4::ParserRuleContext * ctx, std::string funcId, WPLParser::ParameterListContext *paramList, WPLParser::TypeContext * ty, WPLParser::BlockContext * block)
     {
@@ -144,7 +168,8 @@ public:
             }
         }
 
-        this->visitCtx(block);
+        //FIXME: TEST THAT WE CAN'T REDEFINE ARGS!
+        this->safeVisitBlock(block, false);
 
         if(ty && (block->stmts.size() == 0 || !dynamic_cast<WPLParser::ReturnStatementContext *>(block->stmts.at(block->stmts.size() - 1))))
         {
