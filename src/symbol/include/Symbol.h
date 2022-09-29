@@ -272,8 +272,8 @@ public:
         // FIXME: DO BETTER
         if(valueType)
         {
-            std::cout << "VAR/" << valueType.value()->toString() << std::endl;
-            // return "{VAR/" + valueType.value()->toString() + "}";
+            // std::cout << "VAR/" << valueType.value()->toString() << std::endl;
+            return "{VAR/" + valueType.value()->toString() + "}";
         }
         return "VAR";
     }
