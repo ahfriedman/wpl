@@ -707,6 +707,26 @@ std::optional<Value *> CodegenVisitor::TvisitConditionalStatement(WPLParser::Con
 
 std::optional<Value *> CodegenVisitor::TvisitSelectStatement(WPLParser::SelectStatementContext *ctx)
 {
+    for(WPLParser::SelectAlternativeContext * evalCase : ctx->cases)
+    {
+        std::any anyCheck = evalCase->check->accept(this); 
+
+        if(std::optional<Value* > optVal = std::any_cast<std::optional<Value*>>(anyCheck))
+        {
+            if(!optVal)
+            {
+                errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code for: " + evalCase->getText());
+                return {};
+            }
+
+            Value * val = optVal.value(); 
+
+            auto parent = builder->getInsertBlock()->getParent(); 
+
+            BasicBlock * thenBlk = BasicBlock::Create(module->getContext(), "then", parent);
+            //FIXME: just do recursivley 
+        }
+    }
     errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED - visitSelectStatement");
     return {};
 }
