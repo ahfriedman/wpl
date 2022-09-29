@@ -528,111 +528,12 @@ const Type *SemanticVisitor::visitCtx(WPLParser::ExternStatementContext *ctx)
 
 const Type *SemanticVisitor::visitCtx(WPLParser::FuncDefContext *ctx)
 {
-    std::string funcId = ctx->name->getText();
-
-    // FIXME: NEEDS TO BE LOCAL SCOPE ONLY AND THEN NEEDS TO COMPARE TYPES (OR JUST GLOBAL SCOPE)
-
-    std::optional<Symbol *> opt = stmgr->lookup(funcId);
-
-    // FIXME: DO BETTER, NEED ORDERING TO CATCH ALL ERRORS (BASICALLY SEE ANY ISSUE THAT APPLIES TO PROCs)
-    if (opt)
-    {
-        errorHandler.addSemanticError(ctx->getStart(), "Unsupported redeclaration of " + funcId);
-        return Types::UNDEFINED;
-    }
-
-    // FIXME: test breaking params somehow!! like using something thats not a type!!!!
-    const Type *ty = (ctx->paramList) ? this->visitCtx(ctx->paramList)
-                                      : new TypeInvoke();
-
-    const TypeInvoke *procType = dynamic_cast<const TypeInvoke *>(ty); // Always true, but needs separate statement to make C happy.
-    const Type *retType = this->visitCtx(ctx->ty);
-
-    const TypeInvoke *funcType = new TypeInvoke(procType->getParamTypes(), retType);
-
-    Symbol *funcSymbol = new Symbol(funcId, funcType);
-
-    stmgr->addSymbol(funcSymbol);
-    stmgr->enterScope(); // FIXME DOUBLING SCOPES!
-
-    stmgr->addSymbol(new Symbol("@RETURN", retType));
-
-    // FIXME: we double up work here b/c we essentially get the type twice....
-    if (ctx->paramList)
-    {
-        for (auto param : ctx->paramList->params)
-        {
-            const Type *paramType = this->visitCtx(param->ty);
-            Symbol *paramSymbol = new Symbol(param->name->getText(), paramType);
-
-            stmgr->addSymbol(paramSymbol);
-        }
-    }
-
-    this->visitCtx(ctx->block());
-
-    if (ctx->block()->stmts.size() == 0 || !dynamic_cast<WPLParser::ReturnStatementContext *>(ctx->block()->stmts.at(ctx->block()->stmts.size() - 1)))
-    {
-        errorHandler.addSemanticError(ctx->getStart(), "Function must end in return statement");
-    }
-
-    // Double scope for params.... should maybe make this a function....
-    // stmgr->exitScope();
-    this->safeExitScope(ctx);
-
-    bindings->bind(ctx, funcSymbol);
-
-    return funcType; // TODO: Could *probably* return UNDEFINED, but doesnt have to. We don't have a way of storing functions anyways...
+    return this->visitInvokeable(ctx, ctx->name->getText(), ctx->paramList, ctx->ty, ctx->block());
 }
 
 const Type *SemanticVisitor::visitCtx(WPLParser::ProcDefContext *ctx)
 {
-    std::string procId = ctx->name->getText();
-
-    // FIXME: NEEDS TO BE LOCAL SCOPE ONLY AND THEN NEED TO COMPARE TYPES
-    std::optional<Symbol *> opt = stmgr->lookup(procId);
-
-    // FIXME: DO BETTER, NEED OTHER ORDERING TO CATCH ALL ERRORS
-    if (opt)
-    {
-        errorHandler.addSemanticError(ctx->getStart(), "Unsupported redeclaration of " + procId);
-        return Types::UNDEFINED;
-    }
-
-    // FIXME: test breaking params somehow!! like using something thats not a type!!!!
-    const Type *procType = (ctx->paramList) ? this->visitCtx(ctx->paramList)
-                                            : new TypeInvoke();
-
-    Symbol *procSymbol = new Symbol(procId, procType);
-
-    stmgr->addSymbol(procSymbol);
-
-    stmgr->enterScope(); // FIXME: we double up on scope entrances here. Is that ok?
-
-    // Used to help manage return types //FIXME: maybe do better?
-    stmgr->addSymbol(new Symbol("@RETURN", Types::UNDEFINED));
-
-    // FIXME: we double up work here b/c we essentially get the type twice....
-    if (ctx->paramList)
-    {
-        for (auto param : ctx->paramList->params)
-        {
-            const Type *paramType = this->visitCtx(param->ty);
-            Symbol *paramSymbol = new Symbol(param->name->getText(), paramType);
-
-            stmgr->addSymbol(paramSymbol);
-        }
-    }
-
-    this->visitCtx(ctx->block());
-
-    // Double scope for params.... should maybe make this a function....
-    // stmgr->exitScope();
-    this->safeExitScope(ctx);
-
-    bindings->bind(ctx, procSymbol);
-
-    return procType;
+    return visitInvokeable(ctx, ctx->name->getText(), ctx->paramList, nullptr, ctx->block());
 }
 
 const Type *SemanticVisitor::visitCtx(WPLParser::AssignStatementContext *ctx)
@@ -641,19 +542,11 @@ const Type *SemanticVisitor::visitCtx(WPLParser::AssignStatementContext *ctx)
     const Type *exprType = std::any_cast<const Type *>(ctx->ex->accept(this));
 
     // FIXME: DO BETTER W/ Type Inference & such
-    // if (exprType == Types::UNDEFINED)
-    // {
-    //     errorHandler.addSemanticError(ctx->getStart(), "Expression evaluates to an Types::UNDEFINED type");
-    // }
 
     const Type *type = this->visitCtx(ctx->to);
 
-    // Symbol *opt = bindings->getBinding(ctx->to);
-
-    // FIXME: need to still do body checks!!!
     if (type)
     {
-        // Symbol *symbol = opt; //.value();
         if (exprType->isNotSubtype(type))
         {
             errorHandler.addSemanticError(ctx->getStart(), "Assignment statement expected " + type->toString() + " but got " + exprType->toString());

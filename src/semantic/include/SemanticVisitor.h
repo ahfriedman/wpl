@@ -101,6 +101,66 @@ public:
     std::any visitType(WPLParser::TypeContext *ctx) override { return visitCtx(ctx); }
     std::any visitBooleanConst(WPLParser::BooleanConstContext *ctx) override { return visitCtx(ctx); }
 
+    //FIXME: USES NULLS!
+    const Type * visitInvokeable(antlr4::ParserRuleContext * ctx, std::string funcId, WPLParser::ParameterListContext *paramList, WPLParser::TypeContext * ty, WPLParser::BlockContext * block)
+    {
+        // FIXME: NEEDS TO BE LOCAL SCOPE ONLY AND THEN NEEDS TO COMPARE TYPES (OR JUST GLOBAL SCOPE)
+
+        std::optional<Symbol *> opt = stmgr->lookup(funcId);
+
+        // FIXME: DO BETTER, NEED ORDERING TO CATCH ALL ERRORS (BASICALLY SEE ANY ISSUE THAT APPLIES TO PROCs)
+        if (opt)
+        {
+            errorHandler.addSemanticError(ctx->getStart(), "Unsupported redeclaration of " + funcId);
+            return Types::UNDEFINED;
+        }
+
+        // FIXME: test breaking params somehow!! like using something thats not a type!!!!
+        const Type* tmpTy = (paramList) ? visitCtx(paramList) : new TypeInvoke(); 
+
+        const TypeInvoke * procType = dynamic_cast<const TypeInvoke*>(tmpTy); // Always true, but needs separate statement to make C happy.
+        const Type *retType = ty ? this->visitCtx(ty)
+                                 : Types::UNDEFINED; 
+
+        const TypeInvoke * funcType = ty ? new TypeInvoke(procType->getParamTypes(), retType) 
+                                         : procType;
+
+        Symbol * funcSymbol = new Symbol(funcId, funcType);
+
+        stmgr->addSymbol(funcSymbol);
+        stmgr->enterScope(); // FIXME DOUBLING SCOPES!
+
+        stmgr->addSymbol(new Symbol("@RETURN", retType));
+
+        // FIXME: we double up work here b/c we essentially get the type twice....
+        if (paramList)
+        {
+            for (auto param : paramList->params)
+            {
+                const Type *paramType = this->visitCtx(param->ty);
+                Symbol *paramSymbol = new Symbol(param->name->getText(), paramType);
+
+                stmgr->addSymbol(paramSymbol);
+            }
+        }
+
+        this->visitCtx(block);
+
+        if(ty && (block->stmts.size() == 0 || !dynamic_cast<WPLParser::ReturnStatementContext *>(block->stmts.at(block->stmts.size() - 1))))
+        {
+            errorHandler.addSemanticError(ctx->getStart(), "Function must end in return statement");
+        }
+
+        // Double scope for params.... should maybe make this a function....
+        // stmgr->exitScope();
+        safeExitScope(ctx);
+
+        bindings->bind(ctx, funcSymbol);
+
+
+        return funcType;
+    }
+
 private:
     STManager *stmgr;
     PropertyManager *bindings;
