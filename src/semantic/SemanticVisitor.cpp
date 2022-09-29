@@ -411,17 +411,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::BConstExprContext *ctx) { retur
 
 const Type *SemanticVisitor::visitCtx(WPLParser::BlockContext *ctx)
 {
-    stmgr->enterScope();
-
-    for (auto e : ctx->stmts)
-    {
-        e->accept(this);
-    }
-
-    // stmgr->exitScope();
-    this->safeExitScope(ctx); //FIXME: DO BETTER, ENSURE USED EVERYWHERE!!
-
-    return Types::UNDEFINED;
+    return this->safeVisitBlock(ctx, true);
 }
 
 /**
