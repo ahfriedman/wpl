@@ -418,7 +418,8 @@ const Type *SemanticVisitor::visitCtx(WPLParser::BlockContext *ctx)
         e->accept(this);
     }
 
-    stmgr->exitScope();
+    // stmgr->exitScope();
+    this->safeExitScope(ctx); //FIXME: DO BETTER, ENSURE USED EVERYWHERE!!
 
     return Types::UNDEFINED;
 }
@@ -576,7 +577,8 @@ const Type *SemanticVisitor::visitCtx(WPLParser::FuncDefContext *ctx)
     }
 
     // Double scope for params.... should maybe make this a function....
-    stmgr->exitScope();
+    // stmgr->exitScope();
+    this->safeExitScope(ctx);
 
     bindings->bind(ctx, funcSymbol);
 
@@ -625,7 +627,8 @@ const Type *SemanticVisitor::visitCtx(WPLParser::ProcDefContext *ctx)
     this->visitCtx(ctx->block());
 
     // Double scope for params.... should maybe make this a function....
-    stmgr->exitScope();
+    // stmgr->exitScope();
+    this->safeExitScope(ctx);
 
     bindings->bind(ctx, procSymbol);
 

@@ -105,4 +105,30 @@ private:
     STManager *stmgr;
     PropertyManager *bindings;
     WPLErrorHandler errorHandler;
+
+    //FIXME: TEST UNERLYING FNS!!!
+    std::optional<Scope*> safeExitScope(antlr4::ParserRuleContext * ctx) {
+        std::optional<Scope*> res = stmgr->exitScope(); 
+
+        if(res)
+        {
+            Scope* scope = res.value(); 
+            std::vector<const Symbol*> uninf = scope->getUninferred(); 
+
+            if(uninf.size() > 0)
+            {
+                std::ostringstream details;
+
+                for(auto e : uninf)
+                {
+                    details << e->toString() << "; ";
+                }
+
+                errorHandler.addSemanticError(ctx->getStart(), "Uninferred types in context: " + details.str());
+            }
+            
+        }
+
+        return res; 
+    }
 };

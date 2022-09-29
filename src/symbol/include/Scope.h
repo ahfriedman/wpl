@@ -43,6 +43,21 @@ class Scope {
         std::string toString() const; 
 
 
+        std::vector<const Symbol*> getUninferred() {
+            std::vector<const Symbol*> ans; 
+
+            for(auto item : symbols) {
+                if(const TypeInfer * inf = dynamic_cast<const TypeInfer *>(item.second->type))
+                {
+                    if(!inf->getValueType())
+                        ans.push_back(item.second); 
+                }
+            }
+
+            return ans; 
+        }
+
+
 
     private:
         int scopeId = -1; 
