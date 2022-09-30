@@ -705,7 +705,9 @@ std::optional<Value *> CodegenVisitor::TvisitConditionalStatement(WPLParser::Con
 
     BasicBlock *thenBlk = BasicBlock::Create(module->getContext(), "then", parentFn);
     BasicBlock *elseBlk = BasicBlock::Create(module->getContext(), "else");
-    BasicBlock *restBlk = BasicBlock::Create(module->getContext(), "ifcont");
+
+    BasicBlock *restBlk = ctx->falseBlk ? BasicBlock::Create(module->getContext(), "ifcont")
+                                          : elseBlk;
 
     // FIXME: WHAT IF NO ELSE BLOCK??
 
@@ -731,23 +733,27 @@ std::optional<Value *> CodegenVisitor::TvisitConditionalStatement(WPLParser::Con
     // Else block  //FIXME: THIS TREATS IT AS REQUIRED. SHOULD WE DO SOMETHING AB THIS?
     parentFn->getBasicBlockList().push_back(elseBlk);
     builder->SetInsertPoint(elseBlk);
-    std::any lastFalse = nullptr;
-    for (auto e : ctx->falseBlk->stmts)
+
+    if (ctx->falseBlk)
     {
-        // FIXME: UNSAFE W/ RETURNING NULL;
-        lastFalse = e->accept(this); // std::any_cast<Value*>(e->accept(this));
+        std::any lastFalse = nullptr;
+        for (auto e : ctx->falseBlk->stmts)
+        {
+            // FIXME: UNSAFE W/ RETURNING NULL;
+            lastFalse = e->accept(this); // std::any_cast<Value*>(e->accept(this));
+        }
+
+        if (!CodegenVisitor::blockEndsInReturn(ctx->falseBlk))
+        {
+            builder->CreateBr(restBlk);
+        }
+
+        elseBlk = builder->GetInsertBlock();
+
+        // Merge back in
+        parentFn->getBasicBlockList().push_back(restBlk);
+        builder->SetInsertPoint(restBlk);
     }
-
-    if (!CodegenVisitor::blockEndsInReturn(ctx->falseBlk))
-    {
-        builder->CreateBr(restBlk);
-    }
-
-    elseBlk = builder->GetInsertBlock();
-
-    // Merge back in
-    parentFn->getBasicBlockList().push_back(restBlk);
-    builder->SetInsertPoint(restBlk);
 
     return {};
 }
