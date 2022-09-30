@@ -146,3 +146,39 @@ TEST_CASE("programs/test2 - Scopes, multiple assignments, equality (non-arrays)"
 
     REQUIRE(llvmIrToSHA256(cv->getModule()) == "70170b49a60e08f2dd0e8f32af6c6b00d43f79762885e151aaf4685959008e23");
 }
+
+TEST_CASE("programs/test4a - Use and redeclaration of parameters", "[codegen]")
+{
+    std::fstream *inStream = new std::fstream("/home/shared/programs/test4a.wpl");
+    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+
+    WPLLexer lexer(input);
+    antlr4::CommonTokenStream tokens(&lexer);
+    WPLParser parser(&tokens);
+    parser.removeErrorListeners();
+    WPLParser::CompilationUnitContext *tree = NULL;
+    REQUIRE_NOTHROW(tree = parser.compilationUnit());
+    REQUIRE(tree != NULL);
+    STManager *stm = new STManager();
+    PropertyManager *pm = new PropertyManager();
+    SemanticVisitor *sv = new SemanticVisitor(stm, pm);
+    sv->visitCompilationUnit(tree);
+
+
+    // if(sv->hasErrors())
+    // {
+    //     CHECK("foo" == sv->getErrors());
+    // }
+    REQUIRE_FALSE(sv->hasErrors());
+
+    CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll");
+    cv->visitCompilationUnit(tree);
+
+    if (cv->hasErrors())
+    {
+        CHECK("foo" == cv->getErrors());
+    }
+    CHECK_FALSE(cv->hasErrors());
+
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "18abfc620390385733b70c402618a1d51c779c39021c07a5d0800be830e70513");
+}

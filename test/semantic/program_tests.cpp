@@ -292,3 +292,28 @@ TEST_CASE("Inference If - 2", "[semantic]")
 
   CHECK_FALSE(sv->hasErrors());
 }
+
+TEST_CASE("programs/test4 - Don't allow void to be sent to fn", "[codegen]")
+{
+    std::fstream *inStream = new std::fstream("/home/shared/programs/test4.wpl");
+    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+
+    WPLLexer lexer(input);
+    antlr4::CommonTokenStream tokens(&lexer);
+    WPLParser parser(&tokens);
+    parser.removeErrorListeners();
+    WPLParser::CompilationUnitContext *tree = NULL;
+    REQUIRE_NOTHROW(tree = parser.compilationUnit());
+    REQUIRE(tree != NULL);
+    STManager *stm = new STManager();
+    PropertyManager *pm = new PropertyManager();
+    SemanticVisitor *sv = new SemanticVisitor(stm, pm);
+    sv->visitCompilationUnit(tree);
+
+
+    // if(sv->hasErrors())
+    // {
+    //     CHECK("foo" == sv->getErrors());
+    // }
+    REQUIRE(sv->hasErrors());
+}
