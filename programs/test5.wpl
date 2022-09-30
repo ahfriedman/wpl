@@ -1,37 +1,37 @@
 extern int func printf(...);
 
 # FIXME: TEST TO SEE IF WE CAN HAVE MULTIPLE FNS W/ SAME NAME PROVIDED DIFF TYPES!
-int func nestedIf(int a) {
+str func nestedIf(int a) {
     if( a > 0) {
         if(a > 10)
         {
-            return 10; 
+            return "CASE 1 (10)"; 
         }
         else 
         {
-            return 5; 
+            return "CASE 2 (5)"; 
         }
     }
     else 
     {
         if( a = 0 )
         {
-            return 0;  # FIXME: DIV BY ZERO CAUSES EXCEPION?
+            return "CASE 3 (0)";  # FIXME: DIV BY ZERO CAUSES EXCEPION?
         }
         else 
         {
-            return a;
+            return "CASE 4 (a)";
         }
     }
 
-    return -1; 
+    return "CASE IMPOSSIBLE (-1)"; 
 }
 
 int func program() {
 
     var i <- -10; 
-    while i <= 10 do {
-        printf("f(%d) = %d\n", i, nestedIf(i));
+    while i <= 15 do {
+        printf("f(%d) = %s\n", i, nestedIf(i));
         i <- i + 1;
     }
     
