@@ -16,7 +16,7 @@ int func nestedIf(int a) {
     {
         if( a = 0 )
         {
-            return 0; 
+            return 0;  # FIXME: DIV BY ZERO CAUSES EXCEPION?
         }
         else 
         {
