@@ -198,14 +198,14 @@ std::optional<Value *> CodegenVisitor::TvisitEqExpr(WPLParser::EqExprContext *ct
     case WPLParser::EQUAL:
     {
         Value *v1 = builder->CreateICmpEQ(lhs.value(), rhs.value());
-        Value *v = builder->CreateZExtOrTrunc(v1, Int32Ty);
+        Value *v = builder->CreateZExtOrTrunc(v1, Int1Ty);
         return v;
     }
 
     case WPLParser::NOT_EQUAL:
     {
         Value *v1 = builder->CreateICmpNE(lhs.value(), rhs.value());
-        Value *v = builder->CreateZExtOrTrunc(v1, Int32Ty);
+        Value *v = builder->CreateZExtOrTrunc(v1, Int1Ty);
         return v;
     }
     }
@@ -760,6 +760,8 @@ std::optional<Value *> CodegenVisitor::TvisitConditionalStatement(WPLParser::Con
 
 std::optional<Value *> CodegenVisitor::TvisitSelectStatement(WPLParser::SelectStatementContext *ctx)
 {
+    //FIXME: WILL NEED TO CHECK FOR RETURNS AND RETURNS IN BLOCKS!!!
+    
     for (WPLParser::SelectAlternativeContext *evalCase : ctx->cases)
     {
         std::any anyCheck = evalCase->check->accept(this);
