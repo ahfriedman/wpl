@@ -721,7 +721,7 @@ std::optional<Value *> CodegenVisitor::TvisitSelectStatement(WPLParser::SelectSt
 
             Value * val = optVal.value(); 
 
-            auto parent = builder->getInsertBlock()->getParent(); 
+            auto parent = builder->GetInsertBlock()->getParent(); 
 
             BasicBlock * thenBlk = BasicBlock::Create(module->getContext(), "then", parent);
             //FIXME: just do recursivley 

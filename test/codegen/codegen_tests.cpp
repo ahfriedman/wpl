@@ -72,7 +72,7 @@ TEST_CASE("programs/test1 - FIXME: DO BETTER", "[codegen]")
     }
     CHECK_FALSE(cv->hasErrors());
 
-    REQUIRE(llvmIrToSHA256(cv->getModule()) == "e0f894f1b6dd6613bd18eee553f5d6c8896228b4e4a21400b5dd6f1433ab0670");
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "0d04df4ae9f27c56e731772debb2adee582fd37b34798e231df501f8288328ab");
 }
 
 TEST_CASE("programs/test1a - FIXME: DO BETTER", "[codegen]")
