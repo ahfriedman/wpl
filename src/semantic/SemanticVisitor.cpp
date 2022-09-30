@@ -86,7 +86,13 @@ const Type *SemanticVisitor::visitCtx(WPLParser::InvocationContext *ctx)
             // If the invokable is variadic and has no specified type parameters, then we can
             // skip over subsequent checks--we just needed to run type checking on each parameter.
             if (invokeable->isVariadic() && fnParams.size() == 0)
+            {
+                if(dynamic_cast<const TypeBot*>(providedType))
+                {
+                    errorHandler.addSemanticError(ctx->getStart(), "Cannot provide " + providedType->toString() + " to a function.");
+                }
                 continue;
+            }
 
             // Loop up the expected type. This is either the type at the
             // ith index OR the last type specified by the function

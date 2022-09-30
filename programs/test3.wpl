@@ -1,0 +1,22 @@
+extern int func printf(...);
+
+
+
+int func program() {
+    if 1 < 2 then {
+        printf("Correct!\n");
+    }
+    return -1; 
+}
+
+(*
+proc procedurezero () {
+    int a <- 0; 
+
+    while a < 10 do {
+        a <- a + 1; 
+        str b <- "Hello"; 
+    }
+
+}
+*)

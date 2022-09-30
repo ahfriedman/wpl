@@ -170,6 +170,8 @@ public:
                 Symbol *paramSymbol = new Symbol(param->name->getText(), paramType);
 
                 stmgr->addSymbol(paramSymbol);
+
+                bindings->bind(param, paramSymbol);
             }
         }
 
