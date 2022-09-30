@@ -707,7 +707,7 @@ std::optional<Value *> CodegenVisitor::TvisitConditionalStatement(WPLParser::Con
     BasicBlock *elseBlk = BasicBlock::Create(module->getContext(), "else");
 
     BasicBlock *restBlk = ctx->falseBlk ? BasicBlock::Create(module->getContext(), "ifcont")
-                                          : elseBlk;
+                                        : elseBlk;
 
     // FIXME: WHAT IF NO ELSE BLOCK??
 
@@ -760,10 +760,15 @@ std::optional<Value *> CodegenVisitor::TvisitConditionalStatement(WPLParser::Con
 
 std::optional<Value *> CodegenVisitor::TvisitSelectStatement(WPLParser::SelectStatementContext *ctx)
 {
-    //FIXME: WILL NEED TO CHECK FOR RETURNS AND RETURNS IN BLOCKS!!!
-    
-    for (WPLParser::SelectAlternativeContext *evalCase : ctx->cases)
+    // FIXME: WILL NEED TO CHECK FOR RETURNS AND RETURNS IN BLOCKS!!!
+
+    auto origParent = builder->GetInsertBlock()->getParent();
+    BasicBlock *mergeBlk = BasicBlock::Create(module->getContext(), "ifcont");
+
+    for (unsigned long i = 0; i < ctx->cases.size(); i++) // WPLParser::SelectAlternativeContext *evalCase : ctx->cases)
     {
+        WPLParser::SelectAlternativeContext *evalCase = ctx->cases.at(i);
+
         std::any anyCheck = evalCase->check->accept(this);
 
         if (std::optional<Value *> optVal = std::any_cast<std::optional<Value *>>(anyCheck))
@@ -776,13 +781,77 @@ std::optional<Value *> CodegenVisitor::TvisitSelectStatement(WPLParser::SelectSt
 
             Value *val = optVal.value();
 
+            bool isLast = i == ctx->cases.size() - 1;
+
             auto parent = builder->GetInsertBlock()->getParent();
 
             BasicBlock *thenBlk = BasicBlock::Create(module->getContext(), "then", parent);
+            BasicBlock *elseBlk = isLast ? mergeBlk : BasicBlock::Create(module->getContext(), "else");
+
+            builder->CreateCondBr(val, thenBlk, elseBlk);
+
+            /*
+             *
+             * THEN BLOCK
+             *
+             */
+            builder->SetInsertPoint(thenBlk);
+            std::any thenAny = evalCase->eval->accept(this);
+            if (std::optional<Value *> thenOpt = std::any_cast<std::optional<Value *>>(thenAny))
+            {
+                if (!thenOpt)
+                {
+                    errorHandler.addCodegenError(evalCase->getStart(), "Failed to generate code for case: " + evalCase->eval->getText());
+                    return {};
+                }
+                Value *thenVal = thenOpt.value();
+
+                if (WPLParser::BlockContext * blkCtx = dynamic_cast<WPLParser::BlockContext*>(evalCase->eval))
+                {
+                    if(!CodegenVisitor::blockEndsInReturn(blkCtx))
+                    {
+                        builder->CreateBr(mergeBlk);
+                    }
+                    //if it ends in a return, we're good!
+                }
+                else if(WPLParser::ReturnStatementContext* retCtx = dynamic_cast<WPLParser::ReturnStatementContext*>(evalCase->eval))
+                {
+                    //Similarly, we don't need to generate the branch
+                }
+                else 
+                {
+                    builder->CreateBr(mergeBlk);
+                }
+
+                thenBlk = builder->GetInsertBlock(); 
+
+                /*
+                 *
+                 * Else Block!
+                 * 
+                 */
+                if(!isLast)
+                {
+                    parent->getBasicBlockList().push_back(elseBlk);
+                    builder->SetInsertPoint(elseBlk);
+                }
+                
+            }
+            else
+            {
+                errorHandler.addCodegenError(evalCase->getStart(), "Failed to generate code for case: " + evalCase->eval->getText());
+                return {};
+            }
+
             // FIXME: just do recursivley
         }
     }
-    errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED - visitSelectStatement");
+    
+    //FIXME: actually, could we do this in a way where we remove the is last check and put it there? 
+    origParent->getBasicBlockList().push_back(mergeBlk);
+    builder->SetInsertPoint(mergeBlk);
+
+    // errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED - visitSelectStatement");
     return {};
 }
 

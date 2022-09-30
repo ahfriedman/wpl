@@ -153,6 +153,8 @@ public:
     std::any visitType(WPLParser::TypeContext *ctx) override { return TvisitType(ctx); };
     std::any visitBooleanConst(WPLParser::BooleanConstContext *ctx) override { return TvisitBooleanConst(ctx); };
 
+
+
     bool hasErrors() { return errorHandler.hasErrors(); }
     std::string getErrors() { return errorHandler.errorList(); }
 
@@ -161,6 +163,8 @@ public:
     // FIXME: REVIEW LLVM STUFF
     Module *getModule() { return module; }
     void modPrint() { module->print(llvm::outs(), nullptr); }
+
+    
 
 protected:
     static bool blockEndsInReturn(WPLParser::BlockContext *ctx)
