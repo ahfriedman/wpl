@@ -455,7 +455,6 @@ std::optional<Value *> CodegenVisitor::TvisitFuncDef(WPLParser::FuncDefContext *
 
     std::cout << "438" << std::endl;
 
-    // FIXME: NEED TO DO THIS FOR PROCs AS WELL!!!
     for (auto &arg : fn->args())
     {
         int argNumber = arg.getArgNo();
@@ -524,7 +523,6 @@ std::optional<Value *> CodegenVisitor::TvisitProcDef(WPLParser::ProcDefContext *
     BasicBlock *bBlk = BasicBlock::Create(module->getContext(), "entry", fn);
     builder->SetInsertPoint(bBlk);
 
-    // FIXME: NEED TO DO THIS FOR PROCs AS WELL!!!
     for (auto &arg : fn->args())
     {
         int argNumber = arg.getArgNo();
