@@ -5,7 +5,6 @@
 grammar WPL;
 
 //FIXME: UPDATE BASED ON NEW GRAMMAR!!!
-//FIXME: WHAT ABOUT VAR IN IF/SELECT??? SHOULD WE TYPE INF THAT?
 
 // Parser rules
 compilationUnit   :  (stmts+=statement | extens+=externStatement)* EOF ; 
@@ -19,8 +18,6 @@ invocation          :  VARIABLE '(' (args+=expression (',' args+=expression)* )?
 //Helps allow us to use VARIABLE or arrayAccess and not other expressions (such as for assignments)
 arrayAccess         : var=VARIABLE '[' index=expression ']'; 
 arrayOrVar          : var=VARIABLE | array=arrayAccess  ;
-
-//FIXME: program block required, variadic functions
 
 /*
  * Expressions return values. These can be: 
