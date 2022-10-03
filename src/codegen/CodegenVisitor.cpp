@@ -873,10 +873,13 @@ std::optional<Value *> CodegenVisitor::TvisitCallStatement(WPLParser::CallStatem
 
 std::optional<Value *> CodegenVisitor::TvisitReturnStatement(WPLParser::ReturnStatementContext *ctx)
 {
+    // Check if we are returning an expression or not 
     if (ctx->expression())
     {
+        //If we are, then visit that expression
         std::any anyInner = ctx->expression()->accept(this);
 
+        //Perform some checks to make sure that code was generated
         if (std::optional<Value *> inner = std::any_cast<std::optional<Value *>>(anyInner))
         {
             if (!inner)
@@ -885,9 +888,8 @@ std::optional<Value *> CodegenVisitor::TvisitReturnStatement(WPLParser::ReturnSt
                 return {};
             }
 
+            //As the code was generated correctly, build the return statement; we ensure no following code due to how block visitors work in semantic analysis. 
             Value *v = builder->CreateRet(inner.value());
-
-            // FIXME: ENSURE NO FOLLOWING CODE
 
             return v;
         }
@@ -897,8 +899,9 @@ std::optional<Value *> CodegenVisitor::TvisitReturnStatement(WPLParser::ReturnSt
             return {}; 
         }
     }
+
+    // If there is no value, return void. We ensure no following code and type-correctness in the semantic pass. 
     Value *v = builder->CreateRetVoid();
-    // FIXME: ENSURE NO FOLLOWING CODE, ENSURE CORRECT!!
     return v;
 }
 
