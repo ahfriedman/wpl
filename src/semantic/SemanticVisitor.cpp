@@ -69,8 +69,6 @@ const Type *SemanticVisitor::visitCtx(WPLParser::InvocationContext *ctx)
             return Types::UNDEFINED; // TODO: Could change this to the return type to catch more errors?
         }
 
-        // FIXME: TEST VARIADIC(...) WITH NO ARGS!!!
-
         /*
          * Now that we have a valid number of parameters, we can make sure that
          * they have the correct types as per our arguments.
@@ -441,9 +439,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::ConditionContext *ctx)
 const Type *SemanticVisitor::visitCtx(WPLParser::SelectAlternativeContext *ctx)
 {
     //Need to have this b/c we may define variables
-    stmgr->enterScope();
-
-    // FIXME: VERIFY
+    stmgr->enterScope(); //FIXME: SHOULD WE ENTER SCOPE HERE? OR LATER?
     ctx->eval->accept(this);
 
     const Type *checkType = std::any_cast<const Type *>(ctx->check->accept(this));
@@ -540,14 +536,17 @@ const Type *SemanticVisitor::visitCtx(WPLParser::ProcDefContext *ctx)
 const Type *SemanticVisitor::visitCtx(WPLParser::AssignStatementContext *ctx)
 {
     // This one is the update one!
+
+    //Determine the expression type
     const Type *exprType = std::any_cast<const Type *>(ctx->ex->accept(this));
 
-    // FIXME: DO BETTER W/ Type Inference & such
-
+    //Determine the expected type
     const Type *type = this->visitCtx(ctx->to);
 
+    //If we actually have a type... (prevents things like null ptrs)
     if (type)
     {
+        //Make sure that the types are compatible. Inference automatically managed here.
         if (exprType->isNotSubtype(type))
         {
             errorHandler.addSemanticError(ctx->getStart(), "Assignment statement expected " + type->toString() + " but got " + exprType->toString());
@@ -570,7 +569,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::VarDeclStatementContext *ctx)
     {
         auto exprType = (e->ex) ? std::any_cast<const Type *>(e->ex->accept(this)) : assignType;
 
-        // Need to check here to prevent var = var issues... //FIXME: WHAT IF WE GOT A VAR = VAR?
+        //Note: This automatically performs checks to prevent issues with setting VAR = VAR
         if (e->ex && exprType->isNotSubtype(assignType))
         {
             errorHandler.addSemanticError(e->getStart(), "Expression of type " + exprType->toString() + " cannot be assigned to " + assignType->toString());
@@ -637,7 +636,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::SelectStatementContext *ctx)
     // FIXME: VERIFY
     for (auto e : ctx->cases)
     {
-        // FIXME: do better?
+        // FIXME: do better? NEED TO ENSURE BLOCK!!!
         this->visitCtx(e);
     }
 
