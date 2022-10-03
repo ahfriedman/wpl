@@ -183,7 +183,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::ArrayOrVarContext *ctx)
     }
 
     const Type *arrType = this->visitCtx(ctx->array);
-    std::cout << "SV - Bubble up!" << std::endl; 
+    
     bindings->bind(ctx, bindings->getBinding(ctx->array)); // FIXME: DO BETTER; Seems hacky to be passing like this!
     return arrType;
 }
