@@ -77,12 +77,6 @@ std::optional<Value *> CodegenVisitor::TvisitArrayAccess(WPLParser::ArrayAccessC
     return val;
 }
 
-std::optional<Value *> CodegenVisitor::TvisitArrayOrVar(WPLParser::ArrayOrVarContext *ctx)
-{
-    errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED - visitArrayOrVar");
-    return {};
-}
-
 std::optional<Value *> CodegenVisitor::TvisitIConstExpr(WPLParser::IConstExprContext *ctx)
 {
     int i = std::stoi(ctx->i->getText());
@@ -388,11 +382,6 @@ std::optional<Value *> CodegenVisitor::TvisitCondition(WPLParser::ConditionConte
     return std::any_cast<std::optional<Value *>>(ctx->ex->accept(this));
 }
 
-std::optional<Value *> CodegenVisitor::TvisitSelectAlternative(WPLParser::SelectAlternativeContext *ctx)
-{
-    errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED - visitSelectAlternative");
-    return {};
-}
 
 std::optional<Value *> CodegenVisitor::TvisitExternStatement(WPLParser::ExternStatementContext *ctx)
 {
@@ -971,5 +960,17 @@ std::optional<Value *> CodegenVisitor::TvisitParameter(WPLParser::ParameterConte
 std::optional<Value *> CodegenVisitor::TvisitType(WPLParser::TypeContext *ctx)
 {
     errorHandler.addCodegenError(ctx->getStart(), "Unknown error: Codegen should never directly visit types looking for values!");
+    return {};
+}
+
+std::optional<Value *> CodegenVisitor::TvisitArrayOrVar(WPLParser::ArrayOrVarContext *ctx)
+{
+    errorHandler.addCodegenError(ctx->getStart(), "Unknown Error: Codegen should never directly visit ArrayOrVar!");
+    return {};
+}
+
+std::optional<Value *> CodegenVisitor::TvisitSelectAlternative(WPLParser::SelectAlternativeContext *ctx)
+{
+    errorHandler.addCodegenError(ctx->getStart(), "Unknown Error: Codegen should never directly visit SelectAlternative!");
     return {};
 }
