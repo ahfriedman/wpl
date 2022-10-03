@@ -672,8 +672,6 @@ std::optional<Value *> CodegenVisitor::TvisitLoopStatement(WPLParser::LoopStatem
     // Check if we need to loop back again...
     loopBlk = builder->GetInsertBlock(); // FIXME: REVIEW
     builder->CreateCondBr(check.value(), loopBlk, restBlk);
-
-    // FIXME: ALLOW _ IN NAMES?
     //  Out of Loop
 
     parent->getBasicBlockList().push_back(restBlk);
@@ -682,13 +680,14 @@ std::optional<Value *> CodegenVisitor::TvisitLoopStatement(WPLParser::LoopStatem
     return {};
 }
 
-// FIXME: EXTERNS THAT ARE JUST ...!!!!
 // FIXME: EXTERNS CANT HAVE A SPACE?
 
 std::optional<Value *> CodegenVisitor::TvisitConditionalStatement(WPLParser::ConditionalStatementContext *ctx)
 {
     // FIXME: THIS MIGHT NOT WORK OUTSIDE A FUNCTION
-    std::optional<Value *> cond = this->TvisitCondition(ctx->check); // std::any_cast<Value *>(ctx->check->accept(this));
+
+    //Get the condition that the if statement is for
+    std::optional<Value *> cond = this->TvisitCondition(ctx->check);
 
     if (!cond)
     {
@@ -696,6 +695,10 @@ std::optional<Value *> CodegenVisitor::TvisitConditionalStatement(WPLParser::Con
         return {};
     }
 
+    /*
+     * Generate the basic blocks for then, else, and the remaining code.
+     * (NOTE: We set rest to be else if there is no else branch).
+     */
     auto parentFn = builder->GetInsertBlock()->getParent();
 
     BasicBlock *thenBlk = BasicBlock::Create(module->getContext(), "then", parentFn);
@@ -704,38 +707,38 @@ std::optional<Value *> CodegenVisitor::TvisitConditionalStatement(WPLParser::Con
     BasicBlock *restBlk = ctx->falseBlk ? BasicBlock::Create(module->getContext(), "ifcont")
                                         : elseBlk;
 
-    // FIXME: WHAT IF NO ELSE BLOCK??
 
     builder->CreateCondBr(cond.value(), thenBlk, elseBlk);
 
-    // Then block
-    // parentFn->getBasicBlockList().push_back(thenBlk);
-    builder->SetInsertPoint(thenBlk);
-    std::any lastTrue = nullptr;
+    /*
+     * Then block
+     */
+    builder->SetInsertPoint(thenBlk); 
     for (auto e : ctx->trueBlk->stmts)
     {
-        // FIXME: UNSAFE WITH RETUNING NULL! // FIXME: STILL NEED TO CAST??
-        lastTrue = e->accept(this); // std::any_cast<Value*>(e->accept(this));
+        e->accept(this);
     }
 
+    //If the block ends in a return, then we can't make the branch; things would break
     if (!CodegenVisitor::blockEndsInReturn(ctx->trueBlk))
     {
         builder->CreateBr(restBlk);
     }
 
-    thenBlk = builder->GetInsertBlock(); // REVIEW
+    thenBlk = builder->GetInsertBlock(); 
 
-    // Else block  //FIXME: THIS TREATS IT AS REQUIRED. SHOULD WE DO SOMETHING AB THIS?
+    /*
+     * Insert the else block (same as rest if no else branch)
+     */
     parentFn->getBasicBlockList().push_back(elseBlk);
     builder->SetInsertPoint(elseBlk);
 
-    if (ctx->falseBlk)
+    if (ctx->falseBlk) // If we have an else branch
     {
-        std::any lastFalse = nullptr;
+        //Generate the code for the else block; follows the same logic as the then block. 
         for (auto e : ctx->falseBlk->stmts)
         {
-            // FIXME: UNSAFE W/ RETURNING NULL;
-            lastFalse = e->accept(this); // std::any_cast<Value*>(e->accept(this));
+            e->accept(this);
         }
 
         if (!CodegenVisitor::blockEndsInReturn(ctx->falseBlk))
@@ -745,7 +748,7 @@ std::optional<Value *> CodegenVisitor::TvisitConditionalStatement(WPLParser::Con
 
         elseBlk = builder->GetInsertBlock();
 
-        // Merge back in
+        // As we have an else block, rest and else are different, so we have to merge back in. 
         parentFn->getBasicBlockList().push_back(restBlk);
         builder->SetInsertPoint(restBlk);
     }
