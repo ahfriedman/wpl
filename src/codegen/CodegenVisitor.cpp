@@ -134,7 +134,6 @@ std::optional<Value *> CodegenVisitor::TvisitUnaryExpr(WPLParser::UnaryExprConte
         return v;
     }
 
-    // FIXME: REVIEW
     case WPLParser::NOT:
     {
         std::optional<Value *> v = std::any_cast<std::optional<Value *>>(ctx->ex->accept(this));
@@ -363,8 +362,6 @@ std::optional<Value *> CodegenVisitor::TvisitBConstExpr(WPLParser::BConstExprCon
 
 std::optional<Value *> CodegenVisitor::TvisitCondition(WPLParser::ConditionContext *ctx)
 {
-    // Based on https://llvm.org/docs/tutorial/MyFirstLanguageFrontend/LangImpl05.html
-    // FIXME: VERIFY, This might not actually get a boolean well enough....
     return std::any_cast<std::optional<Value *>>(ctx->ex->accept(this));
 }
 
@@ -586,9 +583,7 @@ std::optional<Value *> CodegenVisitor::TvisitAssignStatement(WPLParser::AssignSt
 
         Value *built = builder->CreateGEP(val, {Int32Zero, index.value()});
 
-        std::cout << "551 " << built << std::endl;
-
-        val = built; // builder->CreateGEP(val, {Int32Zero, index.value()});
+        val = built;
     }
 
     builder->CreateStore(exprVal.value(), val);

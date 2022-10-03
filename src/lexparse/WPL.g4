@@ -196,7 +196,7 @@ INTEGER     :   '0' | [1-9][0-9]* ; //Negative numbers handled by unary minus
 STRING      :   QUOTE (ESCAPE_STRING | SAFE_STRING)* QUOTE;
 
 //Variables 
-VARIABLE  :     [a-zA-Z]+   ;
+VARIABLE  :     [a-zA-Z][a-zA-Z0-9_]*  ;
 
 //String escapes are a \ that must be followed by any character
 fragment ESCAPE_STRING  : '\\'. ; 
