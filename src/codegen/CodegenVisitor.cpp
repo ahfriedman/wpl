@@ -760,32 +760,42 @@ std::optional<Value *> CodegenVisitor::TvisitSelectStatement(WPLParser::SelectSt
 {
     // FIXME: WILL NEED TO CHECK FOR RETURNS AND RETURNS IN BLOCKS!!!
 
+    /*
+     * Set up the merge block that all cases go to after the select statement
+     */
     auto origParent = builder->GetInsertBlock()->getParent();
     BasicBlock *mergeBlk = BasicBlock::Create(module->getContext(), "ifcont");
 
-    for (unsigned long i = 0; i < ctx->cases.size(); i++) // WPLParser::SelectAlternativeContext *evalCase : ctx->cases)
+    //Iterate through each of the cases 
+    for (unsigned long i = 0; i < ctx->cases.size(); i++) 
     {
         WPLParser::SelectAlternativeContext *evalCase = ctx->cases.at(i);
 
+        // Visit the check code
         std::any anyCheck = evalCase->check->accept(this);
 
+        //Attempt to cast the check; if this fails, then codegen for the check failed
         if (std::optional<Value *> optVal = std::any_cast<std::optional<Value *>>(anyCheck))
         {
+            // Check that the optional, in fact, has a value. Otherwise, something went wrong. 
             if (!optVal)
             {
                 errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code for: " + evalCase->getText());
                 return {};
             }
 
+            // Knowing that we have a value, get what the value is. 
             Value *val = optVal.value();
 
+            // Helpful check for later on
             bool isLast = i == ctx->cases.size() - 1;
 
+            //Create the then and else blocks as if this were an if statement
             auto parent = builder->GetInsertBlock()->getParent();
-
             BasicBlock *thenBlk = BasicBlock::Create(module->getContext(), "then", parent);
             BasicBlock *elseBlk = isLast ? mergeBlk : BasicBlock::Create(module->getContext(), "else");
 
+            //Branch based on the value
             builder->CreateCondBr(val, thenBlk, elseBlk);
 
             /*
@@ -794,7 +804,11 @@ std::optional<Value *> CodegenVisitor::TvisitSelectStatement(WPLParser::SelectSt
              *
              */
             builder->SetInsertPoint(thenBlk);
+
+            //Visit the evaluation code for the case
             std::any thenAny = evalCase->eval->accept(this);
+            
+            // Check if code generation for the case worked
             if (std::optional<Value *> thenOpt = std::any_cast<std::optional<Value *>>(thenAny))
             {
                 if (!thenOpt)
@@ -802,8 +816,14 @@ std::optional<Value *> CodegenVisitor::TvisitSelectStatement(WPLParser::SelectSt
                     errorHandler.addCodegenError(evalCase->getStart(), "Failed to generate code for case: " + evalCase->eval->getText());
                     return {};
                 }
-                Value *thenVal = thenOpt.value();
 
+                /*
+                 * As codegen worked, we now need to determine if 
+                 * the code we generated was for a block ending in 
+                 * a return or if it is a return statement. This 
+                 * Must be done as it determines if we create 
+                 * a merge into the merge block or not. 
+                 */
                 if (WPLParser::BlockContext * blkCtx = dynamic_cast<WPLParser::BlockContext*>(evalCase->eval))
                 {
                     if(!CodegenVisitor::blockEndsInReturn(blkCtx))
@@ -825,7 +845,7 @@ std::optional<Value *> CodegenVisitor::TvisitSelectStatement(WPLParser::SelectSt
 
                 /*
                  *
-                 * Else Block!
+                 * Else Block
                  * 
                  */
                 if(!isLast)
@@ -840,12 +860,10 @@ std::optional<Value *> CodegenVisitor::TvisitSelectStatement(WPLParser::SelectSt
                 errorHandler.addCodegenError(evalCase->getStart(), "Failed to generate code for case: " + evalCase->eval->getText());
                 return {};
             }
-
-            // FIXME: just do recursivley
         }
     }
     
-    //FIXME: actually, could we do this in a way where we remove the is last check and put it there? 
+    //We could probably do this as an else on the is !isLast check, but this works 
     origParent->getBasicBlockList().push_back(mergeBlk);
     builder->SetInsertPoint(mergeBlk);
     
