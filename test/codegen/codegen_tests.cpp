@@ -291,6 +291,42 @@ TEST_CASE("programs/test6 - Basic Select with Return - FIXME: DO BETTER", "[code
     REQUIRE(llvmIrToSHA256(cv->getModule()) == "686f9e63c3f0c7f09de2dbc0ca6a6e8ae5161be63048a68814c74c5164c33305");
 }
 
+TEST_CASE("programs/test6a - Basic Nested Selects, LEQ, GEQ", "[codegen]")
+{
+    std::fstream *inStream = new std::fstream("/home/shared/programs/test6a.wpl");
+    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+
+    WPLLexer lexer(input);
+    antlr4::CommonTokenStream tokens(&lexer);
+    WPLParser parser(&tokens);
+    parser.removeErrorListeners();
+    WPLParser::CompilationUnitContext *tree = NULL;
+    REQUIRE_NOTHROW(tree = parser.compilationUnit());
+    REQUIRE(tree != NULL);
+    STManager *stm = new STManager();
+    PropertyManager *pm = new PropertyManager();
+    SemanticVisitor *sv = new SemanticVisitor(stm, pm);
+    sv->visitCompilationUnit(tree);
+
+
+    // if(sv->hasErrors())
+    // {
+    //     CHECK("foo" == sv->getErrors());
+    // }
+    REQUIRE_FALSE(sv->hasErrors());
+
+    CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll");
+    cv->visitCompilationUnit(tree);
+
+    if (cv->hasErrors())
+    {
+        CHECK("foo" == cv->getErrors());
+    }
+    CHECK_FALSE(cv->hasErrors());
+
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "d86d9c224f8b22cfc4a52bab88aa5f9ce60016604aafe0e865dc6fc0aa177093");
+}
+
 TEST_CASE("programs/test7 - Test String equality + Nested Loops", "[codegen]")
 {
     std::fstream *inStream = new std::fstream("/home/shared/programs/test7.wpl");

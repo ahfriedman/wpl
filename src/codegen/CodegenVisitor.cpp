@@ -122,10 +122,9 @@ std::optional<Value *> CodegenVisitor::TvisitSConstExpr(WPLParser::SConstExprCon
     replacements.push_back({VT, "\v"});
     replacements.push_back({SL, "\\"});
 
-
     std::string out = actual;
 
-    for(auto e : replacements)
+    for (auto e : replacements)
     {
         out = regex_replace(out, e.first, e.second);
     }
@@ -382,7 +381,6 @@ std::optional<Value *> CodegenVisitor::TvisitCondition(WPLParser::ConditionConte
     return std::any_cast<std::optional<Value *>>(ctx->ex->accept(this));
 }
 
-
 std::optional<Value *> CodegenVisitor::TvisitExternStatement(WPLParser::ExternStatementContext *ctx)
 {
     std::vector<llvm::Type *> typeVec;
@@ -539,6 +537,11 @@ std::optional<Value *> CodegenVisitor::TvisitProcDef(WPLParser::ProcDefContext *
         e->accept(this);
     }
 
+    if (!CodegenVisitor::blockEndsInReturn(ctx->block()))
+    {
+        builder->CreateRetVoid();
+    }
+
     return {};
 }
 
@@ -657,11 +660,10 @@ std::optional<Value *> CodegenVisitor::TvisitLoopStatement(WPLParser::LoopStatem
 
     // In the loop block
     builder->SetInsertPoint(loopBlk);
-    for (auto e : ctx->block()->stmts) //FIXME: DO WE NEED TO CHECK RETURNS?
+    for (auto e : ctx->block()->stmts) // FIXME: DO WE NEED TO CHECK RETURNS?
     {
         e->accept(this);
     }
-
 
     // Re-calculate the loop condition
     check = this->TvisitCondition(ctx->check);
@@ -758,7 +760,8 @@ std::optional<Value *> CodegenVisitor::TvisitConditionalStatement(WPLParser::Con
 
 std::optional<Value *> CodegenVisitor::TvisitSelectStatement(WPLParser::SelectStatementContext *ctx)
 {
-    // FIXME: WILL NEED TO CHECK FOR RETURNS AND RETURNS IN BLOCKS!!!
+    std::cout << "761!" << std::endl;
+    // FIXME: WILL NEED TO CHECK FOR RETURNS AND RETURNS IN BLOCKS!!! + VERIFY NESTED SELECTS WORK!
 
     /*
      * Set up the merge block that all cases go to after the select statement
@@ -806,58 +809,43 @@ std::optional<Value *> CodegenVisitor::TvisitSelectStatement(WPLParser::SelectSt
             builder->SetInsertPoint(thenBlk);
 
             // Visit the evaluation code for the case
-            std::any thenAny = evalCase->eval->accept(this);
+            evalCase->eval->accept(this);
 
-            // Check if code generation for the case worked
-            if (std::optional<Value *> thenOpt = std::any_cast<std::optional<Value *>>(thenAny))
+            /*
+             * As codegen worked, we now need to determine if
+             * the code we generated was for a block ending in
+             * a return or if it is a return statement. This
+             * Must be done as it determines if we create
+             * a merge into the merge block or not.
+             */
+            if (WPLParser::BlockContext *blkCtx = dynamic_cast<WPLParser::BlockContext *>(evalCase->eval))
             {
-                if (!thenOpt)
-                {
-                    errorHandler.addCodegenError(evalCase->getStart(), "Failed to generate code for case: " + evalCase->eval->getText());
-                    return {};
-                }
-
-                /*
-                 * As codegen worked, we now need to determine if
-                 * the code we generated was for a block ending in
-                 * a return or if it is a return statement. This
-                 * Must be done as it determines if we create
-                 * a merge into the merge block or not.
-                 */
-                if (WPLParser::BlockContext *blkCtx = dynamic_cast<WPLParser::BlockContext *>(evalCase->eval))
-                {
-                    if (!CodegenVisitor::blockEndsInReturn(blkCtx))
-                    {
-                        builder->CreateBr(mergeBlk);
-                    }
-                    // if it ends in a return, we're good!
-                }
-                else if (WPLParser::ReturnStatementContext *retCtx = dynamic_cast<WPLParser::ReturnStatementContext *>(evalCase->eval))
-                {
-                    // Similarly, we don't need to generate the branch
-                }
-                else
+                if (!CodegenVisitor::blockEndsInReturn(blkCtx))
                 {
                     builder->CreateBr(mergeBlk);
                 }
-
-                thenBlk = builder->GetInsertBlock();
-
-                /*
-                 *
-                 * Else Block
-                 *
-                 */
-                if (!isLast)
-                {
-                    parent->getBasicBlockList().push_back(elseBlk);
-                    builder->SetInsertPoint(elseBlk);
-                }
+                // if it ends in a return, we're good!
+            }
+            else if (WPLParser::ReturnStatementContext *retCtx = dynamic_cast<WPLParser::ReturnStatementContext *>(evalCase->eval))
+            {
+                // Similarly, we don't need to generate the branch
             }
             else
             {
-                errorHandler.addCodegenError(evalCase->getStart(), "Failed to generate code for case: " + evalCase->eval->getText());
-                return {};
+                builder->CreateBr(mergeBlk);
+            }
+
+            thenBlk = builder->GetInsertBlock();
+
+            /*
+             *
+             * Else Block
+             *
+             */
+            if (!isLast)
+            {
+                parent->getBasicBlockList().push_back(elseBlk);
+                builder->SetInsertPoint(elseBlk);
             }
         }
     }
@@ -866,7 +854,9 @@ std::optional<Value *> CodegenVisitor::TvisitSelectStatement(WPLParser::SelectSt
     origParent->getBasicBlockList().push_back(mergeBlk);
     builder->SetInsertPoint(mergeBlk);
 
-    return {};
+    std::cout << "870" << std::endl;
+    std::optional<Value *> ans = {};
+    return ans;
 }
 
 // Passthrough function
