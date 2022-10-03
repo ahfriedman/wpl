@@ -417,7 +417,7 @@ std::optional<Value *> CodegenVisitor::TvisitFuncDef(WPLParser::FuncDefContext *
         return {};
     }
 
-    const TypeInvoke *inv = dynamic_cast<const TypeInvoke *>(sym->type);
+    // const TypeInvoke *inv = dynamic_cast<const TypeInvoke *>(sym->type);
 
     if (ctx->paramList)
     {
@@ -439,8 +439,6 @@ std::optional<Value *> CodegenVisitor::TvisitFuncDef(WPLParser::FuncDefContext *
     // Create block
     BasicBlock *bBlk = BasicBlock::Create(module->getContext(), "entry", fn);
     builder->SetInsertPoint(bBlk);
-
-    std::cout << "438" << std::endl;
 
     for (auto &arg : fn->args())
     {
@@ -464,8 +462,6 @@ std::optional<Value *> CodegenVisitor::TvisitFuncDef(WPLParser::FuncDefContext *
         }
     }
 
-    std::cout << "453" << std::endl;
-
     std::any last = nullptr;
     for (auto e : ctx->block()->stmts)
     {
@@ -487,7 +483,7 @@ std::optional<Value *> CodegenVisitor::TvisitProcDef(WPLParser::ProcDefContext *
         return {};
     }
 
-    const TypeInvoke *inv = dynamic_cast<const TypeInvoke *>(sym->type);
+    // const TypeInvoke *inv = dynamic_cast<const TypeInvoke *>(sym->type);
 
     if (ctx->paramList)
     {
@@ -595,8 +591,6 @@ std::optional<Value *> CodegenVisitor::TvisitAssignStatement(WPLParser::AssignSt
 
 std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDeclStatementContext *ctx)
 {
-    // FIXME: MODIFY TO DO THINGS BY TYPE!!!!
-
     for (auto e : ctx->assignments)
     {
         // FIXME: DOESNT WORK WHEN NO VALUE!!!
@@ -617,15 +611,9 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
                 return {};
             }
 
-            std::cout << "493 4 " << ctx->getText() << !!varSymbol->type << std::endl;
 
             llvm::Type *ty = varSymbol->type->getLLVMType(module->getContext());
-            std::cout << "495 4 " << ctx->getText() << std::endl;
             llvm::AllocaInst *v = builder->CreateAlloca(ty, 0, var->getText());
-
-            std::cout << "Set Val for: " << varSymbol->identifier << "(" << var->getText() << ") @" << varSymbol << std::endl;
-
-            std::cout << " META: " << v->isArrayAllocation() << " AND " << v->getArraySize() << std::endl;
             varSymbol->val = v;
 
             if (e->ex)
