@@ -200,7 +200,7 @@ std::optional<Value *> CodegenVisitor::TvisitBinaryArithExpr(WPLParser::BinaryAr
 
 std::optional<Value *> CodegenVisitor::TvisitEqExpr(WPLParser::EqExprContext *ctx)
 {
-    // FIXME: VERIFY GOOD ENOUGH! PROBS WONT WORK ON STRINGS!!!
+    // FIXME: VERIFY GOOD ENOUGH! PROBS WON'T WORK ON ARRAYS!
     std::optional<Value *> lhs = std::any_cast<std::optional<Value *>>(ctx->left->accept(this));
     std::optional<Value *> rhs = std::any_cast<std::optional<Value *>>(ctx->right->accept(this));
 
