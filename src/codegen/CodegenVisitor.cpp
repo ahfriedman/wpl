@@ -7,7 +7,6 @@ std::optional<Value *> CodegenVisitor::TvisitCompilationUnit(WPLParser::Compilat
         e->accept(this);
     }
 
-    // FIXME: SURROUND IN IF
     for (auto e : ctx->stmts)
     {
         // Generate code for statement
@@ -98,24 +97,49 @@ std::optional<Value *> CodegenVisitor::TvisitArrayAccessExpr(WPLParser::ArrayAcc
 
 std::optional<Value *> CodegenVisitor::TvisitSConstExpr(WPLParser::SConstExprContext *ctx)
 {
-    // FIXME: UNESCAPE STRINg
+    // TODO: do this better, ensure that we can only escape these chars...
     std::string full(ctx->s->getText());
     std::string actual = full.substr(1, full.length() - 2);
 
-    // std::regex reg("\\\\(.)");
-    // std::string out = regex_replace(actual, reg, R"($1)");
+    std::vector<std::pair<std::regex, std::string>> replacements;
 
-    // FIXME: MAKE THIS WORK!!!
-    std::regex basic("\\\\n");
-    std::string out = regex_replace(actual, basic, "\n");
+    // Reference of all escape characters: https://en.cppreference.com/w/cpp/language/escape
+    std::regex SQ("\\\\'");
+    std::regex DQ("\\\\\"");
+    std::regex QM("\\\\\\?");
+    std::regex SL("\\\\\\\\");
+    std::regex AB("\\\\a");
+    std::regex BS("\\\\b");
+    std::regex FF("\\\\f");
+    std::regex NL("\\\\n");
+    std::regex CR("\\\\r");
+    std::regex HT("\\\\t");
+    std::regex VT("\\\\v");
 
-    // StringRef ref = actual;
+    replacements.push_back({SQ, "\'"});
+    replacements.push_back({DQ, "\""});
+    replacements.push_back({QM, "\?"});
+    replacements.push_back({AB, "\a"});
+    replacements.push_back({BS, "\b"});
+    replacements.push_back({FF, "\f"});
+    replacements.push_back({NL, "\n"});
+    replacements.push_back({CR, "\r"});
+    replacements.push_back({HT, "\t"});
+    replacements.push_back({VT, "\v"});
+    replacements.push_back({SL, "\\"});
+
+
+    std::string out = actual;
+
+    for(auto e : replacements)
+    {
+        out = regex_replace(out, e.first, e.second);
+    }
+
     Value *strVal = builder->CreateGlobalStringPtr(out); // For some reason, I can't return this directly...
 
     return strVal;
 }
-
-// FIXME: SHOULD WE ALLOW INTS IN VARIABLE NAMES? PROBABLY
 
 std::optional<Value *> CodegenVisitor::TvisitUnaryExpr(WPLParser::UnaryExprContext *ctx)
 {
@@ -276,7 +300,6 @@ std::optional<Value *> CodegenVisitor::TvisitVariableExpr(WPLParser::VariableExp
         return {};
     }
 
-    // FIXME: ADD TYPES
     llvm::Type *type = sym->type->getLLVMType(module->getContext());
     if (!type)
     {
@@ -287,7 +310,7 @@ std::optional<Value *> CodegenVisitor::TvisitVariableExpr(WPLParser::VariableExp
     {
         errorHandler.addCodegenError(ctx->getStart(), "Unable to find allocation for variable: " + ctx->getText());
     }
-    // std::cout << "CREATE LOAD FOR: " << id << " " << sym->toString() << " WITH " << type << std::endl;
+
     Value *v = builder->CreateLoad(type, sym->val, id);
     return v;
 }
@@ -317,7 +340,7 @@ std::optional<Value *> CodegenVisitor::TvisitFieldAccessExpr(WPLParser::FieldAcc
 
 std::optional<Value *> CodegenVisitor::TvisitParenExpr(WPLParser::ParenExprContext *ctx)
 {
-    return std::any_cast<std::optional<Value *>>(ctx->ex->accept(this)); // FIXME: VERIFY GOOD ENOUGH
+    return std::any_cast<std::optional<Value *>>(ctx->ex->accept(this));
 }
 
 std::optional<Value *> CodegenVisitor::TvisitBinaryRelExpr(WPLParser::BinaryRelExprContext *ctx)
@@ -427,7 +450,7 @@ std::optional<Value *> CodegenVisitor::TvisitFuncDef(WPLParser::FuncDefContext *
     Function *fn = Function::Create(fnType, GlobalValue::ExternalLinkage, ctx->name->getText(), module);
 
     // Create block
-    BasicBlock *bBlk = BasicBlock::Create(module->getContext(), "entry", fn); // FIXME: USING ENTRY MAY BE AN ISSUE?
+    BasicBlock *bBlk = BasicBlock::Create(module->getContext(), "entry", fn);
     builder->SetInsertPoint(bBlk);
 
     std::cout << "438" << std::endl;
@@ -462,15 +485,6 @@ std::optional<Value *> CodegenVisitor::TvisitFuncDef(WPLParser::FuncDefContext *
     {
         last = e->accept(this);
     }
-
-    if (ctx->block()->stmts.size() > 0 && dynamic_cast<WPLParser::ReturnStatementContext *>(ctx->block()->stmts.at(ctx->block()->stmts.size() - 1)))
-    {
-        // builder->CreateRet(
-        //     std::any_cast<Value *>(last)
-        // );
-    }
-
-    // FIXME: VERIFY ENOUGH, NOTHING FOLLOWING, ETC. THIS IS PROBS WRONG!
 
     return {};
 }
@@ -507,7 +521,7 @@ std::optional<Value *> CodegenVisitor::TvisitProcDef(WPLParser::ProcDefContext *
     Function *fn = Function::Create(fnType, GlobalValue::ExternalLinkage, ctx->name->getText(), module);
 
     // Create block
-    BasicBlock *bBlk = BasicBlock::Create(module->getContext(), "entry", fn); // FIXME: USING ENTRY MAY BE AN ISSUE?
+    BasicBlock *bBlk = BasicBlock::Create(module->getContext(), "entry", fn);
     builder->SetInsertPoint(bBlk);
 
     // FIXME: NEED TO DO THIS FOR PROCs AS WELL!!!
@@ -537,8 +551,6 @@ std::optional<Value *> CodegenVisitor::TvisitProcDef(WPLParser::ProcDefContext *
     {
         e->accept(this);
     }
-
-    // FIXME: VERIFY ENOUGH, NOTHING FOLLOWING, ETC. THIS IS PROBS WRONG!
 
     return {};
 }
@@ -598,7 +610,7 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
     for (auto e : ctx->assignments)
     {
         // FIXME: DOESNT WORK WHEN NO VALUE!!!
-        std::optional<Value *> exVal = (e->ex) ? std::any_cast<std::optional<Value *>>(e->ex->accept(this)) : std::nullopt; // builder->getInt32(0);
+        std::optional<Value *> exVal = (e->ex) ? std::any_cast<std::optional<Value *>>(e->ex->accept(this)) : std::nullopt;
 
         if ((e->ex) && !exVal)
         {
@@ -670,7 +682,7 @@ std::optional<Value *> CodegenVisitor::TvisitLoopStatement(WPLParser::LoopStatem
         return {};
     }
     // Check if we need to loop back again...
-    loopBlk = builder->GetInsertBlock(); // FIXME: REVIEW
+    loopBlk = builder->GetInsertBlock();
     builder->CreateCondBr(check.value(), loopBlk, restBlk);
     //  Out of Loop
 
@@ -873,13 +885,13 @@ std::optional<Value *> CodegenVisitor::TvisitCallStatement(WPLParser::CallStatem
 
 std::optional<Value *> CodegenVisitor::TvisitReturnStatement(WPLParser::ReturnStatementContext *ctx)
 {
-    // Check if we are returning an expression or not 
+    // Check if we are returning an expression or not
     if (ctx->expression())
     {
-        //If we are, then visit that expression
+        // If we are, then visit that expression
         std::any anyInner = ctx->expression()->accept(this);
 
-        //Perform some checks to make sure that code was generated
+        // Perform some checks to make sure that code was generated
         if (std::optional<Value *> inner = std::any_cast<std::optional<Value *>>(anyInner))
         {
             if (!inner)
@@ -888,19 +900,19 @@ std::optional<Value *> CodegenVisitor::TvisitReturnStatement(WPLParser::ReturnSt
                 return {};
             }
 
-            //As the code was generated correctly, build the return statement; we ensure no following code due to how block visitors work in semantic analysis. 
+            // As the code was generated correctly, build the return statement; we ensure no following code due to how block visitors work in semantic analysis.
             Value *v = builder->CreateRet(inner.value());
 
             return v;
         }
-        else 
+        else
         {
             errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code for: " + ctx->getText());
-            return {}; 
+            return {};
         }
     }
 
-    // If there is no value, return void. We ensure no following code and type-correctness in the semantic pass. 
+    // If there is no value, return void. We ensure no following code and type-correctness in the semantic pass.
     Value *v = builder->CreateRetVoid();
     return v;
 }
