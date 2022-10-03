@@ -633,10 +633,9 @@ const Type *SemanticVisitor::visitCtx(WPLParser::ConditionalStatementContext *ct
 
 const Type *SemanticVisitor::visitCtx(WPLParser::SelectStatementContext *ctx)
 {
-    // FIXME: VERIFY
+    //Here we just need to visit each of the individual cases; they each handle their own logic. 
     for (auto e : ctx->cases)
     {
-        // FIXME: do better? NEED TO ENSURE BLOCK!!!
         this->visitCtx(e);
     }
 
