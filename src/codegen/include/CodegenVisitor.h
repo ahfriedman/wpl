@@ -160,7 +160,6 @@ public:
 
     PropertyManager *getProperties() { return props; }
 
-    // FIXME: REVIEW LLVM STUFF
     Module *getModule() { return module; }
     void modPrint() { module->print(llvm::outs(), nullptr); }
 
@@ -178,8 +177,7 @@ protected:
         // FIXME: probably don't need to visit this either...
         llvm::Type *ty;
         bool valid = false;
-
-        // FIXME: VERIFY!
+        
         if (ctx->TYPE_INT())
         {
             ty = Int32Ty;
@@ -206,7 +204,7 @@ protected:
         {
             // FIXME: ENSURE POSITIVE
             uint64_t len = (uint64_t)std::stoi(ctx->len->getText());
-            llvm::Type *arr = ArrayType::get(ty, len); // new llvm::Type::ArrayType(ty, len);
+            llvm::Type *arr = ArrayType::get(ty, len);
 
             return arr;
         }

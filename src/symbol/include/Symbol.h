@@ -16,39 +16,12 @@
 #include "llvm/IR/Value.h"
 #include "llvm/IR/IRBuilder.h"
 
-// Needed for anycasts
-#include <any>
-#include <utility>
+#include <any>      // Needed for anycasts
+#include <utility>  // Needed for anycasts
+#include <iostream> // cout
+#include <vector>   // Vectors
+#include <optional> // Optionals
 
-// cout
-#include <iostream>
-
-// Vectors
-#include <vector>
-
-// Optional
-#include <optional>
-
-// FIXME: we may need arrays, functions & procedures.
-
-// class Type
-// {
-
-// public:
-//     // enum BaseTypes {
-//     //     INT,        // Integers
-//     //     BOOL,       // Booleans
-//     //     STR,        // Strings
-//     //     BOT,        // Bottom - Should be impossible
-//     //     TOP,        // Top    - Universal Type - Shouldn't be used
-//     // };
-
-// protected:
-//     //Used to print the name of the type
-//     virtual void toString() const = 0;
-//     virtual bool operator==(Type other);
-//     virtual bool operator!=(Type other);
-// };
 
 // Object slicing is NOT fun
 class Type
@@ -113,7 +86,6 @@ class TypeArray : public Type
 private:
     const Type *valueType;
     int length;
-    // int
     // FIXME: should we have a length defined in here?
 
 public:
@@ -140,7 +112,7 @@ public:
         uint64_t len = (uint64_t)length;
         llvm::Type *inner = valueType->getLLVMType(C);
         llvm::Type *arr = llvm::ArrayType::get(inner, len);
-        // return llvm::Type::getInt8PtrTy(C);
+
         return arr;
     }
 
@@ -196,7 +168,6 @@ public:
         paramTypes = p;
         retType = r;
 
-        // FIXME: MAKE SURE AT LEAST ONE PARAMTYPE!!!
         variadic = v;
     }
 
@@ -269,10 +240,8 @@ public:
 
     std::string toString() const override
     {
-        // FIXME: DO BETTER
         if(valueType)
         {
-            // std::cout << "VAR/" << valueType.value()->toString() << std::endl;
             return "{VAR/" + valueType.value()->toString() + "}";
         }
         return "VAR";

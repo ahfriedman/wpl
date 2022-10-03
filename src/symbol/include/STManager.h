@@ -38,6 +38,6 @@ class STManager {
 
   private:
     std::vector<Scope*> scopes;
-    std::optional<Scope*> currentScope = {}; //FIXME: Do something better here!!! 
+    std::optional<Scope*> currentScope = {}; 
     int scopeNumber = 0;
 };

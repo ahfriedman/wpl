@@ -1,6 +1,5 @@
 #include "Symbol.h"
 
-// FIXME: change to is(Not) Subtype? no... still not quite right... hmmm....
 bool Type::isSubtype(const Type *other) const
 {
     if(const TypeInfer* inf = dynamic_cast<const TypeInfer*>(this)) {
