@@ -61,7 +61,7 @@ TEST_CASE("Sample Progam one", "[semantic]")
   std::cout << stmgr->toString() << std::endl;
   std::cout << sv->getErrors() << std::endl; 
 
-  CHECK_FALSE(sv->hasErrors());
+  CHECK_FALSE(sv->hasErrors(0));
 }
 
 TEST_CASE("Sample Progam one w/ Inf", "[semantic]")
@@ -112,7 +112,7 @@ TEST_CASE("Sample Progam one w/ Inf", "[semantic]")
   std::cout << stmgr->toString() << std::endl;
   std::cout << sv->getErrors() << std::endl; 
 
-  CHECK_FALSE(sv->hasErrors());
+  CHECK_FALSE(sv->hasErrors(0));
 }
 
 TEST_CASE("Block", "[semantic]")
@@ -163,7 +163,7 @@ TEST_CASE("Block", "[semantic]")
   std::cout << stmgr->toString() << std::endl;
   std::cout << sv->getErrors() << std::endl; 
 
-  CHECK_FALSE(sv->hasErrors());
+  CHECK_FALSE(sv->hasErrors(0));
 }
 
 
@@ -206,7 +206,7 @@ TEST_CASE("Inference If Errors - 1", "[semantic]")
   // std::cout << stmgr->toString() << std::endl;
   // std::cout << sv->getErrors() << std::endl; 
 
-  CHECK(sv->hasErrors());
+  CHECK(sv->hasErrors(0));
 }
 
 TEST_CASE("Inference If - 1", "[semantic]")
@@ -248,7 +248,7 @@ TEST_CASE("Inference If - 1", "[semantic]")
   std::cout << stmgr->toString() << std::endl;
   std::cout << sv->getErrors() << std::endl; 
 
-  CHECK_FALSE(sv->hasErrors());
+  CHECK_FALSE(sv->hasErrors(0));
 }
 
 TEST_CASE("Inference If - 2", "[semantic]")
@@ -290,7 +290,7 @@ TEST_CASE("Inference If - 2", "[semantic]")
   std::cout << stmgr->toString() << std::endl;
   std::cout << sv->getErrors() << std::endl; 
 
-  CHECK_FALSE(sv->hasErrors());
+  CHECK_FALSE(sv->hasErrors(0));
 }
 
 TEST_CASE("programs/test4 - Don't allow void to be sent to fn", "[codegen]")
@@ -311,9 +311,9 @@ TEST_CASE("programs/test4 - Don't allow void to be sent to fn", "[codegen]")
     sv->visitCompilationUnit(tree);
 
 
-    // if(sv->hasErrors())
+    // if(sv->hasErrors(0))
     // {
     //     CHECK("foo" == sv->getErrors());
     // }
-    REQUIRE(sv->hasErrors());
+    REQUIRE(sv->hasErrors(0));
 }

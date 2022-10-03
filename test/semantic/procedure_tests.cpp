@@ -38,7 +38,7 @@ TEST_CASE("visitbasicProc", "[semantic][proc]")
     std::cout << stmgr->toString() << std::endl;
     std::cout << tree->getText() << std::endl;
 
-    CHECK_FALSE(sv->hasErrors());
+    CHECK_FALSE(sv->hasErrors(ERROR));
   }
 
   // FIXME: test recursion
@@ -68,6 +68,6 @@ TEST_CASE("visitbasicProc", "[semantic][proc]")
     std::cout << stmgr->toString() << std::endl;
     std::cout << tree->getText() << std::endl;
 
-    CHECK_FALSE(sv->hasErrors());
+    CHECK_FALSE(sv->hasErrors(ERROR));
   }
 }

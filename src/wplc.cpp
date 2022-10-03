@@ -110,7 +110,7 @@ int main(int argc, const char *argv[])
   tree = parser.compilationUnit();
 
   // FIXME: WHY CAN I JUST DO INT?
-  if (syntaxListener->hasErrors())
+  if (syntaxListener->hasErrors(0)) //Want to see all errors. 
   {
     std::cout << "ERRORS" << std::endl;
     std::cerr << syntaxListener->errorList() << std::endl;
@@ -127,7 +127,7 @@ int main(int argc, const char *argv[])
   SemanticVisitor *sv = new SemanticVisitor(stm, pm);
   sv->visitCompilationUnit(tree);
   std::cout << "OUT" << std::endl;
-  if (sv->hasErrors())
+  if (sv->hasErrors(0)) //Want to see all errors
   {
     std::cerr << sv->getErrors() << std::endl;
     return -1;
@@ -136,7 +136,7 @@ int main(int argc, const char *argv[])
   // Generate the LLVM IR code
   CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll");
   cv->visitCompilationUnit(tree);
-  if (cv->hasErrors())
+  if (cv->hasErrors(0)) //Want to see all errors
   {
     std::cerr << cv->getErrors() << std::endl;
     return -1;

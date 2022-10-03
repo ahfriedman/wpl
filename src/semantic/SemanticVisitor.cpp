@@ -14,6 +14,12 @@ const Type *SemanticVisitor::visitCtx(WPLParser::CompilationUnitContext *ctx)
     // Visit the statements contained in the unit
     for (auto e : ctx->stmts)
     {
+        if(!(dynamic_cast<WPLParser::FuncDefContext*>(e) 
+          || dynamic_cast<WPLParser::ProcDefContext*>(e)
+          || dynamic_cast<WPLParser::VarDeclStatementContext*>(e))) //FIXME: ENSURE VAR DECL WORKS IN TOP LEVEL! AND THAT WE DON'T ALLOW FUNC DEF IN SELECT!
+          {
+            errorHandler.addSemanticCritWarning(ctx->getStart(), "Currently, only FUNC, PROC, EXTERN, and variable declarations allowed at top-level. Not: " + e->getText());
+          }
         e->accept(this);
     }
 
@@ -183,7 +189,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::ArrayOrVarContext *ctx)
     }
 
     const Type *arrType = this->visitCtx(ctx->array);
-    
+
     bindings->bind(ctx, bindings->getBinding(ctx->array)); // FIXME: DO BETTER; Seems hacky to be passing like this!
     return arrType;
 }

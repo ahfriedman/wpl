@@ -155,7 +155,7 @@ public:
 
 
 
-    bool hasErrors() { return errorHandler.hasErrors(); }
+    bool hasErrors(int flags) { return errorHandler.hasErrors(flags); }
     std::string getErrors() { return errorHandler.errorList(); }
 
     PropertyManager *getProperties() { return props; }

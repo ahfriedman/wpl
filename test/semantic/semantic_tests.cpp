@@ -20,10 +20,10 @@ TEST_CASE("Development Semantic tests", "[semantic]")
   SemanticVisitor *sv = new SemanticVisitor(new STManager(), new PropertyManager()); // NEW
   sv->visitCompilationUnit(tree);                                                    // NEW
   // Error checking is NEW
-  // if (sv->hasErrors()) {
+  // if (sv->hasErrors(ERROR)) {
   //   CHECK("foo" == sv->getErrors());
   // }
-  CHECK_FALSE(sv->hasErrors());
+  CHECK_FALSE(sv->hasErrors(ERROR));
 }
 
 TEST_CASE("Bool Const Tests", "[semantic]")
@@ -41,7 +41,7 @@ TEST_CASE("Bool Const Tests", "[semantic]")
   SemanticVisitor *sv = new SemanticVisitor(new STManager(), new PropertyManager());
   sv->visitCompilationUnit(tree);
 
-  CHECK_FALSE(sv->hasErrors());
+  CHECK_FALSE(sv->hasErrors(ERROR));
 }
 
 TEST_CASE("Type from compilationUnit", "[semantic]")
