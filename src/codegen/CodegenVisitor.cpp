@@ -686,7 +686,7 @@ std::optional<Value *> CodegenVisitor::TvisitConditionalStatement(WPLParser::Con
 {
     // FIXME: THIS MIGHT NOT WORK OUTSIDE A FUNCTION
 
-    //Get the condition that the if statement is for
+    // Get the condition that the if statement is for
     std::optional<Value *> cond = this->TvisitCondition(ctx->check);
 
     if (!cond)
@@ -707,25 +707,24 @@ std::optional<Value *> CodegenVisitor::TvisitConditionalStatement(WPLParser::Con
     BasicBlock *restBlk = ctx->falseBlk ? BasicBlock::Create(module->getContext(), "ifcont")
                                         : elseBlk;
 
-
     builder->CreateCondBr(cond.value(), thenBlk, elseBlk);
 
     /*
      * Then block
      */
-    builder->SetInsertPoint(thenBlk); 
+    builder->SetInsertPoint(thenBlk);
     for (auto e : ctx->trueBlk->stmts)
     {
         e->accept(this);
     }
 
-    //If the block ends in a return, then we can't make the branch; things would break
+    // If the block ends in a return, then we can't make the branch; things would break
     if (!CodegenVisitor::blockEndsInReturn(ctx->trueBlk))
     {
         builder->CreateBr(restBlk);
     }
 
-    thenBlk = builder->GetInsertBlock(); 
+    thenBlk = builder->GetInsertBlock();
 
     /*
      * Insert the else block (same as rest if no else branch)
@@ -735,7 +734,7 @@ std::optional<Value *> CodegenVisitor::TvisitConditionalStatement(WPLParser::Con
 
     if (ctx->falseBlk) // If we have an else branch
     {
-        //Generate the code for the else block; follows the same logic as the then block. 
+        // Generate the code for the else block; follows the same logic as the then block.
         for (auto e : ctx->falseBlk->stmts)
         {
             e->accept(this);
@@ -748,7 +747,7 @@ std::optional<Value *> CodegenVisitor::TvisitConditionalStatement(WPLParser::Con
 
         elseBlk = builder->GetInsertBlock();
 
-        // As we have an else block, rest and else are different, so we have to merge back in. 
+        // As we have an else block, rest and else are different, so we have to merge back in.
         parentFn->getBasicBlockList().push_back(restBlk);
         builder->SetInsertPoint(restBlk);
     }
@@ -766,36 +765,36 @@ std::optional<Value *> CodegenVisitor::TvisitSelectStatement(WPLParser::SelectSt
     auto origParent = builder->GetInsertBlock()->getParent();
     BasicBlock *mergeBlk = BasicBlock::Create(module->getContext(), "ifcont");
 
-    //Iterate through each of the cases 
-    for (unsigned long i = 0; i < ctx->cases.size(); i++) 
+    // Iterate through each of the cases
+    for (unsigned long i = 0; i < ctx->cases.size(); i++)
     {
         WPLParser::SelectAlternativeContext *evalCase = ctx->cases.at(i);
 
         // Visit the check code
         std::any anyCheck = evalCase->check->accept(this);
 
-        //Attempt to cast the check; if this fails, then codegen for the check failed
+        // Attempt to cast the check; if this fails, then codegen for the check failed
         if (std::optional<Value *> optVal = std::any_cast<std::optional<Value *>>(anyCheck))
         {
-            // Check that the optional, in fact, has a value. Otherwise, something went wrong. 
+            // Check that the optional, in fact, has a value. Otherwise, something went wrong.
             if (!optVal)
             {
                 errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code for: " + evalCase->getText());
                 return {};
             }
 
-            // Knowing that we have a value, get what the value is. 
+            // Knowing that we have a value, get what the value is.
             Value *val = optVal.value();
 
             // Helpful check for later on
             bool isLast = i == ctx->cases.size() - 1;
 
-            //Create the then and else blocks as if this were an if statement
+            // Create the then and else blocks as if this were an if statement
             auto parent = builder->GetInsertBlock()->getParent();
             BasicBlock *thenBlk = BasicBlock::Create(module->getContext(), "then", parent);
             BasicBlock *elseBlk = isLast ? mergeBlk : BasicBlock::Create(module->getContext(), "else");
 
-            //Branch based on the value
+            // Branch based on the value
             builder->CreateCondBr(val, thenBlk, elseBlk);
 
             /*
@@ -805,9 +804,9 @@ std::optional<Value *> CodegenVisitor::TvisitSelectStatement(WPLParser::SelectSt
              */
             builder->SetInsertPoint(thenBlk);
 
-            //Visit the evaluation code for the case
+            // Visit the evaluation code for the case
             std::any thenAny = evalCase->eval->accept(this);
-            
+
             // Check if code generation for the case worked
             if (std::optional<Value *> thenOpt = std::any_cast<std::optional<Value *>>(thenAny))
             {
@@ -818,42 +817,41 @@ std::optional<Value *> CodegenVisitor::TvisitSelectStatement(WPLParser::SelectSt
                 }
 
                 /*
-                 * As codegen worked, we now need to determine if 
-                 * the code we generated was for a block ending in 
-                 * a return or if it is a return statement. This 
-                 * Must be done as it determines if we create 
-                 * a merge into the merge block or not. 
+                 * As codegen worked, we now need to determine if
+                 * the code we generated was for a block ending in
+                 * a return or if it is a return statement. This
+                 * Must be done as it determines if we create
+                 * a merge into the merge block or not.
                  */
-                if (WPLParser::BlockContext * blkCtx = dynamic_cast<WPLParser::BlockContext*>(evalCase->eval))
+                if (WPLParser::BlockContext *blkCtx = dynamic_cast<WPLParser::BlockContext *>(evalCase->eval))
                 {
-                    if(!CodegenVisitor::blockEndsInReturn(blkCtx))
+                    if (!CodegenVisitor::blockEndsInReturn(blkCtx))
                     {
                         builder->CreateBr(mergeBlk);
                     }
-                    //if it ends in a return, we're good!
+                    // if it ends in a return, we're good!
                 }
-                else if(WPLParser::ReturnStatementContext* retCtx = dynamic_cast<WPLParser::ReturnStatementContext*>(evalCase->eval))
+                else if (WPLParser::ReturnStatementContext *retCtx = dynamic_cast<WPLParser::ReturnStatementContext *>(evalCase->eval))
                 {
-                    //Similarly, we don't need to generate the branch
+                    // Similarly, we don't need to generate the branch
                 }
-                else 
+                else
                 {
                     builder->CreateBr(mergeBlk);
                 }
 
-                thenBlk = builder->GetInsertBlock(); 
+                thenBlk = builder->GetInsertBlock();
 
                 /*
                  *
                  * Else Block
-                 * 
+                 *
                  */
-                if(!isLast)
+                if (!isLast)
                 {
                     parent->getBasicBlockList().push_back(elseBlk);
                     builder->SetInsertPoint(elseBlk);
                 }
-                
             }
             else
             {
@@ -862,11 +860,11 @@ std::optional<Value *> CodegenVisitor::TvisitSelectStatement(WPLParser::SelectSt
             }
         }
     }
-    
-    //We could probably do this as an else on the is !isLast check, but this works 
+
+    // We could probably do this as an else on the is !isLast check, but this works
     origParent->getBasicBlockList().push_back(mergeBlk);
     builder->SetInsertPoint(mergeBlk);
-    
+
     return {};
 }
 
@@ -877,20 +875,27 @@ std::optional<Value *> CodegenVisitor::TvisitReturnStatement(WPLParser::ReturnSt
 {
     if (ctx->expression())
     {
+        std::any anyInner = ctx->expression()->accept(this);
 
-        std::optional<Value *> inner = std::any_cast<std::optional<Value *>>(ctx->expression()->accept(this)); // FIXME: UNSAFE W/ ERORS
+        if (std::optional<Value *> inner = std::any_cast<std::optional<Value *>>(anyInner))
+        {
+            if (!inner)
+            {
+                errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code for: " + ctx->getText());
+                return {};
+            }
 
-        if (!inner)
+            Value *v = builder->CreateRet(inner.value());
+
+            // FIXME: ENSURE NO FOLLOWING CODE
+
+            return v;
+        }
+        else 
         {
             errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code for: " + ctx->getText());
-            return {};
+            return {}; 
         }
-
-        Value *v = builder->CreateRet(inner.value());
-
-        // FIXME: ENSURE NO FOLLOWING CODE
-
-        return v;
     }
     Value *v = builder->CreateRetVoid();
     // FIXME: ENSURE NO FOLLOWING CODE, ENSURE CORRECT!!
