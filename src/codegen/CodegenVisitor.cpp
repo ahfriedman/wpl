@@ -647,20 +647,22 @@ std::optional<Value *> CodegenVisitor::TvisitLoopStatement(WPLParser::LoopStatem
 
     auto parent = builder->GetInsertBlock()->getParent();
 
-    BasicBlock *loopBlk = BasicBlock::Create(module->getContext(), "loop");
+    BasicBlock *loopBlk = BasicBlock::Create(module->getContext(), "loop", parent);
     BasicBlock *restBlk = BasicBlock::Create(module->getContext(), "rest");
 
     builder->CreateCondBr(check.value(), loopBlk, restBlk);
 
     // Need to add here otherwise we will overwrite it
-    parent->getBasicBlockList().push_back(loopBlk);
+    // parent->getBasicBlockList().push_back(loopBlk);
 
     // In the loop block
     builder->SetInsertPoint(loopBlk);
-    for (auto e : ctx->block()->stmts)
+    for (auto e : ctx->block()->stmts) //FIXME: DO WE NEED TO CHECK RETURNS?
     {
         e->accept(this);
     }
+
+
     // Re-calculate the loop condition
     check = this->TvisitCondition(ctx->check);
     if (!check)
@@ -669,8 +671,8 @@ std::optional<Value *> CodegenVisitor::TvisitLoopStatement(WPLParser::LoopStatem
         return {};
     }
     // Check if we need to loop back again...
-    loopBlk = builder->GetInsertBlock();
     builder->CreateCondBr(check.value(), loopBlk, restBlk);
+    loopBlk = builder->GetInsertBlock();
     //  Out of Loop
 
     parent->getBasicBlockList().push_back(restBlk);
@@ -931,8 +933,6 @@ std::optional<Value *> CodegenVisitor::TvisitBlock(WPLParser::BlockContext *ctx)
  * These are visitors which should NEVER be seen during the compilation process.
  *
  */
-
-// FIXME: maybe these should be meta/compiler errors
 std::optional<Value *> CodegenVisitor::TvisitTypeOrVar(WPLParser::TypeOrVarContext *ctx)
 {
     errorHandler.addCodegenError(ctx->getStart(), "TypeOrVar fragment should never be visited directly by codegen!");
