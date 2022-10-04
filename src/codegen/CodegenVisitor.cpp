@@ -439,6 +439,8 @@ std::optional<Value *> CodegenVisitor::TvisitExternStatement(WPLParser::ExternSt
         }
     }
 
+    //FIXME: FIX VARIADIC TYPES!!
+
     ArrayRef<llvm::Type *> paramRef = ArrayRef(typeVec);
     bool isVariadic = ctx->variadic || ctx->ELLIPSIS();
 
@@ -678,14 +680,21 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
             {
                 module->getOrInsertGlobal(var->getText(), ty);
                 llvm::GlobalVariable *glob = module->getNamedGlobal(var->getText());
-                // glob->setLinkage(GlobalValue::CommonLinkage);
+                glob->setLinkage(GlobalValue::ExternalLinkage);
                 glob->setDSOLocal(true);
+
+                //FIXME: VARS NEED DECL IN GLOBAL SCOPE!!!
                 if (e->ex)
                 {
                     if (llvm::Constant *constant = static_cast<llvm::Constant *>(exVal.value()))
                     {
                         glob->setInitializer(constant);
                     }
+                }
+                else 
+                {
+                    llvm::ConstantAggregateZero* constant = llvm::ConstantAggregateZero::get(ty);
+                    glob->setInitializer(constant);
                 }
             }
             else
