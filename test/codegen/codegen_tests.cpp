@@ -345,10 +345,10 @@ TEST_CASE("programs/test7 - Test String equality + Nested Loops", "[codegen]")
     sv->visitCompilationUnit(tree);
 
 
-    // if(sv->hasErrors(0))
-    // {
-    //     CHECK("foo" == sv->getErrors());
-    // }
+    if(sv->hasErrors(0))
+    {
+        CHECK("foo" == sv->getErrors());
+    }
     REQUIRE_FALSE(sv->hasErrors(0));
 
     CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll");
