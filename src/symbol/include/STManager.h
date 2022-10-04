@@ -36,6 +36,15 @@ class STManager {
     int scopeCount() { return scopes.size(); }
     std::string toString() const;
 
+
+    bool isGlobalScope() {
+      if(scopes.size() == 0) return false; 
+
+      if(!currentScope) return false; 
+
+      return currentScope.value()->getId() == 0; 
+    }
+
   private:
     std::vector<Scope*> scopes;
     std::optional<Scope*> currentScope = {}; 

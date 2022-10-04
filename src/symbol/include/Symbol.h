@@ -298,13 +298,17 @@ struct Symbol
 
     llvm::AllocaInst *val;
 
+    bool isGlobal; 
+
     // Constructs a symbol from an ID and symbol type.
-    Symbol(std::string id, const Type *t)
+    Symbol(std::string id, const Type *t, bool glob=false)
     {
         identifier = id;
         type = t;
+        isGlobal = glob; 
 
         val = nullptr; // FIXME: replace with optional?
+        
     }
 
     std::string toString() const

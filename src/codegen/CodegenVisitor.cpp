@@ -91,6 +91,7 @@ std::optional<Value *> CodegenVisitor::TvisitArrayAccessExpr(WPLParser::ArrayAcc
 
 std::optional<Value *> CodegenVisitor::TvisitSConstExpr(WPLParser::SConstExprContext *ctx)
 {
+    std::cout << "94" << std::endl;
     // TODO: do this better, ensure that we can only escape these chars...
     std::string full(ctx->s->getText());
     std::string actual = full.substr(1, full.length() - 2);
@@ -129,9 +130,37 @@ std::optional<Value *> CodegenVisitor::TvisitSConstExpr(WPLParser::SConstExprCon
         out = regex_replace(out, e.first, e.second);
     }
 
-    Value *strVal = builder->CreateGlobalStringPtr(out); // For some reason, I can't return this directly...
+    std::cout << "133" << std::endl;
 
-    return strVal;
+    llvm::Constant *dat = llvm::ConstantDataArray::getString(module->getContext(), out);
+
+    // llvm::Constant * var = module->getOrInsertGlobal("", dat->getType());
+    // var->setLinkage(GlobalValue::PrivateLinkage);
+
+    llvm::GlobalVariable *glob = new llvm::GlobalVariable(
+        *module,
+        dat->getType(),
+        true,
+        GlobalValue::PrivateLinkage,
+        dat,
+        "");
+    glob->setAlignment(llvm::MaybeAlign(1)); 
+    glob->setUnnamedAddr(llvm::GlobalValue::UnnamedAddr::Global); 
+
+    llvm::Constant *Indices[] = {Int32Zero, Int32Zero};
+
+    Value * val = llvm::ConstantExpr::getInBoundsGetElementPtr(
+        glob->getValueType(), 
+        glob, 
+        Indices
+    );
+    // llvm::GlobalVariable * glob = builder->CreateGlobalString(out);
+
+    // Value *strVal = builder->CreateGlobalStringPtr(out); // For some reason, I can't return this directly...
+
+    std::cout << "137" << std::endl;
+
+    return val;
 }
 
 std::optional<Value *> CodegenVisitor::TvisitUnaryExpr(WPLParser::UnaryExprContext *ctx)
@@ -301,10 +330,26 @@ std::optional<Value *> CodegenVisitor::TvisitVariableExpr(WPLParser::VariableExp
 
     if (!sym->val)
     {
+        if (sym->isGlobal)
+        {
+            llvm::GlobalVariable *glob = module->getNamedGlobal(sym->identifier); // FIXME: VERIFY THIS WORKS WITH ARRAYS!!
+
+            if (!glob)
+            {
+                errorHandler.addCodegenError(ctx->getStart(), "Unable to find global variable: " + id);
+                return {};
+            }
+
+            Value *val = builder->CreateLoad(glob);
+            return val;
+        }
+
         errorHandler.addCodegenError(ctx->getStart(), "Unable to find allocation for variable: " + ctx->getText());
     }
 
     Value *v = builder->CreateLoad(type, sym->val, id);
+
+    std::cout << "323 " << ctx->getText() << std::endl;
     return v;
 }
 
@@ -559,15 +604,29 @@ std::optional<Value *> CodegenVisitor::TvisitAssignStatement(WPLParser::AssignSt
         errorHandler.addCodegenError(ctx->getStart(), "Incorrectly processed variable in assignment: " + ctx->to->getText());
         return {};
     }
+
+    Value *val = varSym->val;
+
+    if (varSym->isGlobal)
+    {
+        llvm::GlobalVariable *glob = module->getNamedGlobal(varSym->identifier); // FIXME: VERIFY THIS WORKS WITH ARRAYS!!
+
+        if (!glob)
+        {
+            errorHandler.addCodegenError(ctx->getStart(), "Unable to find global variable: " + varSym->identifier);
+            return {};
+        }
+
+        val = builder->CreateLoad(glob)->getPointerOperand();
+    }
+
     // Shouldn't need this in the end....
-    if (varSym->val == nullptr)
+    if (val == nullptr)
     {
         errorHandler.addCodegenError(ctx->getStart(), "Improperly initialized variable in assignment: " + ctx->to->getText() + "@" + varSym->identifier);
         std::cout << "IMPROP VAR @ " << varSym << std::endl;
         return {};
     }
-
-    Value *val = varSym->val;
 
     if (!ctx->to->VARIABLE())
     {
@@ -591,16 +650,18 @@ std::optional<Value *> CodegenVisitor::TvisitAssignStatement(WPLParser::AssignSt
 
 std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDeclStatementContext *ctx)
 {
+    std::cout << "625" << std::endl;
     for (auto e : ctx->assignments)
     {
         // FIXME: DOESNT WORK WHEN NO VALUE!!!
         std::optional<Value *> exVal = (e->ex) ? std::any_cast<std::optional<Value *>>(e->ex->accept(this)) : std::nullopt;
 
+        std::cout << "599" << std::endl;
         if ((e->ex) && !exVal)
         {
             errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code for: " + e->ex->getText());
         }
-
+        std::cout << "604" << std::endl;
         for (auto var : e->VARIABLE())
         {
             Symbol *varSymbol = props->getBinding(var);
@@ -611,13 +672,30 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
                 return {};
             }
 
-
             llvm::Type *ty = varSymbol->type->getLLVMType(module->getContext());
-            llvm::AllocaInst *v = builder->CreateAlloca(ty, 0, var->getText());
-            varSymbol->val = v;
 
-            if (e->ex)
-                builder->CreateStore(exVal.value(), v);
+            if (varSymbol->isGlobal)
+            {
+                module->getOrInsertGlobal(var->getText(), ty);
+                llvm::GlobalVariable *glob = module->getNamedGlobal(var->getText());
+                // glob->setLinkage(GlobalValue::CommonLinkage);
+                glob->setDSOLocal(true);
+                if (e->ex)
+                {
+                    if (llvm::Constant *constant = static_cast<llvm::Constant *>(exVal.value()))
+                    {
+                        glob->setInitializer(constant);
+                    }
+                }
+            }
+            else
+            {
+                llvm::AllocaInst *v = builder->CreateAlloca(ty, 0, var->getText());
+                varSymbol->val = v;
+
+                if (e->ex)
+                    builder->CreateStore(exVal.value(), v);
+            }
         }
     }
 

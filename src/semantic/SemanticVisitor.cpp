@@ -593,7 +593,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::VarDeclStatementContext *ctx)
             }
             else
             {
-                Symbol *symbol = new Symbol(id, exprType); // Done with exprType for later inferencing purposes
+                Symbol *symbol = new Symbol(id, exprType, stmgr->isGlobalScope()); // Done with exprType for later inferencing purposes
                 stmgr->addSymbol(symbol);
                 std::cout << "Bind @ varDecl" << std::endl; 
                 bindings->bind(var, symbol);
