@@ -31,7 +31,7 @@ TEST_CASE("Basic Assignments", "[semantic]")
 
     sv->visitCompilationUnit(tree);
 
-    CHECK_FALSE(sv->hasErrors());
+    CHECK_FALSE(sv->hasErrors(ERROR));
 
     std::optional<Symbol *> opt = stmgr->lookup("a");
 
@@ -61,7 +61,7 @@ TEST_CASE("Assignment: Int Expr", "[semantic]")
 
   sv->visitCompilationUnit(tree);
 
-  CHECK_FALSE(sv->hasErrors());
+  CHECK_FALSE(sv->hasErrors(ERROR));
 
   std::optional<Symbol *> opt = stmgr->lookup("a");
 
@@ -90,7 +90,7 @@ TEST_CASE("Assignment: Bool const", "[semantic]")
 
   sv->visitCompilationUnit(tree);
 
-  CHECK_FALSE(sv->hasErrors());
+  CHECK_FALSE(sv->hasErrors(ERROR));
 
   std::optional<Symbol *> opt = stmgr->lookup("a");
 
@@ -119,7 +119,7 @@ TEST_CASE("Assignment: Bool expr", "[semantic]")
 
   sv->visitCompilationUnit(tree);
 
-  CHECK_FALSE(sv->hasErrors());
+  CHECK_FALSE(sv->hasErrors(ERROR));
 
   std::optional<Symbol *> opt = stmgr->lookup("a");
 
@@ -148,7 +148,7 @@ TEST_CASE("Assignment: String const", "[semantic]")
 
   sv->visitCompilationUnit(tree);
 
-  CHECK_FALSE(sv->hasErrors());
+  CHECK_FALSE(sv->hasErrors(ERROR));
 
   std::optional<Symbol *> opt = stmgr->lookup("a");
 

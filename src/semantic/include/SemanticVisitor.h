@@ -20,7 +20,7 @@ public:
     std::string getErrors() { return errorHandler.errorList(); }
     STManager *getSTManager() { return stmgr; }
     PropertyManager *getBindings() { return bindings; }
-    bool hasErrors() { return errorHandler.hasErrors(); }
+    bool hasErrors(int flags) { return errorHandler.hasErrors(flags); }
 
     const Type *visitCtx(WPLParser::CompilationUnitContext *ctx);
     const Type *visitCtx(WPLParser::InvocationContext *ctx);
@@ -170,6 +170,8 @@ public:
                 Symbol *paramSymbol = new Symbol(param->name->getText(), paramType);
 
                 stmgr->addSymbol(paramSymbol);
+
+                bindings->bind(param, paramSymbol);
             }
         }
 

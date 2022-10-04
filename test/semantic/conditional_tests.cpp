@@ -34,9 +34,9 @@ TEST_CASE("Basic if", "[semantic][conditional]")
   sv->visitCompilationUnit(tree);
 
   //FIXME: CHECK MORE PRECISELY 
-  CHECK_FALSE(sv->hasErrors());
+  CHECK_FALSE(sv->hasErrors(ERROR));
 
-  // CHECK_FALSE(sv->hasErrors());
+  // CHECK_FALSE(sv->hasErrors(ERROR));
 
   // std::optional<Symbol *> opt = stmgr->lookup("a");
 
@@ -70,9 +70,9 @@ TEST_CASE("Basic if 2", "[semantic][conditional]")
   sv->visitCompilationUnit(tree);
 
   //FIXME: CHECK MORE PRECISELY 
-  CHECK_FALSE(sv->hasErrors());
+  CHECK_FALSE(sv->hasErrors(ERROR));
 
-  // CHECK_FALSE(sv->hasErrors());
+  // CHECK_FALSE(sv->hasErrors(ERROR));
 
   // std::optional<Symbol *> opt = stmgr->lookup("a");
 
@@ -108,9 +108,9 @@ TEST_CASE("If Example 1", "[semantic][conditional]")
   sv->visitCompilationUnit(tree);
 
   //FIXME: CHECK MORE PRECISELY 
-  CHECK(sv->hasErrors());
+  CHECK(sv->hasErrors(ERROR));
 
-  // CHECK_FALSE(sv->hasErrors());
+  // CHECK_FALSE(sv->hasErrors(ERROR));
 
   // std::optional<Symbol *> opt = stmgr->lookup("a");
 
@@ -147,9 +147,9 @@ TEST_CASE("If Example 1-2", "[semantic][conditional]")
   sv->visitCompilationUnit(tree);
 
   //FIXME: CHECK MORE PRECISELY 
-  CHECK(sv->hasErrors());
+  CHECK(sv->hasErrors(ERROR));
 
-  // CHECK_FALSE(sv->hasErrors());
+  // CHECK_FALSE(sv->hasErrors(ERROR));
 
   // std::optional<Symbol *> opt = stmgr->lookup("a");
 
@@ -187,9 +187,9 @@ TEST_CASE("If Example 1-3", "[semantic][conditional]")
   sv->visitCompilationUnit(tree);
 
   //FIXME: CHECK MORE PRECISELY 
-  CHECK(sv->hasErrors());
+  CHECK(sv->hasErrors(ERROR));
 
-  // CHECK_FALSE(sv->hasErrors());
+  // CHECK_FALSE(sv->hasErrors(ERROR));
 
   // std::optional<Symbol *> opt = stmgr->lookup("a");
 
@@ -227,9 +227,9 @@ TEST_CASE("If Example 1-4", "[semantic][conditional]")
   sv->visitCompilationUnit(tree);
 
   //FIXME: CHECK MORE PRECISELY 
-  CHECK(sv->hasErrors());
+  CHECK(sv->hasErrors(ERROR));
 
-  // CHECK_FALSE(sv->hasErrors());
+  // CHECK_FALSE(sv->hasErrors(ERROR));
 
   // std::optional<Symbol *> opt = stmgr->lookup("a");
 
@@ -267,9 +267,9 @@ TEST_CASE("If Example 1-5", "[semantic][conditional]")
   sv->visitCompilationUnit(tree);
 
   //FIXME: CHECK MORE PRECISELY 
-  CHECK_FALSE(sv->hasErrors());
+  CHECK_FALSE(sv->hasErrors(ERROR));
 
-  // CHECK_FALSE(sv->hasErrors());
+  // CHECK_FALSE(sv->hasErrors(ERROR));
 
   // std::optional<Symbol *> opt = stmgr->lookup("a");
 

@@ -5,7 +5,6 @@
 grammar WPL;
 
 //FIXME: UPDATE BASED ON NEW GRAMMAR!!!
-//FIXME: WHAT ABOUT VAR IN IF/SELECT??? SHOULD WE TYPE INF THAT?
 
 // Parser rules
 compilationUnit   :  (stmts+=statement | extens+=externStatement)* EOF ; 
@@ -19,8 +18,6 @@ invocation          :  VARIABLE '(' (args+=expression (',' args+=expression)* )?
 //Helps allow us to use VARIABLE or arrayAccess and not other expressions (such as for assignments)
 arrayAccess         : var=VARIABLE '[' index=expression ']'; 
 arrayOrVar          : var=VARIABLE | array=arrayAccess  ;
-
-//FIXME: program block required, variadic functions
 
 /*
  * Expressions return values. These can be: 
@@ -199,7 +196,7 @@ INTEGER     :   '0' | [1-9][0-9]* ; //Negative numbers handled by unary minus
 STRING      :   QUOTE (ESCAPE_STRING | SAFE_STRING)* QUOTE;
 
 //Variables 
-VARIABLE  :     [a-zA-Z]+   ;
+VARIABLE  :     [a-zA-Z][a-zA-Z0-9_]*  ;
 
 //String escapes are a \ that must be followed by any character
 fragment ESCAPE_STRING  : '\\'. ; 

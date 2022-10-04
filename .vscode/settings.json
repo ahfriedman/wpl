@@ -90,7 +90,9 @@
     "*.def": "cpp",
     "test.C": "cpp",
     "version": "cpp",
-    "*.cp": "cpp"
+    "*.cp": "cpp",
+    "forward_list": "cpp",
+    "complex": "cpp"
   },
   "cmake.configureOnOpen": true
 }

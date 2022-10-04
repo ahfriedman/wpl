@@ -14,6 +14,10 @@ const Type *SemanticVisitor::visitCtx(WPLParser::CompilationUnitContext *ctx)
     // Visit the statements contained in the unit
     for (auto e : ctx->stmts)
     {
+        if (!(dynamic_cast<WPLParser::FuncDefContext *>(e) || dynamic_cast<WPLParser::ProcDefContext *>(e) || dynamic_cast<WPLParser::VarDeclStatementContext *>(e))) // FIXME: ENSURE VAR DECL WORKS IN TOP LEVEL! AND THAT WE DON'T ALLOW FUNC DEF IN SELECT!
+        {
+            errorHandler.addSemanticCritWarning(ctx->getStart(), "Currently, only FUNC, PROC, EXTERN, and variable declarations allowed at top-level. Not: " + e->getText());
+        }
         e->accept(this);
     }
 
@@ -59,17 +63,13 @@ const Type *SemanticVisitor::visitCtx(WPLParser::InvocationContext *ctx)
          * to allow for this invocation.
          */
         if (
-            (!invokeable->isVariadic() && fnParams.size() != ctx->args.size()) 
-            || (invokeable->isVariadic() && fnParams.size() > ctx->args.size())
-        )
+            (!invokeable->isVariadic() && fnParams.size() != ctx->args.size()) || (invokeable->isVariadic() && fnParams.size() > ctx->args.size()))
         {
             std::ostringstream errorMsg;
             errorMsg << "Invocation of " << name << " expected " << fnParams.size() << " argument(s), but got " << ctx->args.size();
             errorHandler.addSemanticError(ctx->getStart(), errorMsg.str());
             return Types::UNDEFINED; // TODO: Could change this to the return type to catch more errors?
         }
-
-        // FIXME: TEST VARIADIC(...) WITH NO ARGS!!!
 
         /*
          * Now that we have a valid number of parameters, we can make sure that
@@ -86,7 +86,13 @@ const Type *SemanticVisitor::visitCtx(WPLParser::InvocationContext *ctx)
             // If the invokable is variadic and has no specified type parameters, then we can
             // skip over subsequent checks--we just needed to run type checking on each parameter.
             if (invokeable->isVariadic() && fnParams.size() == 0)
+            {
+                if (dynamic_cast<const TypeBot *>(providedType))
+                {
+                    errorHandler.addSemanticError(ctx->getStart(), "Cannot provide " + providedType->toString() + " to a function.");
+                }
                 continue;
+            }
 
             // Loop up the expected type. This is either the type at the
             // ith index OR the last type specified by the function
@@ -146,7 +152,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::ArrayAccessContext *ctx)
     Symbol *sym = opt.value();
     if (const TypeArray *arr = dynamic_cast<const TypeArray *>(sym->type))
     {
-        std::cout << "Bind @ Array Access" << std::endl; 
+        std::cout << "Bind @ Array Access" << std::endl;
         bindings->bind(ctx, sym);
         return arr->getValueType(); // Return type of array
     }
@@ -173,14 +179,22 @@ const Type *SemanticVisitor::visitCtx(WPLParser::ArrayOrVarContext *ctx)
 
         Symbol *symbol = opt.value();
 
-        std::cout << "Bind @ Array or Var" << std::endl; 
+        std::cout << "Bind @ Array or Var" << std::endl;
         bindings->bind(ctx, symbol);
         return symbol->type;
     }
 
     const Type *arrType = this->visitCtx(ctx->array);
-    std::cout << "SV - Bubble up!" << std::endl; 
-    bindings->bind(ctx, bindings->getBinding(ctx->array)); // FIXME: DO BETTER; Seems hacky to be passing like this!
+
+    Symbol *binding = bindings->getBinding(ctx->array);
+
+    if(!binding)
+    {
+        errorHandler.addSemanticError(ctx->array->getStart(), "Could not correctly bind to array access!");
+        return Types::UNDEFINED;
+    }
+
+    bindings->bind(ctx, binding); // FIXME: DO BETTER; Seems hacky to be passing like this!
     return arrType;
 }
 
@@ -338,7 +352,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::VariableExprContext *ctx)
 
     Symbol *symbol = opt.value();
 
-    std::cout << "Bind @ Variable" << std::endl; 
+    std::cout << "Bind @ Variable" << std::endl;
     bindings->bind(ctx, symbol);
     return symbol->type;
 }
@@ -353,7 +367,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::FieldAccessExprContext *ctx)
 {
     // Determine the type of the expression we are visiting
     const Type *ty = std::any_cast<const Type *>(ctx->ex->accept(this));
-    std::cout << "SV354 - Finish FA EX visit - " << bindings->getBinding(ctx->ex)->val << std::endl; 
+    std::cout << "SV354 - Finish FA EX visit - " << bindings->getBinding(ctx->ex)->val << std::endl;
 
     // Currently we only support arrays, so if its not an array, report an error.
     if (const TypeArray *a = dynamic_cast<const TypeArray *>(ty))
@@ -434,10 +448,8 @@ const Type *SemanticVisitor::visitCtx(WPLParser::ConditionContext *ctx)
 
 const Type *SemanticVisitor::visitCtx(WPLParser::SelectAlternativeContext *ctx)
 {
-    //Need to have this b/c we may define variables
-    stmgr->enterScope();
-
-    // FIXME: VERIFY
+    // Need to have this b/c we may define variables
+    stmgr->enterScope(); // FIXME: SHOULD WE ENTER SCOPE HERE? OR LATER?
     ctx->eval->accept(this);
 
     const Type *checkType = std::any_cast<const Type *>(ctx->check->accept(this));
@@ -450,7 +462,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::SelectAlternativeContext *ctx)
         errorHandler.addSemanticError(ctx->getStart(), "Select alternative expected BOOL but got " + checkType->toString());
     }
 
-    this->safeExitScope(ctx); 
+    this->safeExitScope(ctx);
 
     return Types::UNDEFINED;
 }
@@ -534,14 +546,17 @@ const Type *SemanticVisitor::visitCtx(WPLParser::ProcDefContext *ctx)
 const Type *SemanticVisitor::visitCtx(WPLParser::AssignStatementContext *ctx)
 {
     // This one is the update one!
+
+    // Determine the expression type
     const Type *exprType = std::any_cast<const Type *>(ctx->ex->accept(this));
 
-    // FIXME: DO BETTER W/ Type Inference & such
-
+    // Determine the expected type
     const Type *type = this->visitCtx(ctx->to);
 
+    // If we actually have a type... (prevents things like null ptrs)
     if (type)
     {
+        // Make sure that the types are compatible. Inference automatically managed here.
         if (exprType->isNotSubtype(type))
         {
             errorHandler.addSemanticError(ctx->getStart(), "Assignment statement expected " + type->toString() + " but got " + exprType->toString());
@@ -564,7 +579,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::VarDeclStatementContext *ctx)
     {
         auto exprType = (e->ex) ? std::any_cast<const Type *>(e->ex->accept(this)) : assignType;
 
-        // Need to check here to prevent var = var issues... //FIXME: WHAT IF WE GOT A VAR = VAR?
+        // Note: This automatically performs checks to prevent issues with setting VAR = VAR
         if (e->ex && exprType->isNotSubtype(assignType))
         {
             errorHandler.addSemanticError(e->getStart(), "Expression of type " + exprType->toString() + " cannot be assigned to " + assignType->toString());
@@ -582,9 +597,9 @@ const Type *SemanticVisitor::visitCtx(WPLParser::VarDeclStatementContext *ctx)
             }
             else
             {
-                Symbol *symbol = new Symbol(id, exprType); // Done with exprType for later inferencing purposes
+                Symbol *symbol = new Symbol(id, exprType, stmgr->isGlobalScope()); // Done with exprType for later inferencing purposes
                 stmgr->addSymbol(symbol);
-                std::cout << "Bind @ varDecl" << std::endl; 
+                std::cout << "Bind @ varDecl" << std::endl;
                 bindings->bind(var, symbol);
             }
         }
@@ -628,10 +643,9 @@ const Type *SemanticVisitor::visitCtx(WPLParser::ConditionalStatementContext *ct
 
 const Type *SemanticVisitor::visitCtx(WPLParser::SelectStatementContext *ctx)
 {
-    // FIXME: VERIFY
+    // Here we just need to visit each of the individual cases; they each handle their own logic.
     for (auto e : ctx->cases)
     {
-        // FIXME: do better?
         this->visitCtx(e);
     }
 
@@ -659,7 +673,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::ReturnStatementContext *ctx)
     // If the return statement has an expression...
     if (ctx->expression())
     {
-        //Evaluate the expression type
+        // Evaluate the expression type
         const Type *valType = std::any_cast<const Type *>(ctx->expression()->accept(this));
 
         // If the type of the return symbol is a BOT, then we must be in a PROC and, thus, we cannot return anything
@@ -669,8 +683,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::ReturnStatementContext *ctx)
             return Types::UNDEFINED;
         }
 
-        //As the return type is not a BOT, we have to make sure that it is the correct type to return
-        
+        // As the return type is not a BOT, we have to make sure that it is the correct type to return
 
         if (valType->isNotSubtype(sym.value()->type))
         {
@@ -678,12 +691,12 @@ const Type *SemanticVisitor::visitCtx(WPLParser::ReturnStatementContext *ctx)
             return Types::UNDEFINED;
         }
 
-        //Valid return statement; return UNDEFINED as its a statement.
+        // Valid return statement; return UNDEFINED as its a statement.
         return Types::UNDEFINED;
     }
     else
     {
-        //We do not have an expression to return, so make sure that the return type is also a BOT.
+        // We do not have an expression to return, so make sure that the return type is also a BOT.
         if (const TypeBot *b = dynamic_cast<const TypeBot *>(sym.value()->type))
         {
             return Types::UNDEFINED;

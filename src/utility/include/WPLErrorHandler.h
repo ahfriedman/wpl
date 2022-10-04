@@ -21,24 +21,35 @@ enum ErrType
   CODEGEN
 };
 
+enum ErrSev 
+{
+  ERROR = 1, 
+  CRITICAL_WARNING = 2, //Not an error persay, but need to stop compiling. 
+  WARNING = 4,
+  INFO = 8,
+};
+
 struct WPLError
 {
   ErrType type;
   antlr4::Token *token;
   std::string message;
 
-  WPLError(antlr4::Token *tok, std::string msg, ErrType et)
+  ErrSev severity; 
+
+  WPLError(antlr4::Token *tok, std::string msg, ErrType et, ErrSev es)
   {
     token = tok;
     message = msg;
 
     type = et;
+    severity = es; 
   }
 
   std::string toString()
   {
     std::ostringstream e;
-    e << getStringForErrorType(type) << ": [" << token->getLine() << ',' << token->getCharPositionInLine()
+    e << getStringForSeverity(severity) << ": " << getStringForErrorType(type) << ": [" << token->getLine() << ',' << token->getCharPositionInLine()
       << "]: " << message;
     return e.str();
   }
@@ -55,6 +66,21 @@ struct WPLError
       return "CODEGEN";
     }
   }
+
+  static std::string getStringForSeverity(ErrSev e)
+  {
+    switch(e)
+    {
+      case ERROR: 
+        return "Error";
+      case CRITICAL_WARNING: 
+        return "Critical Warning";
+      case WARNING:
+        return "Warning";
+      case INFO: 
+        return "Informational";
+    }
+  }
 };
 
 class WPLErrorHandler
@@ -62,13 +88,19 @@ class WPLErrorHandler
 public:
   void addSemanticError(antlr4::Token *t, std::string msg)
   {
-    WPLError *e = new WPLError(t, msg, SEMANTIC);
+    WPLError *e = new WPLError(t, msg, SEMANTIC, ERROR);
+    errors.push_back(e);
+  }
+
+  void addSemanticCritWarning(antlr4::Token *t, std::string msg)
+  {
+    WPLError *e = new WPLError(t, msg, SEMANTIC, CRITICAL_WARNING);
     errors.push_back(e);
   }
 
   void addCodegenError(antlr4::Token *t, std::string msg)
   {
-    WPLError *e = new WPLError(t, msg, CODEGEN);
+    WPLError *e = new WPLError(t, msg, CODEGEN, ERROR);
     errors.push_back(e);
   }
 
@@ -76,6 +108,7 @@ public:
 
   std::string errorList()
   {
+    // int i = WARNING | CRITICAL_WARNING; 
     std::ostringstream errList;
     for (WPLError *e : errors)
     {
@@ -84,7 +117,18 @@ public:
     return errList.str();
   }
 
-  bool hasErrors() { return !errors.empty(); }
+  bool hasErrors(int errorFlags) { 
+    //If no flags provided, then return if we have any 
+    if(!errorFlags) return !errors.empty(); 
+
+    for(WPLError * err : errors)
+    {
+      std::cout << err->severity << " & " << errorFlags << std::endl; 
+      if(err->severity & errorFlags) return true; 
+    }
+
+    return false; //!errors.empty(); 
+  }
 
 protected:
   std::vector<WPLError *> errors;
@@ -100,7 +144,7 @@ class WPLSyntaxErrorListener : public antlr4::BaseErrorListener, public WPLError
       const std::string &msg,
       std::exception_ptr ex) override
   {
-    WPLError *e = new WPLError(offendingSymbol, msg, SYNTAX);
+    WPLError *e = new WPLError(offendingSymbol, msg, SYNTAX, ERROR);
     errors.push_back(e);
     // throw std::invalid_argument("test error thrown: " + msg);
   }

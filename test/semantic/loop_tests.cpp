@@ -35,9 +35,9 @@ TEST_CASE("Undefined Params", "[semantic][loop]")
   sv->visitCompilationUnit(tree);
 
   //FIXME: CHECK MORE PRECISELY 
-  CHECK(sv->hasErrors());
+  CHECK(sv->hasErrors(ERROR));
 
-  // CHECK_FALSE(sv->hasErrors());
+  // CHECK_FALSE(sv->hasErrors(ERROR));
 
   // std::optional<Symbol *> opt = stmgr->lookup("a");
 
@@ -74,9 +74,9 @@ TEST_CASE("Undefined Params 2", "[semantic][loop]")
   sv->visitCompilationUnit(tree);
 
   //FIXME: CHECK MORE PRECISELY 
-  CHECK(sv->hasErrors());
+  CHECK(sv->hasErrors(ERROR));
 
-  // CHECK_FALSE(sv->hasErrors());
+  // CHECK_FALSE(sv->hasErrors(ERROR));
 
   // std::optional<Symbol *> opt = stmgr->lookup("a");
 
@@ -113,9 +113,9 @@ TEST_CASE("Check example", "[semantic][loop]")
   sv->visitCompilationUnit(tree);
 
   //FIXME: CHECK MORE PRECISELY 
-  CHECK_FALSE(sv->hasErrors());
+  CHECK_FALSE(sv->hasErrors(ERROR));
 
-  // CHECK_FALSE(sv->hasErrors());
+  // CHECK_FALSE(sv->hasErrors(ERROR));
 
   // std::optional<Symbol *> opt = stmgr->lookup("a");
 
@@ -152,9 +152,9 @@ TEST_CASE("Check example - adv", "[semantic][loop]")
   sv->visitCompilationUnit(tree);
 
   //FIXME: CHECK MORE PRECISELY 
-  CHECK_FALSE(sv->hasErrors());
+  CHECK_FALSE(sv->hasErrors(ERROR));
 
-  // CHECK_FALSE(sv->hasErrors());
+  // CHECK_FALSE(sv->hasErrors(ERROR));
 
   {
     std::optional<Symbol *> opt = stmgr->lookup("a");
@@ -204,7 +204,7 @@ TEST_CASE("Sit & Spin", "[semantic][loop]")
 
   sv->visitCompilationUnit(tree);
 
-  CHECK_FALSE(sv->hasErrors());
+  CHECK_FALSE(sv->hasErrors(ERROR));
 
   // std::optional<Symbol *> opt = stmgr->lookup("a");
 
@@ -236,7 +236,7 @@ TEST_CASE("Int condition", "[semantic][loop]")
 
   sv->visitCompilationUnit(tree);
 
-  CHECK(sv->hasErrors());
+  CHECK(sv->hasErrors(ERROR));
 
   // std::optional<Symbol *> opt = stmgr->lookup("a");
 
@@ -268,7 +268,7 @@ TEST_CASE("Int condition 2", "[semantic][loop]")
 
   sv->visitCompilationUnit(tree);
 
-  CHECK(sv->hasErrors());
+  CHECK(sv->hasErrors(ERROR));
 
   // std::optional<Symbol *> opt = stmgr->lookup("a");
 
@@ -300,7 +300,7 @@ TEST_CASE("str condition", "[semantic][loop]")
 
   sv->visitCompilationUnit(tree);
 
-  CHECK(sv->hasErrors());
+  CHECK(sv->hasErrors(ERROR));
 
   // std::optional<Symbol *> opt = stmgr->lookup("a");
 
@@ -332,7 +332,7 @@ TEST_CASE("Boolean Expr", "[semantic][loop]")
 
   sv->visitCompilationUnit(tree);
 
-  CHECK_FALSE(sv->hasErrors());
+  CHECK_FALSE(sv->hasErrors(ERROR));
 
   // std::optional<Symbol *> opt = stmgr->lookup("a");
 

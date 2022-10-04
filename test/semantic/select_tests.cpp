@@ -39,9 +39,9 @@ TEST_CASE("Basic select", "[semantic][conditional]")
   sv->visitCompilationUnit(tree);
 
   //FIXME: CHECK MORE PRECISELY 
-  CHECK_FALSE(sv->hasErrors());
+  CHECK_FALSE(sv->hasErrors(ERROR));
 
-  // CHECK_FALSE(sv->hasErrors());
+  // CHECK_FALSE(sv->hasErrors(ERROR));
 
   // std::optional<Symbol *> opt = stmgr->lookup("a");
 
@@ -85,9 +85,9 @@ TEST_CASE("Basic select inf error 1", "[semantic][conditional]")
   sv->visitCompilationUnit(tree);
 
   //FIXME: CHECK MORE PRECISELY 
-  CHECK(sv->hasErrors());
+  CHECK(sv->hasErrors(ERROR));
 
-  // CHECK_FALSE(sv->hasErrors());
+  // CHECK_FALSE(sv->hasErrors(ERROR));
 
   // std::optional<Symbol *> opt = stmgr->lookup("a");
 
@@ -129,9 +129,9 @@ TEST_CASE("Basic select inf 1", "[semantic][conditional]")
   sv->visitCompilationUnit(tree);
 
   //FIXME: CHECK MORE PRECISELY 
-  CHECK_FALSE(sv->hasErrors());
+  CHECK_FALSE(sv->hasErrors(ERROR));
 
-  // CHECK_FALSE(sv->hasErrors());
+  // CHECK_FALSE(sv->hasErrors(ERROR));
 
   // std::optional<Symbol *> opt = stmgr->lookup("a");
 
@@ -174,9 +174,9 @@ TEST_CASE("Basic select inf 2", "[semantic][conditional]")
 
   std::cout << sv->getErrors() << std::endl; 
   //FIXME: CHECK MORE PRECISELY 
-  CHECK_FALSE(sv->hasErrors());
+  CHECK_FALSE(sv->hasErrors(ERROR));
 
-  // CHECK_FALSE(sv->hasErrors());
+  // CHECK_FALSE(sv->hasErrors(ERROR));
 
   // std::optional<Symbol *> opt = stmgr->lookup("a");
 
@@ -218,9 +218,9 @@ TEST_CASE("Basic select inf 3", "[semantic][conditional]")
   sv->visitCompilationUnit(tree);
 
   //FIXME: CHECK MORE PRECISELY 
-  CHECK_FALSE(sv->hasErrors());
+  CHECK_FALSE(sv->hasErrors(ERROR));
 
-  // CHECK_FALSE(sv->hasErrors());
+  // CHECK_FALSE(sv->hasErrors(ERROR));
 
   // std::optional<Symbol *> opt = stmgr->lookup("a");
 
