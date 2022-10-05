@@ -79,12 +79,19 @@ int main(int argc, const char *argv[])
    * 3. Parse the input and get the parse tree for then exit stage.
    * 4. TBD: handle errors
    ******************************************************************/
-
+  
   // 1. Create the lexer
   antlr4::ANTLRInputStream *input = nullptr;
   if (inputFileName != "-")
   {
     std::fstream *inStream = new std::fstream(inputFileName);
+
+    if(inStream->fail())
+    {
+      std::cerr << "Error loading file: " << inputFileName << ". Does it exist?" << std::endl; 
+      return -1; 
+    }
+
     input = new antlr4::ANTLRInputStream(*inStream);
   }
   else
@@ -101,8 +108,6 @@ int main(int argc, const char *argv[])
   WPLSyntaxErrorListener *syntaxListener = new WPLSyntaxErrorListener();
   parser.addErrorListener(syntaxListener);
   // delete syntaxListener;
-
-  // FIXME: ADD WAY OF CHECKING PARSER ERRORS
 
   WPLParser::CompilationUnitContext *tree = NULL;
 
