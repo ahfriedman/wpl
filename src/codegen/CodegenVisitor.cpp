@@ -312,7 +312,7 @@ std::optional<Value *> CodegenVisitor::TvisitCallExpr(WPLParser::CallExprContext
 
 std::optional<Value *> CodegenVisitor::TvisitVariableExpr(WPLParser::VariableExprContext *ctx)
 {
-    // FIXME: should probably methodize...
+    // FIXME: should probably methodize... -> Yeah, why is var used everywhere? is that right? CHECK!
     std::string id = ctx->v->getText();
     Symbol *sym = props->getBinding(ctx);
 
@@ -610,7 +610,7 @@ std::optional<Value *> CodegenVisitor::TvisitAssignStatement(WPLParser::AssignSt
 
     if (varSym->isGlobal)
     {
-        llvm::GlobalVariable *glob = module->getNamedGlobal(varSym->identifier); // FIXME: VERIFY THIS WORKS WITH ARRAYS!!
+        llvm::GlobalVariable *glob = module->getNamedGlobal(varSym->identifier);
 
         if (!glob)
         {

@@ -201,7 +201,7 @@ protected:
 
         if (ctx->len)
         {
-            // FIXME: ENSURE POSITIVE
+            //Semantic analysis ensures this is positive. 
             uint64_t len = (uint64_t)std::stoi(ctx->len->getText());
             llvm::Type *arr = ArrayType::get(ty, len);
 

@@ -776,6 +776,12 @@ const Type *SemanticVisitor::visitCtx(WPLParser::TypeContext *ctx)
     if (ctx->len)
     {
         int len = std::stoi(ctx->len->getText());
+
+        if(len < 1)
+        {
+            errorHandler.addSemanticError(ctx->getStart(), "Cannot initialize array with a size of less than 1!");
+        }
+
         const Type *arr = new TypeArray(
             ty, len);
         return arr;
