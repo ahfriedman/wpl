@@ -1,6 +1,5 @@
 extern int func printf(...);
 
-# FIXME: TEST BOTH SIDES + TEST WITH PROC
 int func mutArgsOne(int i) {
     if ~(5 < 10) then {
         i <- 20;

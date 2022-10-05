@@ -7,12 +7,6 @@
 
 #include "test_error_handlers.h"
 
-
-//FIXME: DO BETTER TYPE INF TESTS (INLUDING NEGATIVE + NEVER DEFINED)
-//FIXME: MAKE SURE WE CANT DEFINE FUNCTIONS IN FUNCTIONS, RETURN EARLy, ETC/
-
-// FIXME: REQUIRE END IN RETURN
-
 TEST_CASE("Sample Progam one", "[semantic]")
 {
   antlr4::ANTLRInputStream input(
@@ -50,7 +44,6 @@ TEST_CASE("Sample Progam one", "[semantic]")
   REQUIRE(tree != NULL);
 
   // Any errors should be syntax errors.
-  // FIXME: Should probably confirm the above statement through testing for syntax errors
   REQUIRE(tree->getText() != "");
 
   STManager *stmgr = new STManager();
@@ -101,7 +94,6 @@ TEST_CASE("Sample Progam one w/ Inf", "[semantic]")
   REQUIRE(tree != NULL);
 
   // Any errors should be syntax errors.
-  // FIXME: Should probably confirm the above statement through testing for syntax errors
   REQUIRE(tree->getText() != "");
 
   STManager *stmgr = new STManager();
@@ -152,134 +144,6 @@ TEST_CASE("Block", "[semantic]")
   REQUIRE(tree != NULL);
 
   // Any errors should be syntax errors.
-  // FIXME: Should probably confirm the above statement through testing for syntax errors
-  REQUIRE(tree->getText() != "");
-
-  STManager *stmgr = new STManager();
-  SemanticVisitor *sv = new SemanticVisitor(stmgr, new PropertyManager());
-
-  sv->visitCompilationUnit(tree);
-
-  std::cout << stmgr->toString() << std::endl;
-  std::cout << sv->getErrors() << std::endl; 
-
-  CHECK_FALSE(sv->hasErrors(0));
-}
-
-
-TEST_CASE("Inference If Errors - 1", "[semantic]")
-{
-  antlr4::ANTLRInputStream input(
-      R""""(
-      proc infTest() {
-        var a; 
-        
-        if(1 < 2) then {
-          a <- true; 
-        } else {
-          a <- 10; 
-        }
-      }
-      )""""
-    );
-  WPLLexer lexer(&input);
-  // lexer.removeErrorListeners();
-  // lexer.addErrorListener(new TestErrorListener());
-  antlr4::CommonTokenStream tokens(&lexer);
-  WPLParser parser(&tokens);
-  parser.removeErrorListeners();
-  parser.addErrorListener(new TestErrorListener());
-
-  WPLParser::CompilationUnitContext *tree = NULL;
-  REQUIRE_NOTHROW(tree = parser.compilationUnit());
-  REQUIRE(tree != NULL);
-
-  // Any errors should be syntax errors.
-  // FIXME: Should probably confirm the above statement through testing for syntax errors
-  REQUIRE(tree->getText() != "");
-
-  STManager *stmgr = new STManager();
-  SemanticVisitor *sv = new SemanticVisitor(stmgr, new PropertyManager());
-
-  sv->visitCompilationUnit(tree);
-
-  // std::cout << stmgr->toString() << std::endl;
-  // std::cout << sv->getErrors() << std::endl; 
-
-  CHECK(sv->hasErrors(0));
-}
-
-TEST_CASE("Inference If - 1", "[semantic]")
-{
-  antlr4::ANTLRInputStream input(
-      R""""(
-      proc infTest() {
-        var a; 
-        
-        if(1 < 2) then {
-          var a <- false; 
-        } else {
-          a <- 10; 
-        }
-      }
-      )""""
-    );
-  WPLLexer lexer(&input);
-  // lexer.removeErrorListeners();
-  // lexer.addErrorListener(new TestErrorListener());
-  antlr4::CommonTokenStream tokens(&lexer);
-  WPLParser parser(&tokens);
-  parser.removeErrorListeners();
-  parser.addErrorListener(new TestErrorListener());
-
-  WPLParser::CompilationUnitContext *tree = NULL;
-  REQUIRE_NOTHROW(tree = parser.compilationUnit());
-  REQUIRE(tree != NULL);
-
-  // Any errors should be syntax errors.
-  // FIXME: Should probably confirm the above statement through testing for syntax errors
-  REQUIRE(tree->getText() != "");
-
-  STManager *stmgr = new STManager();
-  SemanticVisitor *sv = new SemanticVisitor(stmgr, new PropertyManager());
-
-  sv->visitCompilationUnit(tree);
-
-  std::cout << stmgr->toString() << std::endl;
-  std::cout << sv->getErrors() << std::endl; 
-
-  CHECK_FALSE(sv->hasErrors(0));
-}
-
-TEST_CASE("Inference If - 2", "[semantic]")
-{
-  antlr4::ANTLRInputStream input(
-      R""""(
-      proc infTest() {
-        var a; 
-        
-        if(1 < 2) then {
-          a <- false; 
-        } else {
-          var a <- 10; 
-        }
-      }
-      )""""
-    );
-  WPLLexer lexer(&input);
-  // lexer.removeErrorListeners();
-  // lexer.addErrorListener(new TestErrorListener());
-  antlr4::CommonTokenStream tokens(&lexer);
-  WPLParser parser(&tokens);
-  parser.removeErrorListeners();
-  parser.addErrorListener(new TestErrorListener());
-
-  WPLParser::CompilationUnitContext *tree = NULL;
-  REQUIRE_NOTHROW(tree = parser.compilationUnit());
-  REQUIRE(tree != NULL);
-
-  // Any errors should be syntax errors.
-  // FIXME: Should probably confirm the above statement through testing for syntax errors
   REQUIRE(tree->getText() != "");
 
   STManager *stmgr = new STManager();

@@ -129,8 +129,7 @@ public:
 
         return Types::UNDEFINED; 
     }
-
-    //FIXME: USES NULLS!
+    
     const Type * visitInvokeable(antlr4::ParserRuleContext * ctx, std::string funcId, WPLParser::ParameterListContext *paramList, WPLParser::TypeContext * ty, WPLParser::BlockContext * block)
     {
         // FIXME: NEEDS TO BE LOCAL SCOPE ONLY AND THEN NEEDS TO COMPARE TYPES (OR JUST GLOBAL SCOPE)
@@ -197,7 +196,7 @@ private:
     PropertyManager *bindings;
     WPLErrorHandler errorHandler;
 
-    //FIXME: TEST UNERLYING FNS!!!
+    //INFO: TEST UNERLYING FNS!!!
     std::optional<Scope*> safeExitScope(antlr4::ParserRuleContext * ctx) {
         std::optional<Scope*> res = stmgr->exitScope(); 
 

@@ -154,6 +154,3 @@ TEST_CASE("Assignment: String const", "[semantic]")
   CHECK(opt.has_value());
   CHECK(opt.value()->type->isSubtype(Types::STR));
 }
-
-//FIXME: CAN PARENS BE USED ON STRINGS?
-//FIXME: Add some tests to verify that we don't allow ops to be use incorrectly!

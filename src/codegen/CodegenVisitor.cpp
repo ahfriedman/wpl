@@ -656,8 +656,6 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
      */
     for (auto e : ctx->assignments)
     {
-        std::cout << "EXPR" << std::endl;
-
         std::optional<Value *> exVal = std::nullopt; 
 
         if(e->ex)
@@ -675,19 +673,12 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
             }
         }
 
-        // std::optional<Value *> exVal = (e->ex) ? std::any_cast<std::optional<Value *>>(e->ex->accept(this)) : std::nullopt;
-
-        std::cout << "599" << std::endl;
         if ((e->ex) && !exVal)
         {
             errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code for: " + e->ex->getText());
         }
-        std::cout << "604" << std::endl;
         for (auto var : e->VARIABLE())
         {
-            std::cout << "669" << std::endl; 
-            std::cout << "VAR " << var->getText() << std::endl; 
-            
             Symbol *varSymbol = props->getBinding(var);
 
             if (!varSymbol)
@@ -696,54 +687,41 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
                 return {};
             }
 
-            std::cout << "679" << std::endl; 
-            std::cout << "680 " << varSymbol->type->toString() << std::endl; 
             llvm::Type *ty = varSymbol->type->getLLVMType(module->getContext());
-            std::cout << "682" << std::endl;
             if (varSymbol->isGlobal)
             {
-                std::cout << "684" << std::endl;
                 module->getOrInsertGlobal(var->getText(), ty);
                 llvm::GlobalVariable *glob = module->getNamedGlobal(var->getText());
                 glob->setLinkage(GlobalValue::ExternalLinkage);
                 glob->setDSOLocal(true);
 
-                std::cout << "691" << std::endl;
-                
                 if (e->ex)
                 {
-                    std::cout << "695" << std::endl;
                     if (llvm::Constant *constant = static_cast<llvm::Constant *>(exVal.value()))
                     {
-                        std::cout << "698" << std::endl;
                         glob->setInitializer(constant);
-                        std::cout << "700" << std::endl;
                     }
                     else 
                     {
-                        std::cout << "ERRR" << std::endl; 
-                        errorHandler.addCodegenError(ctx->getStart(), "Global variable can only be initalized to a constant!"); //FIXME: test, verify, and potentially move to semantic ?
+                        //Should already be checked in semantic, and I don't think we could get here anyways, but still might as well have it. 
+                        errorHandler.addCodegenError(ctx->getStart(), "Global variable can only be initalized to a constant!"); 
                         return {};
                     }
                 }
                 else 
                 {
-                    std::cout << "710" << std::endl;
                     llvm::ConstantAggregateZero* constant = llvm::ConstantAggregateZero::get(ty);
                     glob->setInitializer(constant);
                 }
-                std::cout << "715" << std::endl;
             }
             else
             {
-                std::cout << "713" << std::endl;
                 llvm::AllocaInst *v = builder->CreateAlloca(ty, 0, var->getText());
                 varSymbol->val = v;
 
                 if (e->ex)
                     builder->CreateStore(exVal.value(), v);
             }
-            std::cout << "726" << std::endl;
         }
     }
 

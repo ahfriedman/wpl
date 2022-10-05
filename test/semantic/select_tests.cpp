@@ -308,7 +308,6 @@ TEST_CASE("Basic select - Dead Code - proc", "[semantic][conditional]")
 
 TEST_CASE("Basic select - Dead Code - func", "[semantic][conditional]")
 {
-  //FIXME: should select allow 0 cases then throw an error semantically?
   antlr4::ANTLRInputStream input(
     R""""(
       select {

@@ -7,8 +7,6 @@
 
 #include "test_error_handlers.h"
 
-// FIXME: REQUIRE END IN RETURN
-
 TEST_CASE("visitbasicProc", "[semantic][proc]")
 {
   SECTION("No arguments & empty")
@@ -27,7 +25,6 @@ TEST_CASE("visitbasicProc", "[semantic][proc]")
     REQUIRE(tree != NULL);
 
     // Any errors should be syntax errors.
-    // FIXME: Should probably confirm the above statement through testing for syntax errors
     REQUIRE(tree->getText() != "");
 
     STManager *stmgr = new STManager();
@@ -57,7 +54,6 @@ TEST_CASE("visitbasicProc", "[semantic][proc]")
 
     std::cout << "PAST" << std::endl;
     // Any errors should be syntax errors.
-    // FIXME: Should probably confirm the above statement through testing for syntax errors
     REQUIRE(tree->getText() != "");
 
     STManager *stmgr = new STManager();
