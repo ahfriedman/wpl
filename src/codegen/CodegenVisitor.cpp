@@ -400,13 +400,13 @@ std::optional<Value *> CodegenVisitor::TvisitBinaryRelExpr(WPLParser::BinaryRelE
         v1 = builder->CreateICmpSLT(lhs.value(), rhs.value());
         break;
     case WPLParser::LESS_EQ:
-        v1 = builder->CreateICmpSLE(lhs.value(), rhs.value()); // FIXME: VERIFY
+        v1 = builder->CreateICmpSLE(lhs.value(), rhs.value());
         break;
     case WPLParser::GREATER:
         v1 = builder->CreateICmpSGT(lhs.value(), rhs.value());
         break;
     case WPLParser::GREATER_EQ:
-        v1 = builder->CreateICmpSGE(lhs.value(), rhs.value()); // FIXME: VERIFY
+        v1 = builder->CreateICmpSGE(lhs.value(), rhs.value());
         break;
 
     default:
@@ -590,7 +590,6 @@ std::optional<Value *> CodegenVisitor::TvisitProcDef(WPLParser::ProcDefContext *
 
 std::optional<Value *> CodegenVisitor::TvisitAssignStatement(WPLParser::AssignStatementContext *ctx)
 {
-    // FIXME: Might not work perfectly due to no arrays/vars yet.... or strings...
     std::optional<Value *> exprVal = std::any_cast<std::optional<Value *>>(ctx->ex->accept(this));
 
     if (!exprVal)
@@ -683,12 +682,16 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
                 glob->setLinkage(GlobalValue::ExternalLinkage);
                 glob->setDSOLocal(true);
 
-                //FIXME: VARS NEED DECL IN GLOBAL SCOPE!!!
+                
                 if (e->ex)
                 {
                     if (llvm::Constant *constant = static_cast<llvm::Constant *>(exVal.value()))
                     {
                         glob->setInitializer(constant);
+                    }
+                    else 
+                    {
+                        errorHandler.addCodegenError(ctx->getStart(), "Global variable can only be initalized to a constant!"); //FIXME: test, verify, and potentially move to semantic ?
                     }
                 }
                 else 
@@ -735,7 +738,7 @@ std::optional<Value *> CodegenVisitor::TvisitLoopStatement(WPLParser::LoopStatem
 
     // In the loop block
     builder->SetInsertPoint(loopBlk);
-    for (auto e : ctx->block()->stmts) // FIXME: DO WE NEED TO CHECK RETURNS?
+    for (auto e : ctx->block()->stmts)
     {
         e->accept(this);
     }
@@ -836,7 +839,7 @@ std::optional<Value *> CodegenVisitor::TvisitConditionalStatement(WPLParser::Con
 std::optional<Value *> CodegenVisitor::TvisitSelectStatement(WPLParser::SelectStatementContext *ctx)
 {
     std::cout << "761!" << std::endl;
-    // FIXME: WILL NEED TO CHECK FOR RETURNS AND RETURNS IN BLOCKS!!! + VERIFY NESTED SELECTS WORK!
+    // FIXME: WILL NEED TO CHECK FOR RETURNS AND RETURNS IN BLOCKS!!!
 
     /*
      * Set up the merge block that all cases go to after the select statement

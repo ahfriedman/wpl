@@ -174,7 +174,6 @@ protected:
     //FIXME: Maybe use optionals? But types should always be defined... unless expanding lang...
     llvm::Type * llvmTypeFor(WPLParser::TypeContext *ctx)
     {
-        // FIXME: probably don't need to visit this either...
         llvm::Type *ty;
         bool valid = false;
         

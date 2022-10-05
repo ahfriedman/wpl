@@ -14,7 +14,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::CompilationUnitContext *ctx)
     // Visit the statements contained in the unit
     for (auto e : ctx->stmts)
     {
-        if (!(dynamic_cast<WPLParser::FuncDefContext *>(e) || dynamic_cast<WPLParser::ProcDefContext *>(e) || dynamic_cast<WPLParser::VarDeclStatementContext *>(e))) // FIXME: ENSURE VAR DECL WORKS IN TOP LEVEL! AND THAT WE DON'T ALLOW FUNC DEF IN SELECT!
+        if (!(dynamic_cast<WPLParser::FuncDefContext *>(e) || dynamic_cast<WPLParser::ProcDefContext *>(e) || dynamic_cast<WPLParser::VarDeclStatementContext *>(e))) // FIXME: AND THAT WE DON'T ALLOW FUNC DEF IN SELECT!
         {
             errorHandler.addSemanticCritWarning(ctx->getStart(), "Currently, only FUNC, PROC, EXTERN, and variable declarations allowed at top-level. Not: " + e->getText());
         }
@@ -188,7 +188,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::ArrayOrVarContext *ctx)
 
     Symbol *binding = bindings->getBinding(ctx->array);
 
-    if(!binding)
+    if (!binding)
     {
         errorHandler.addSemanticError(ctx->array->getStart(), "Could not correctly bind to array access!");
         return Types::UNDEFINED;
@@ -451,6 +451,13 @@ const Type *SemanticVisitor::visitCtx(WPLParser::SelectAlternativeContext *ctx)
     // Need to have this b/c we may define variables
     stmgr->enterScope(); // FIXME: SHOULD WE ENTER SCOPE HERE? OR LATER?
     ctx->eval->accept(this);
+
+    if (dynamic_cast<WPLParser::FuncDefContext *>(ctx->eval) ||
+        dynamic_cast<WPLParser::ProcDefContext *>(ctx->eval) ||
+        dynamic_cast<WPLParser::VarDeclStatementContext *>(ctx->eval))
+    {
+        errorHandler.addSemanticError(ctx->getStart(), "Dead code: definition as select alternative.");
+    }
 
     const Type *checkType = std::any_cast<const Type *>(ctx->check->accept(this));
 
