@@ -14,7 +14,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::CompilationUnitContext *ctx)
     // Visit the statements contained in the unit
     for (auto e : ctx->stmts)
     {
-        if (!(dynamic_cast<WPLParser::FuncDefContext *>(e) || dynamic_cast<WPLParser::ProcDefContext *>(e) || dynamic_cast<WPLParser::VarDeclStatementContext *>(e))) // FIXME: AND THAT WE DON'T ALLOW FUNC DEF IN SELECT!
+        if (!(dynamic_cast<WPLParser::FuncDefContext *>(e) || dynamic_cast<WPLParser::ProcDefContext *>(e) || dynamic_cast<WPLParser::VarDeclStatementContext *>(e)))
         {
             errorHandler.addSemanticCritWarning(ctx->getStart(), "Currently, only FUNC, PROC, EXTERN, and variable declarations allowed at top-level. Not: " + e->getText());
         }
@@ -164,37 +164,49 @@ const Type *SemanticVisitor::visitCtx(WPLParser::ArrayAccessContext *ctx)
 
 const Type *SemanticVisitor::visitCtx(WPLParser::ArrayOrVarContext *ctx)
 {
+    //Check if we are a var or an array
     if (ctx->var)
     {
-        //  Based on starter; Same as VAR
+        /*
+         * Based on starter; Same as VAR
+         * 
+         * Get the variable name and look it up in the symbol table
+         */
         std::string id = ctx->var->getText();
-
         std::optional<Symbol *> opt = stmgr->lookup(id);
 
+        // If we can't find the variable, report an error as it is undefined.
         if (!opt)
         {
             errorHandler.addSemanticError(ctx->getStart(), "Undefined variable in expression: " + id);
             return Types::UNDEFINED;
         }
 
+        //Otherwise, get the symbol's value
         Symbol *symbol = opt.value();
 
-        std::cout << "Bind @ Array or Var" << std::endl;
+        //Bind the larger context to the symbol, and return the symbol's type. 
         bindings->bind(ctx, symbol);
         return symbol->type;
     }
 
+    /*
+     * As we are not a var, we must be an array access, so we must visit that context. 
+     */
     const Type *arrType = this->visitCtx(ctx->array);
 
+    //Lookup the binding of the array
     Symbol *binding = bindings->getBinding(ctx->array);
 
+    //If we didn't get a binding, report an error. 
     if (!binding)
     {
         errorHandler.addSemanticError(ctx->array->getStart(), "Could not correctly bind to array access!");
         return Types::UNDEFINED;
     }
 
-    bindings->bind(ctx, binding); // FIXME: DO BETTER; Seems hacky to be passing like this!
+    //Otherwise, bind this context to the same binding as the array access, and return its type. 
+    bindings->bind(ctx, binding);
     return arrType;
 }
 
