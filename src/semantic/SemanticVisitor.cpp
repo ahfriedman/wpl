@@ -279,7 +279,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::BinaryArithExprContext *ctx)
 
 const Type *SemanticVisitor::visitCtx(WPLParser::EqExprContext *ctx)
 {
-    // FIXME: do better! WILL THIS EVEN WORK FOR ARRAYS, STRINGS, ETC? AND WHICH SIDE DETERMINES WHICH? SHOULD IT BE SUB OR SUPER?
+    // FIXME: do better! WILL THIS EVEN WORK FOR ARRAYS? AND WHICH SIDE DETERMINES WHICH? SHOULD IT BE SUB OR SUPER?
     auto right = std::any_cast<const Type *>(ctx->right->accept(this));
     auto left = std::any_cast<const Type *>(ctx->left->accept(this));
     if (right->isNotSubtype(left))
@@ -460,17 +460,24 @@ const Type *SemanticVisitor::visitCtx(WPLParser::ConditionContext *ctx)
 
 const Type *SemanticVisitor::visitCtx(WPLParser::SelectAlternativeContext *ctx)
 {
-    // Need to have this b/c we may define variables
-    stmgr->enterScope(); // FIXME: SHOULD WE ENTER SCOPE HERE? OR LATER?
+    //Enter the scope (needed as we may define variables or do other stuff)
+    stmgr->enterScope(); 
+    //Accept the evaluation context
     ctx->eval->accept(this);
+    //Safe exit the scope 
+    this->safeExitScope(ctx);
 
+    /*
+     *  Just make sure that we don't try to define functions and stuff in a select as that doesn't make sense (and would cause codegen issues as it stands).
+     */ 
     if (dynamic_cast<WPLParser::FuncDefContext *>(ctx->eval) ||
         dynamic_cast<WPLParser::ProcDefContext *>(ctx->eval) ||
         dynamic_cast<WPLParser::VarDeclStatementContext *>(ctx->eval))
     {
         errorHandler.addSemanticError(ctx->getStart(), "Dead code: definition as select alternative.");
     }
-
+    
+    //Confirm that the check type is a boolean 
     const Type *checkType = std::any_cast<const Type *>(ctx->check->accept(this));
 
     if (const TypeBool *b = dynamic_cast<const TypeBool *>(checkType))
@@ -481,8 +488,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::SelectAlternativeContext *ctx)
         errorHandler.addSemanticError(ctx->getStart(), "Select alternative expected BOOL but got " + checkType->toString());
     }
 
-    this->safeExitScope(ctx);
-
+    //Return UNDEFINED as its a statement.
     return Types::UNDEFINED;
 }
 

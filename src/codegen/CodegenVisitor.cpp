@@ -801,8 +801,6 @@ std::optional<Value *> CodegenVisitor::TvisitLoopStatement(WPLParser::LoopStatem
 
 std::optional<Value *> CodegenVisitor::TvisitConditionalStatement(WPLParser::ConditionalStatementContext *ctx)
 {
-    // FIXME: THIS MIGHT NOT WORK OUTSIDE A FUNCTION
-
     // Get the condition that the if statement is for
     std::optional<Value *> cond = this->TvisitCondition(ctx->check);
 
