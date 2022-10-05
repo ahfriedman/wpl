@@ -51,7 +51,7 @@ int func program() {
 
     printf("ANS: %d\n", mutArgsOne(0));
     printf("ANS: %d\n", mutArgsTwo(0));
-    printf("ANS: %d\n", PROCmutArgsOne(0)); # FIXME: NEED TO FIX THIS; CODEGEN FAILS, BUT IT APPEARS TO BE ALLOWED!!!
+    printf("ANS: %d\n", PROCmutArgsOne(0));
     printf("ANS: %d\n", PROCmutArgsTwo(0));
 
     return -1; 

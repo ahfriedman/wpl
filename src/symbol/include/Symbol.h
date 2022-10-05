@@ -86,7 +86,6 @@ class TypeArray : public Type
 private:
     const Type *valueType;
     int length;
-    // FIXME: should we have a length defined in here?
 
 public:
     TypeArray(const Type *v, int l)
@@ -97,7 +96,6 @@ public:
 
     std::string toString() const override
     {
-        // FIXME: DO BETTER
         return valueType->toString() + "[]";
     }
 

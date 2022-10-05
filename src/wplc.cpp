@@ -79,7 +79,7 @@ int main(int argc, const char *argv[])
    * 3. Parse the input and get the parse tree for then exit stage.
    * 4. TBD: handle errors
    ******************************************************************/
-  
+
   // 1. Create the lexer
   antlr4::ANTLRInputStream *input = nullptr;
   if (inputFileName != "-")
@@ -113,8 +113,7 @@ int main(int argc, const char *argv[])
 
   // 3. Parse the program and get the parse tree
   tree = parser.compilationUnit();
-
-  // FIXME: WHY CAN I JUST DO INT?
+  
   if (syntaxListener->hasErrors(0)) //Want to see all errors. 
   {
     std::cout << "ERRORS" << std::endl;
