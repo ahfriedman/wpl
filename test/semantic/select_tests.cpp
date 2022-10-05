@@ -53,7 +53,6 @@ TEST_CASE("Basic select", "[semantic][conditional]")
 
 TEST_CASE("Basic select inf error 1", "[semantic][conditional]")
 {
-  //FIXME: should select allow 0 cases then throw an error semantically?
   antlr4::ANTLRInputStream input(
     R""""(
       var a; 
@@ -97,7 +96,6 @@ TEST_CASE("Basic select inf error 1", "[semantic][conditional]")
 
 TEST_CASE("Basic select inf 1", "[semantic][conditional]")
 {
-  //FIXME: should select allow 0 cases then throw an error semantically?
   antlr4::ANTLRInputStream input(
     R""""(
       var a; 
@@ -141,7 +139,6 @@ TEST_CASE("Basic select inf 1", "[semantic][conditional]")
 
 TEST_CASE("Basic select inf 2", "[semantic][conditional]")
 {
-  //FIXME: should select allow 0 cases then throw an error semantically?
   antlr4::ANTLRInputStream input(
     R""""(
       var a; 
@@ -186,7 +183,6 @@ TEST_CASE("Basic select inf 2", "[semantic][conditional]")
 
 TEST_CASE("Basic select inf 3", "[semantic][conditional]")
 {
-  //FIXME: should select allow 0 cases then throw an error semantically?
   antlr4::ANTLRInputStream input(
     R""""(
       var a; 
@@ -232,7 +228,6 @@ TEST_CASE("Basic select inf 3", "[semantic][conditional]")
 
 TEST_CASE("Basic select - Dead Code - var", "[semantic][conditional]")
 {
-  //FIXME: should select allow 0 cases then throw an error semantically?
   antlr4::ANTLRInputStream input(
     R""""(
       select {
@@ -273,7 +268,6 @@ TEST_CASE("Basic select - Dead Code - var", "[semantic][conditional]")
 
 TEST_CASE("Basic select - Dead Code - proc", "[semantic][conditional]")
 {
-  //FIXME: should select allow 0 cases then throw an error semantically?
   antlr4::ANTLRInputStream input(
     R""""(
       select {

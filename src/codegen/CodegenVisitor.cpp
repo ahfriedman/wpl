@@ -332,7 +332,7 @@ std::optional<Value *> CodegenVisitor::TvisitVariableExpr(WPLParser::VariableExp
     {
         if (sym->isGlobal)
         {
-            llvm::GlobalVariable *glob = module->getNamedGlobal(sym->identifier); // FIXME: VERIFY THIS WORKS WITH ARRAYS!!
+            llvm::GlobalVariable *glob = module->getNamedGlobal(sym->identifier);
 
             if (!glob)
             {

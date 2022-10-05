@@ -157,7 +157,7 @@ public:
         Symbol * funcSymbol = new Symbol(funcId, funcType);
 
         stmgr->addSymbol(funcSymbol);
-        stmgr->enterScope(); // FIXME DOUBLING SCOPES!
+        stmgr->enterScope(); //NOTE: We do NOT duplicate scopes here because we use a saveVisitBlock with newScope=false
 
         stmgr->addSymbol(new Symbol("@RETURN", retType));
 
@@ -183,8 +183,7 @@ public:
             errorHandler.addSemanticError(ctx->getStart(), "Function must end in return statement");
         }
 
-        // Double scope for params.... should maybe make this a function....
-        // stmgr->exitScope();
+        //Safe exit the scope. 
         safeExitScope(ctx);
 
         bindings->bind(ctx, funcSymbol);

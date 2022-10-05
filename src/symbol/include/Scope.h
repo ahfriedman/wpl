@@ -31,7 +31,6 @@ class Scope {
             // assert(p->has_value());  //Ensure we have a value. //FIXME: should probably do this better
             parent = p;
         }
-        //FIXME: destructors? 
 
         bool addSymbol(Symbol* symbol);
         bool addSymbol(std::string id, Type* t); 

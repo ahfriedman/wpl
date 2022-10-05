@@ -9,7 +9,6 @@
 
 TEST_CASE("Basic Assignments", "[semantic]")
 {
-  // FIXME: is a <- 2 allowed without a type/previous definition?
   SECTION("Basic Int Test")
   {
     antlr4::ANTLRInputStream input("int a <- 2;");

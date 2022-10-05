@@ -14,7 +14,7 @@ Scope &STManager::enterScope()
 
 std::optional<Scope *> STManager::exitScope()
 {
-    // FIXME: Potential memory leak
+    // INFO: Potential memory leak
     if (!currentScope)
     {
         return {};
