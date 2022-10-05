@@ -164,12 +164,12 @@ const Type *SemanticVisitor::visitCtx(WPLParser::ArrayAccessContext *ctx)
 
 const Type *SemanticVisitor::visitCtx(WPLParser::ArrayOrVarContext *ctx)
 {
-    //Check if we are a var or an array
+    // Check if we are a var or an array
     if (ctx->var)
     {
         /*
          * Based on starter; Same as VAR
-         * 
+         *
          * Get the variable name and look it up in the symbol table
          */
         std::string id = ctx->var->getText();
@@ -182,30 +182,30 @@ const Type *SemanticVisitor::visitCtx(WPLParser::ArrayOrVarContext *ctx)
             return Types::UNDEFINED;
         }
 
-        //Otherwise, get the symbol's value
+        // Otherwise, get the symbol's value
         Symbol *symbol = opt.value();
 
-        //Bind the larger context to the symbol, and return the symbol's type. 
+        // Bind the larger context to the symbol, and return the symbol's type.
         bindings->bind(ctx, symbol);
         return symbol->type;
     }
 
     /*
-     * As we are not a var, we must be an array access, so we must visit that context. 
+     * As we are not a var, we must be an array access, so we must visit that context.
      */
     const Type *arrType = this->visitCtx(ctx->array);
 
-    //Lookup the binding of the array
+    // Lookup the binding of the array
     Symbol *binding = bindings->getBinding(ctx->array);
 
-    //If we didn't get a binding, report an error. 
+    // If we didn't get a binding, report an error.
     if (!binding)
     {
         errorHandler.addSemanticError(ctx->array->getStart(), "Could not correctly bind to array access!");
         return Types::UNDEFINED;
     }
 
-    //Otherwise, bind this context to the same binding as the array access, and return its type. 
+    // Otherwise, bind this context to the same binding as the array access, and return its type.
     bindings->bind(ctx, binding);
     return arrType;
 }
@@ -598,6 +598,16 @@ const Type *SemanticVisitor::visitCtx(WPLParser::VarDeclStatementContext *ctx)
     {
         auto exprType = (e->ex) ? std::any_cast<const Type *>(e->ex->accept(this)) : assignType;
 
+        if (e->ex && stmgr->isGlobalScope())
+        {
+            if (!(dynamic_cast<WPLParser::BConstExprContext *>(e->ex) ||
+                  dynamic_cast<WPLParser::IConstExprContext *>(e->ex) ||
+                  dynamic_cast<WPLParser::SConstExprContext *>(e->ex)))
+            {
+                errorHandler.addSemanticError(e->ex->getStart(), "Global variables must be assigned explicit constants or initialized at runtime!");
+            }
+        }
+
         // Note: This automatically performs checks to prevent issues with setting VAR = VAR
         if (e->ex && exprType->isNotSubtype(assignType))
         {
@@ -777,7 +787,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::TypeContext *ctx)
     {
         int len = std::stoi(ctx->len->getText());
 
-        if(len < 1)
+        if (len < 1)
         {
             errorHandler.addSemanticError(ctx->getStart(), "Cannot initialize array with a size of less than 1!");
         }

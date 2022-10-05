@@ -342,3 +342,28 @@ TEST_CASE("programs/test9Err - Test assign var to array", "[codegen]")
     // }
     REQUIRE(sv->hasErrors(0));
 }
+
+TEST_CASE("programs/test11Err - Prevent global exprs", "[codegen]")
+{
+    std::fstream *inStream = new std::fstream("/home/shared/programs/test11err.wpl");
+    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+
+    WPLLexer lexer(input);
+    antlr4::CommonTokenStream tokens(&lexer);
+    WPLParser parser(&tokens);
+    parser.removeErrorListeners();
+    WPLParser::CompilationUnitContext *tree = NULL;
+    REQUIRE_NOTHROW(tree = parser.compilationUnit());
+    REQUIRE(tree != NULL);
+    STManager *stm = new STManager();
+    PropertyManager *pm = new PropertyManager();
+    SemanticVisitor *sv = new SemanticVisitor(stm, pm);
+    sv->visitCompilationUnit(tree);
+
+
+    // if(sv->hasErrors(0))
+    // {
+    //     CHECK("foo" == sv->getErrors());
+    // }
+    REQUIRE(sv->hasErrors(0));
+}
