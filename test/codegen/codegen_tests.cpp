@@ -39,7 +39,7 @@ TEST_CASE("Development Codegen Tests", "[codegen]")
     REQUIRE(llvmIrToSHA256(cv->getModule()) == "5176d9cbe3d5f39bad703b71f652afd972037c5cb97818fa01297aa2bb185188");
 }
 
-TEST_CASE("programs/test1 - FIXME: DO BETTER", "[codegen]")
+TEST_CASE("programs/test1 - General Overview", "[codegen]")
 {
     std::fstream *inStream = new std::fstream("/home/shared/programs/test1.wpl");
     antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
@@ -73,6 +73,42 @@ TEST_CASE("programs/test1 - FIXME: DO BETTER", "[codegen]")
     CHECK_FALSE(cv->hasErrors(0));
 
     REQUIRE(llvmIrToSHA256(cv->getModule()) == "0d04df4ae9f27c56e731772debb2adee582fd37b34798e231df501f8288328ab");
+}
+
+TEST_CASE("programs/test1-full - General Overview - full", "[codegen]")
+{
+    std::fstream *inStream = new std::fstream("/home/shared/programs/test1-full.wpl");
+    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+
+    WPLLexer lexer(input);
+    antlr4::CommonTokenStream tokens(&lexer);
+    WPLParser parser(&tokens);
+    parser.removeErrorListeners();
+    WPLParser::CompilationUnitContext *tree = NULL;
+    REQUIRE_NOTHROW(tree = parser.compilationUnit());
+    REQUIRE(tree != NULL);
+    STManager *stm = new STManager();
+    PropertyManager *pm = new PropertyManager();
+    SemanticVisitor *sv = new SemanticVisitor(stm, pm);
+    sv->visitCompilationUnit(tree);
+
+
+    // if(sv->hasErrors(0))
+    // {
+    //     CHECK("foo" == sv->getErrors());
+    // }
+    REQUIRE_FALSE(sv->hasErrors(0));
+
+    CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll");
+    cv->visitCompilationUnit(tree);
+
+    if (cv->hasErrors(0))
+    {
+        CHECK("foo" == cv->getErrors());
+    }
+    CHECK_FALSE(cv->hasErrors(0));
+
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "4ec8bf45d3a4b2114b2bd691018473cfed3b8f7688e626a626ea3cf691ad8f4f");
 }
 
 TEST_CASE("programs/test1a - FIXME: DO BETTER", "[codegen]")

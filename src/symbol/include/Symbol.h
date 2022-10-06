@@ -104,7 +104,6 @@ public:
 
     int getLength() const { return length; }
 
-    // FIXME: ENSURE THESE ARE ALL GOOD ENOUGH!
     llvm::Type *getLLVMType(llvm::LLVMContext &C) const override
     {
         uint64_t len = (uint64_t)length;
