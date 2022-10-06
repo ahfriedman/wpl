@@ -38,8 +38,6 @@ TEST_CASE("visitbasicProc", "[semantic][proc]")
     CHECK_FALSE(sv->hasErrors(ERROR));
   }
 
-  // FIXME: test recursion
-
   SECTION("1 arg & empty")
   {
     antlr4::ANTLRInputStream input("proc program (int a) {}");
