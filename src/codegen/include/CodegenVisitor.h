@@ -28,6 +28,8 @@
 #include <string>
 #include <regex>
 
+#include <variant>
+
 // using namespace llvm;
 using llvm::ArrayRef;
 using llvm::ArrayType;
@@ -152,8 +154,6 @@ public:
     std::any visitType(WPLParser::TypeContext *ctx) override { return TvisitType(ctx); };
     std::any visitBooleanConst(WPLParser::BooleanConstContext *ctx) override { return TvisitBooleanConst(ctx); };
 
-
-
     bool hasErrors(int flags) { return errorHandler.hasErrors(flags); }
     std::string getErrors() { return errorHandler.errorList(); }
 
@@ -162,7 +162,113 @@ public:
     Module *getModule() { return module; }
     void modPrint() { module->print(llvm::outs(), nullptr); }
 
-    
+    // From C++ Documentation for visitors
+    template <class... Ts>
+    struct overloaded : Ts...
+    {
+        using Ts::operator()...;
+    };
+    template <class... Ts>
+    overloaded(Ts...) -> overloaded<Ts...>;
+
+    std::optional<Value *> visitInvokeable(std::variant<WPLParser::ProcDefContext *, WPLParser::FuncDefContext *> sum)
+    {
+        std::vector<llvm::Type *> typeVec;
+
+        // From C++ Documentation for visitors
+        antlr4::ParserRuleContext *ctx = std::visit(overloaded{[](WPLParser::ProcDefContext *arg)
+                                                               { return (antlr4::ParserRuleContext *)arg; },
+                                                               [](WPLParser::FuncDefContext *arg)
+                                                               { return (antlr4::ParserRuleContext *)arg; }},
+                                                    sum);
+
+        Symbol *sym = props->getBinding(ctx);
+
+        std::string funcId = std::visit(overloaded{[](WPLParser::ProcDefContext *arg)
+                                                   { return arg->name->getText(); },
+                                                   [](WPLParser::FuncDefContext *arg)
+                                                   { return arg->name->getText(); }},
+                                        sum);
+
+        if (!sym)
+        {
+            errorHandler.addCodegenError(ctx->getStart(), "Unbound function: " + funcId);
+            return {};
+        }
+
+        WPLParser::ParameterListContext *paramList = std::visit(overloaded{[](WPLParser::ProcDefContext *arg)
+                                                                           { return arg->paramList; },
+                                                                           [](WPLParser::FuncDefContext *arg)
+                                                                           { return arg->paramList; }},
+                                                                sum);
+
+        if (paramList)
+        {
+            for (auto e : paramList->params)
+            {
+                llvm::Type *type = CodegenVisitor::llvmTypeFor(e->ty);
+                typeVec.push_back(type);
+            }
+        }
+
+        ArrayRef<llvm::Type *> paramRef = ArrayRef(typeVec);
+
+        // Can't use visitor because visitor can't see `this'
+        llvm::Type *retType = std::holds_alternative<WPLParser::FuncDefContext *>(sum) ? CodegenVisitor::llvmTypeFor(std::get<WPLParser::FuncDefContext *>(sum)->ty)
+                                                                                       : VoidTy;
+
+        FunctionType *fnType = FunctionType::get(
+            retType,
+            paramRef,
+            false);
+
+        Function *fn = Function::Create(fnType, GlobalValue::ExternalLinkage, funcId, module);
+
+        // Create basic block
+        BasicBlock *bBlk = BasicBlock::Create(module->getContext(), "entry", fn);
+        builder->SetInsertPoint(bBlk);
+
+        for (auto &arg : fn->args())
+        {
+            int argNumber = arg.getArgNo();
+            llvm::Type *type = typeVec.at(argNumber);
+
+            // FIXME: not convinced this will work with arrays--not that WPL requires that... seems suspicious like it'd include the type here??
+            std::string argName = paramList->params.at(argNumber)->getText();
+
+            llvm::AllocaInst *v = builder->CreateAlloca(type, 0, argName);
+            Symbol *sym = props->getBinding(paramList->params.at(argNumber));
+
+            if (!sym)
+            {
+                errorHandler.addCodegenError(ctx->getStart(), "Unable to generate parameter for function: " + argName);
+            }
+            else
+            {
+                sym->val = v;
+
+                builder->CreateStore(&arg, v);
+            }
+        }
+
+        WPLParser::BlockContext* block = std::visit(overloaded{[](WPLParser::ProcDefContext *arg)
+                                                   { return arg->block(); },
+                                                   [](WPLParser::FuncDefContext *arg)
+                                                   { return arg->block(); }},
+                                        sum);
+
+
+        for(auto e : block->stmts)
+        {
+            e->accept(this);
+        }
+
+        if(std::holds_alternative<WPLParser::ProcDefContext *>(sum) && !CodegenVisitor::blockEndsInReturn(block)) {
+            builder->CreateRetVoid();
+        }
+
+        return {};
+    }
 
 protected:
     static bool blockEndsInReturn(WPLParser::BlockContext *ctx)
@@ -170,12 +276,12 @@ protected:
         return ctx->stmts.size() > 0 && dynamic_cast<WPLParser::ReturnStatementContext *>(ctx->stmts.at(ctx->stmts.size() - 1));
     }
 
-    //FIXME: Maybe use optionals? But types should always be defined... unless expanding lang...
-    llvm::Type * llvmTypeFor(WPLParser::TypeContext *ctx)
+    // FIXME: Maybe use optionals? But types should always be defined... unless expanding lang...
+    llvm::Type *llvmTypeFor(WPLParser::TypeContext *ctx)
     {
         llvm::Type *ty;
         bool valid = false;
-        
+
         if (ctx->TYPE_INT())
         {
             ty = Int32Ty;
@@ -200,7 +306,7 @@ protected:
 
         if (ctx->len)
         {
-            //Semantic analysis ensures this is positive. 
+            // Semantic analysis ensures this is positive.
             uint64_t len = (uint64_t)std::stoi(ctx->len->getText());
             llvm::Type *arr = ArrayType::get(ty, len);
 
