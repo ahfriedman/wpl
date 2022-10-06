@@ -173,8 +173,7 @@ public:
                 bindings->bind(param, paramSymbol);
             }
         }
-
-        //FIXME: TEST THAT WE CAN'T REDEFINE ARGS!
+        
         this->safeVisitBlock(block, false);
 
         if(ty && (block->stmts.size() == 0 || !dynamic_cast<WPLParser::ReturnStatementContext *>(block->stmts.at(block->stmts.size() - 1))))
