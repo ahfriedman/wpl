@@ -116,7 +116,7 @@ TEST_CASE("Block", "[semantic]")
       "   if (n / i * i = n) then { return false; } \n"
       "   i <- i + 2;\n"
       "   {\n"
-      "     int i <- 0;\n" //FIXME: TEST THIS CASE IN WPLC
+      "     int i <- 0;\n"
       "   }\n"
       " }\n"
       " return true;\n"
