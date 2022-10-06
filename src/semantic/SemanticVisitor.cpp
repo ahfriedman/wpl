@@ -377,8 +377,17 @@ const Type *SemanticVisitor::visitCtx(WPLParser::VariableExprContext *ctx)
 const Type *SemanticVisitor::visitCtx(WPLParser::FieldAccessExprContext *ctx)
 {
     // Determine the type of the expression we are visiting
-    const Type *ty = std::any_cast<const Type *>(ctx->ex->accept(this));
-    std::cout << "SV354 - Finish FA EX visit - " << bindings->getBinding(ctx->ex)->val << std::endl;
+    std::optional<Symbol *> opt = stmgr->lookup(ctx->VARIABLE().at(0)->getText());
+    if(!opt)
+    {
+        errorHandler.addSemanticError(ctx->getStart(), "Undefined variable reference: " + ctx->ex->getText());
+        return Types::UNDEFINED;
+    }
+
+    Symbol * sym = opt.value(); 
+    bindings->bind(ctx->VARIABLE().at(0), sym);
+
+    const Type* ty = sym->type;
 
     // Currently we only support arrays, so if its not an array, report an error.
     if (const TypeArray *a = dynamic_cast<const TypeArray *>(ty))

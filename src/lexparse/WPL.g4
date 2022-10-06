@@ -41,7 +41,7 @@ arrayOrVar          : var=VARIABLE | array=arrayAccess  ;
  *      11-14. Typical boolean and variable constants. 
  */
 expression          : '(' ex=expression ')'                         # ParenExpr
-                    | ex=expression '.' field=VARIABLE       # FieldAccessExpr 
+                    | ex=VARIABLE '.' field=VARIABLE       # FieldAccessExpr 
                     | <assoc=right> op=(MINUS | NOT) ex=expression  # UnaryExpr 
                     | left=expression op=(MULTIPLY | DIVIDE) right=expression # BinaryArithExpr
                     | left=expression op=(PLUS | MINUS) right=expression      # BinaryArithExpr

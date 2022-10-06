@@ -355,9 +355,8 @@ std::optional<Value *> CodegenVisitor::TvisitVariableExpr(WPLParser::VariableExp
 
 std::optional<Value *> CodegenVisitor::TvisitFieldAccessExpr(WPLParser::FieldAccessExprContext *ctx)
 {
-
     // This is ONLY array length for now...
-    Symbol *sym = props->getBinding(ctx->ex); // FIXME: DO WE NEED TO VISIT? -> I guess not currently b/c all type stuff, but probably should and/or remove and change it to VAR?
+    Symbol *sym = props->getBinding(ctx->VARIABLE().at(0));
 
     if (!sym || !sym->val || !sym->type)
     {
