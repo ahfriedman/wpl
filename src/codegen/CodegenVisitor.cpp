@@ -590,60 +590,70 @@ std::optional<Value *> CodegenVisitor::TvisitProcDef(WPLParser::ProcDefContext *
 
 std::optional<Value *> CodegenVisitor::TvisitAssignStatement(WPLParser::AssignStatementContext *ctx)
 {
+    //Visit the expression to get the value we will assign
     std::optional<Value *> exprVal = std::any_cast<std::optional<Value *>>(ctx->ex->accept(this));
 
+    //Check that the expression generated
     if (!exprVal)
     {
         errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code for: " + ctx->ex->getText());
         return {};
     }
 
+    //Lookup the binding for the variable we are assigning to and and ensure that we find it
     Symbol *varSym = props->getBinding(ctx->to);
-
     if (varSym == nullptr)
     {
         errorHandler.addCodegenError(ctx->getStart(), "Incorrectly processed variable in assignment: " + ctx->to->getText());
         return {};
     }
 
+    //Get the allocation instruction for the symbol 
     Value *val = varSym->val;
 
+    //If the symbol is global 
     if (varSym->isGlobal)
     {
+        //Find the global variable that corresponds to our symbol
         llvm::GlobalVariable *glob = module->getNamedGlobal(varSym->identifier);
 
+        //If we can't find it, then throw an error. 
         if (!glob)
         {
             errorHandler.addCodegenError(ctx->getStart(), "Unable to find global variable: " + varSym->identifier);
             return {};
         }
 
+        //Load a pointer to the global variable
         val = builder->CreateLoad(glob)->getPointerOperand();
     }
 
-    // Shouldn't need this in the end....
+    //Sanity check to ensure that we now have a value for the variable
     if (val == nullptr)
     {
         errorHandler.addCodegenError(ctx->getStart(), "Improperly initialized variable in assignment: " + ctx->to->getText() + "@" + varSym->identifier);
-        std::cout << "IMPROP VAR @ " << varSym << std::endl;
         return {};
     }
 
+    //Checks to see if we are dealing with an array
     if (!ctx->to->VARIABLE())
     {
-        // Dealing with an array //FIXME: REFACTOR!!!
+        //As this is an array access, we need to determine the index we will be accessing
         std::optional<Value *> index = std::any_cast<std::optional<Value *>>(ctx->to->array->index->accept(this));
 
+        //Ensure we built an index
         if (!index)
         {
             errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code for: " + ctx->to->getText());
+            return {};
         }
 
+        //Create a GEP to the index based on our previously calculated value and index
         Value *built = builder->CreateGEP(val, {Int32Zero, index.value()});
-
         val = built;
     }
 
+    //Store the expression's value
     builder->CreateStore(exprVal.value(), val);
 
     return {};

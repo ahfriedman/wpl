@@ -63,7 +63,7 @@ str func otherbranchtwo() {
     int a <- 0; 
     str b <- "Why hello there!"; 
 
-    if(a < 5) then { # FIXME: ADD PRINT STATEMENTS TO MAKE SURE WE DONT FALL IN HERE!
+    if(a < 5) then {
         b <- "Well, we fel into the first case"; 
     } else {
         printf("ERROR: THIS CODE SHOULDN'T BE RUN\n");

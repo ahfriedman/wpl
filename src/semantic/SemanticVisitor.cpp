@@ -279,7 +279,6 @@ const Type *SemanticVisitor::visitCtx(WPLParser::BinaryArithExprContext *ctx)
 
 const Type *SemanticVisitor::visitCtx(WPLParser::EqExprContext *ctx)
 {
-    // FIXME: do better! WILL THIS EVEN WORK FOR ARRAYS? AND WHICH SIDE DETERMINES WHICH? SHOULD IT BE SUB OR SUPER?
     auto right = std::any_cast<const Type *>(ctx->right->accept(this));
     auto left = std::any_cast<const Type *>(ctx->left->accept(this));
     if (right->isNotSubtype(left))

@@ -36,13 +36,6 @@ TEST_CASE("Undefined Params", "[semantic][loop]")
 
   //FIXME: CHECK MORE PRECISELY 
   CHECK(sv->hasErrors(ERROR));
-
-  // CHECK_FALSE(sv->hasErrors(ERROR));
-
-  // std::optional<Symbol *> opt = stmgr->lookup("a");
-
-  // CHECK(opt.has_value());
-  // CHECK(opt.value()->type->isSubtype(Types::INT));
 }
 
 
