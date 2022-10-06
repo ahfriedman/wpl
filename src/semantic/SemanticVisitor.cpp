@@ -523,7 +523,6 @@ const Type *SemanticVisitor::visitCtx(WPLParser::ParameterListContext *ctx)
 // Passthrough to visit the inner expression
 const Type *SemanticVisitor::visitCtx(WPLParser::ParameterContext *ctx) { return this->visitCtx(ctx->ty); }
 
-// Unused
 const Type *SemanticVisitor::visitCtx(WPLParser::AssignmentContext *ctx)
 {
     errorHandler.addSemanticError(ctx->getStart(), "Assignment should never be visited directly during type checking!");

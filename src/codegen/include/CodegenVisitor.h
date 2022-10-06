@@ -300,7 +300,7 @@ protected:
 
         if (!valid)
         {
-            errorHandler.addCodegenError(ctx->getStart(), "UNIMPLEMENTED TYPE: " + ctx->getText());
+            errorHandler.addCodegenError(ctx->getStart(), "Unknown type: " + ctx->getText());
             return nullptr;
         }
 
