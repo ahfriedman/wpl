@@ -7,6 +7,9 @@
 
 #include "test_error_handlers.h"
 
+/*
+ * FIXME: test loops more robustly
+ */
 
 TEST_CASE("Undefined Params", "[semantic][loop]")
 {
@@ -33,8 +36,6 @@ TEST_CASE("Undefined Params", "[semantic][loop]")
   SemanticVisitor *sv = new SemanticVisitor(stmgr, new PropertyManager());
 
   sv->visitCompilationUnit(tree);
-
-  //FIXME: CHECK MORE PRECISELY 
   CHECK(sv->hasErrors(ERROR));
 }
 
@@ -65,16 +66,7 @@ TEST_CASE("Undefined Params 2", "[semantic][loop]")
   SemanticVisitor *sv = new SemanticVisitor(stmgr, new PropertyManager());
 
   sv->visitCompilationUnit(tree);
-
-  //FIXME: CHECK MORE PRECISELY 
   CHECK(sv->hasErrors(ERROR));
-
-  // CHECK_FALSE(sv->hasErrors(ERROR));
-
-  // std::optional<Symbol *> opt = stmgr->lookup("a");
-
-  // CHECK(opt.has_value());
-  // CHECK(opt.value()->type->isSubtype(Types::INT));
 }
 
 
@@ -104,16 +96,7 @@ TEST_CASE("Check example", "[semantic][loop]")
   SemanticVisitor *sv = new SemanticVisitor(stmgr, new PropertyManager());
 
   sv->visitCompilationUnit(tree);
-
-  //FIXME: CHECK MORE PRECISELY 
   CHECK_FALSE(sv->hasErrors(ERROR));
-
-  // CHECK_FALSE(sv->hasErrors(ERROR));
-
-  // std::optional<Symbol *> opt = stmgr->lookup("a");
-
-  // CHECK(opt.has_value());
-  // CHECK(opt.value()->type->isSubtype(Types::INT));
 }
 
 TEST_CASE("Check example - adv", "[semantic][loop]")
@@ -144,10 +127,7 @@ TEST_CASE("Check example - adv", "[semantic][loop]")
 
   sv->visitCompilationUnit(tree);
 
-  //FIXME: CHECK MORE PRECISELY 
   CHECK_FALSE(sv->hasErrors(ERROR));
-
-  // CHECK_FALSE(sv->hasErrors(ERROR));
 
   {
     std::optional<Symbol *> opt = stmgr->lookup("a");
@@ -196,13 +176,7 @@ TEST_CASE("Sit & Spin", "[semantic][loop]")
   SemanticVisitor *sv = new SemanticVisitor(stmgr, new PropertyManager());
 
   sv->visitCompilationUnit(tree);
-
   CHECK_FALSE(sv->hasErrors(ERROR));
-
-  // std::optional<Symbol *> opt = stmgr->lookup("a");
-
-  // CHECK(opt.has_value());
-  // CHECK(opt.value()->type->isSubtype(Types::INT));
 }
 
 TEST_CASE("Int condition", "[semantic][loop]")
@@ -230,11 +204,6 @@ TEST_CASE("Int condition", "[semantic][loop]")
   sv->visitCompilationUnit(tree);
 
   CHECK(sv->hasErrors(ERROR));
-
-  // std::optional<Symbol *> opt = stmgr->lookup("a");
-
-  // CHECK(opt.has_value());
-  // CHECK(opt.value()->type->isSubtype(Types::INT));
 }
 
 TEST_CASE("Int condition 2", "[semantic][loop]")
@@ -262,11 +231,6 @@ TEST_CASE("Int condition 2", "[semantic][loop]")
   sv->visitCompilationUnit(tree);
 
   CHECK(sv->hasErrors(ERROR));
-
-  // std::optional<Symbol *> opt = stmgr->lookup("a");
-
-  // CHECK(opt.has_value());
-  // CHECK(opt.value()->type->isSubtype(Types::INT));
 }
 
 TEST_CASE("str condition", "[semantic][loop]")
@@ -294,11 +258,6 @@ TEST_CASE("str condition", "[semantic][loop]")
   sv->visitCompilationUnit(tree);
 
   CHECK(sv->hasErrors(ERROR));
-
-  // std::optional<Symbol *> opt = stmgr->lookup("a");
-
-  // CHECK(opt.has_value());
-  // CHECK(opt.value()->type->isSubtype(Types::INT));
 }
 
 TEST_CASE("Boolean Expr", "[semantic][loop]")
@@ -326,9 +285,4 @@ TEST_CASE("Boolean Expr", "[semantic][loop]")
   sv->visitCompilationUnit(tree);
 
   CHECK_FALSE(sv->hasErrors(ERROR));
-
-  // std::optional<Symbol *> opt = stmgr->lookup("a");
-
-  // CHECK(opt.has_value());
-  // CHECK(opt.value()->type->isSubtype(Types::INT));
 }

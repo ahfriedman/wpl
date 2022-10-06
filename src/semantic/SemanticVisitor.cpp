@@ -545,14 +545,12 @@ const Type *SemanticVisitor::visitCtx(WPLParser::ExternStatementContext *ctx)
         errorHandler.addSemanticError(ctx->getStart(), "Unsupported redeclaration of " + id);
         return Types::UNDEFINED;
     }
-
-    // FIXME: test breaking params somehow!! like using something thats not a type!!!!
+    
     const Type *ty = (ctx->paramList) ? this->visitCtx(ctx->paramList)
                                       : new TypeInvoke();
 
     const TypeInvoke *procType = dynamic_cast<const TypeInvoke *>(ty); // Always true, but needs separate statement to make C happy.
 
-    // FIXME: DO BETTER
     const Type *retType = ctx->ty ? this->visitCtx(ctx->ty)
                                   : Types::UNDEFINED;
 
