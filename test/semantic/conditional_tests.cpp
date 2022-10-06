@@ -7,6 +7,10 @@
 
 #include "test_error_handlers.h"
 
+/*
+ * FIXME: Make conditional tests more robust!
+ */ 
+
 TEST_CASE("Basic if", "[semantic][conditional]")
 {
   antlr4::ANTLRInputStream input(
@@ -31,15 +35,7 @@ TEST_CASE("Basic if", "[semantic][conditional]")
 
   sv->visitCompilationUnit(tree);
 
-  //FIXME: CHECK MORE PRECISELY 
   CHECK_FALSE(sv->hasErrors(ERROR));
-
-  // CHECK_FALSE(sv->hasErrors(ERROR));
-
-  // std::optional<Symbol *> opt = stmgr->lookup("a");
-
-  // CHECK(opt.has_value());
-  // CHECK(opt.value()->type->isSubtypeOf(Types::INT));
 }
 
 TEST_CASE("Basic if 2", "[semantic][conditional]")
@@ -67,15 +63,7 @@ TEST_CASE("Basic if 2", "[semantic][conditional]")
 
   sv->visitCompilationUnit(tree);
 
-  //FIXME: CHECK MORE PRECISELY 
   CHECK_FALSE(sv->hasErrors(ERROR));
-
-  // CHECK_FALSE(sv->hasErrors(ERROR));
-
-  // std::optional<Symbol *> opt = stmgr->lookup("a");
-
-  // CHECK(opt.has_value());
-  // CHECK(opt.value()->type->isSubtypeOf(Types::INT));
 }
 
 TEST_CASE("If Example 1", "[semantic][conditional]")
@@ -105,15 +93,7 @@ TEST_CASE("If Example 1", "[semantic][conditional]")
 
   sv->visitCompilationUnit(tree);
 
-  //FIXME: CHECK MORE PRECISELY 
   CHECK(sv->hasErrors(ERROR));
-
-  // CHECK_FALSE(sv->hasErrors(ERROR));
-
-  // std::optional<Symbol *> opt = stmgr->lookup("a");
-
-  // CHECK(opt.has_value());
-  // CHECK(opt.value()->type->isSubtypeOf(Types::INT));
 }
 
 TEST_CASE("If Example 1-2", "[semantic][conditional]")
@@ -144,15 +124,7 @@ TEST_CASE("If Example 1-2", "[semantic][conditional]")
 
   sv->visitCompilationUnit(tree);
 
-  //FIXME: CHECK MORE PRECISELY 
   CHECK(sv->hasErrors(ERROR));
-
-  // CHECK_FALSE(sv->hasErrors(ERROR));
-
-  // std::optional<Symbol *> opt = stmgr->lookup("a");
-
-  // CHECK(opt.has_value());
-  // CHECK(opt.value()->type->isSubtypeOf(Types::INT));
 }
 
 TEST_CASE("If Example 1-3", "[semantic][conditional]")
@@ -183,16 +155,7 @@ TEST_CASE("If Example 1-3", "[semantic][conditional]")
   SemanticVisitor *sv = new SemanticVisitor(stmgr, new PropertyManager());
 
   sv->visitCompilationUnit(tree);
-
-  //FIXME: CHECK MORE PRECISELY 
   CHECK(sv->hasErrors(ERROR));
-
-  // CHECK_FALSE(sv->hasErrors(ERROR));
-
-  // std::optional<Symbol *> opt = stmgr->lookup("a");
-
-  // CHECK(opt.has_value());
-  // CHECK(opt.value()->type->isSubtypeOf(Types::INT));
 }
 
 TEST_CASE("If Example 1-4", "[semantic][conditional]")
@@ -224,15 +187,7 @@ TEST_CASE("If Example 1-4", "[semantic][conditional]")
 
   sv->visitCompilationUnit(tree);
 
-  //FIXME: CHECK MORE PRECISELY 
   CHECK(sv->hasErrors(ERROR));
-
-  // CHECK_FALSE(sv->hasErrors(ERROR));
-
-  // std::optional<Symbol *> opt = stmgr->lookup("a");
-
-  // CHECK(opt.has_value());
-  // CHECK(opt.value()->type->isSubtypeOf(Types::INT));
 }
 
 TEST_CASE("If Example 1-5", "[semantic][conditional]")
@@ -263,16 +218,7 @@ TEST_CASE("If Example 1-5", "[semantic][conditional]")
   SemanticVisitor *sv = new SemanticVisitor(stmgr, new PropertyManager());
 
   sv->visitCompilationUnit(tree);
-
-  //FIXME: CHECK MORE PRECISELY 
   CHECK_FALSE(sv->hasErrors(ERROR));
-
-  // CHECK_FALSE(sv->hasErrors(ERROR));
-
-  // std::optional<Symbol *> opt = stmgr->lookup("a");
-
-  // CHECK(opt.has_value());
-  // CHECK(opt.value()->type->isSubtypeOf(Types::INT));
 }
 
 
@@ -310,9 +256,6 @@ TEST_CASE("Inference If Errors - 1", "[semantic]")
   SemanticVisitor *sv = new SemanticVisitor(stmgr, new PropertyManager());
 
   sv->visitCompilationUnit(tree);
-
-  // std::cout << stmgr->toString() << std::endl;
-  // std::cout << sv->getErrors() << std::endl; 
 
   CHECK(sv->hasErrors(0));
 }
@@ -352,9 +295,6 @@ TEST_CASE("Inference If - 1", "[semantic]")
 
   sv->visitCompilationUnit(tree);
 
-  std::cout << stmgr->toString() << std::endl;
-  std::cout << sv->getErrors() << std::endl; 
-
   CHECK_FALSE(sv->hasErrors(0));
 }
 
@@ -393,8 +333,8 @@ TEST_CASE("Inference If - 2", "[semantic]")
 
   sv->visitCompilationUnit(tree);
 
-  std::cout << stmgr->toString() << std::endl;
-  std::cout << sv->getErrors() << std::endl; 
+  // std::cout << stmgr->toString() << std::endl;
+  // std::cout << sv->getErrors() << std::endl; 
 
   CHECK_FALSE(sv->hasErrors(0));
 }

@@ -312,7 +312,7 @@ std::optional<Value *> CodegenVisitor::TvisitCallExpr(WPLParser::CallExprContext
 
 std::optional<Value *> CodegenVisitor::TvisitVariableExpr(WPLParser::VariableExprContext *ctx)
 {
-    // FIXME: should probably methodize... -> Yeah, why is var used everywhere? is that right? CHECK!
+    // FIXME: why is var used everywhere? is that right? CHECK!
     std::string id = ctx->v->getText();
     Symbol *sym = props->getBinding(ctx);
 
@@ -348,8 +348,6 @@ std::optional<Value *> CodegenVisitor::TvisitVariableExpr(WPLParser::VariableExp
     }
 
     Value *v = builder->CreateLoad(type, sym->val, id);
-
-    std::cout << "323 " << ctx->getText() << std::endl;
     return v;
 }
 
