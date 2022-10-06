@@ -1,6 +1,4 @@
-#extern int func test(str a,...);
 extern int func printf(...);
-#extern int func testtwo(...);
 
 int func chayos() {
     var a, b <- 1; 
@@ -122,7 +120,6 @@ int func program() {
     return -1; 
 }
 
-(*
 proc procedurezero () {
     int a <- 0; 
 
@@ -132,4 +129,3 @@ proc procedurezero () {
     }
 
 }
-*)

@@ -86,7 +86,6 @@ class TypeArray : public Type
 private:
     const Type *valueType;
     int length;
-    // FIXME: should we have a length defined in here?
 
 public:
     TypeArray(const Type *v, int l)
@@ -97,7 +96,6 @@ public:
 
     std::string toString() const override
     {
-        // FIXME: DO BETTER
         return valueType->toString() + "[]";
     }
 
@@ -106,7 +104,6 @@ public:
 
     int getLength() const { return length; }
 
-    // FIXME: ENSURE THESE ARE ALL GOOD ENOUGH!
     llvm::Type *getLLVMType(llvm::LLVMContext &C) const override
     {
         uint64_t len = (uint64_t)length;
@@ -248,12 +245,12 @@ public:
     }
 
     std::optional<const Type *> getValueType() const { return valueType; }
-
-    // FIXME: ENSURE THESE ARE ALL GOOD ENOUGH!
+    
     llvm::Type *getLLVMType(llvm::LLVMContext &C) const override
     {
-        //FIXME: what happens if we don't get a value type by code gen!!!!
         if(valueType) return valueType.value()->getLLVMType(C); 
+
+        //This should never happen: we should have always detected such cases in our semantic analyis
         return nullptr; 
     }
 

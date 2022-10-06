@@ -7,6 +7,9 @@
 
 #include "test_error_handlers.h"
 
+/*
+ * FIXME: Make select tests more robust
+ */
 
 TEST_CASE("Basic select", "[semantic][conditional]")
 {
@@ -14,7 +17,7 @@ TEST_CASE("Basic select", "[semantic][conditional]")
   antlr4::ANTLRInputStream input(
     R""""(
       select {
-        false : int a <- 2;
+        false : {int a <- 2;}
 
 
       }
@@ -38,29 +41,20 @@ TEST_CASE("Basic select", "[semantic][conditional]")
 
   sv->visitCompilationUnit(tree);
 
-  //FIXME: CHECK MORE PRECISELY 
   CHECK_FALSE(sv->hasErrors(ERROR));
-
-  // CHECK_FALSE(sv->hasErrors(ERROR));
-
-  // std::optional<Symbol *> opt = stmgr->lookup("a");
-
-  // CHECK(opt.has_value());
-  // CHECK(opt.value()->type->isSubtypeOf(Types::INT));
 }
 
 
 
 TEST_CASE("Basic select inf error 1", "[semantic][conditional]")
 {
-  //FIXME: should select allow 0 cases then throw an error semantically?
   antlr4::ANTLRInputStream input(
     R""""(
       var a; 
 
       select {
-        false : a <- true; 
-        true : a <- 10; 
+        false : {a <- true;} 
+        true : {a <- 10;}
         
 
       }
@@ -83,28 +77,18 @@ TEST_CASE("Basic select inf error 1", "[semantic][conditional]")
   SemanticVisitor *sv = new SemanticVisitor(stmgr, new PropertyManager());
 
   sv->visitCompilationUnit(tree);
-
-  //FIXME: CHECK MORE PRECISELY 
   CHECK(sv->hasErrors(ERROR));
-
-  // CHECK_FALSE(sv->hasErrors(ERROR));
-
-  // std::optional<Symbol *> opt = stmgr->lookup("a");
-
-  // CHECK(opt.has_value());
-  // CHECK(opt.value()->type->isSubtypeOf(Types::INT));
 }
 
 TEST_CASE("Basic select inf 1", "[semantic][conditional]")
 {
-  //FIXME: should select allow 0 cases then throw an error semantically?
   antlr4::ANTLRInputStream input(
     R""""(
       var a; 
 
       select {
-        false : boolean a <- true; 
-        true : a <- 10; 
+        false : {boolean a <- true;} 
+        true : {a <- 10; }
         
 
       }
@@ -128,27 +112,18 @@ TEST_CASE("Basic select inf 1", "[semantic][conditional]")
 
   sv->visitCompilationUnit(tree);
 
-  //FIXME: CHECK MORE PRECISELY 
   CHECK_FALSE(sv->hasErrors(ERROR));
-
-  // CHECK_FALSE(sv->hasErrors(ERROR));
-
-  // std::optional<Symbol *> opt = stmgr->lookup("a");
-
-  // CHECK(opt.has_value());
-  // CHECK(opt.value()->type->isSubtypeOf(Types::INT));
 }
 
 TEST_CASE("Basic select inf 2", "[semantic][conditional]")
 {
-  //FIXME: should select allow 0 cases then throw an error semantically?
   antlr4::ANTLRInputStream input(
     R""""(
       var a; 
 
       select {
-        false : a <- true; 
-        true : int a <- 10; 
+        false : {a <- true;} 
+        true : {int a <- 10; }
         
 
       }
@@ -172,21 +147,12 @@ TEST_CASE("Basic select inf 2", "[semantic][conditional]")
 
   sv->visitCompilationUnit(tree);
 
-  std::cout << sv->getErrors() << std::endl; 
-  //FIXME: CHECK MORE PRECISELY 
+  // std::cout << sv->getErrors() << std::endl; 
   CHECK_FALSE(sv->hasErrors(ERROR));
-
-  // CHECK_FALSE(sv->hasErrors(ERROR));
-
-  // std::optional<Symbol *> opt = stmgr->lookup("a");
-
-  // CHECK(opt.has_value());
-  // CHECK(opt.value()->type->isSubtypeOf(Types::INT));
 }
 
 TEST_CASE("Basic select inf 3", "[semantic][conditional]")
 {
-  //FIXME: should select allow 0 cases then throw an error semantically?
   antlr4::ANTLRInputStream input(
     R""""(
       var a; 
@@ -217,13 +183,103 @@ TEST_CASE("Basic select inf 3", "[semantic][conditional]")
 
   sv->visitCompilationUnit(tree);
 
-  //FIXME: CHECK MORE PRECISELY 
   CHECK_FALSE(sv->hasErrors(ERROR));
+}
 
-  // CHECK_FALSE(sv->hasErrors(ERROR));
 
-  // std::optional<Symbol *> opt = stmgr->lookup("a");
 
-  // CHECK(opt.has_value());
-  // CHECK(opt.value()->type->isSubtypeOf(Types::INT));
+TEST_CASE("Basic select - Dead Code - var", "[semantic][conditional]")
+{
+  antlr4::ANTLRInputStream input(
+    R""""(
+      select {
+        false : int a <- 2;
+
+
+      }
+    )""""
+  );
+  WPLLexer lexer(&input);
+  // lexer.removeErrorListeners();
+  // lexer.addErrorListener(new TestErrorListener());
+  antlr4::CommonTokenStream tokens(&lexer);
+  WPLParser parser(&tokens);
+  parser.removeErrorListeners();
+  parser.addErrorListener(new TestErrorListener());
+
+  WPLParser::CompilationUnitContext *tree = NULL;
+  REQUIRE_NOTHROW(tree = parser.compilationUnit());
+  REQUIRE(tree != NULL);
+  REQUIRE(tree->getText() != "");
+
+  STManager *stmgr = new STManager();
+  SemanticVisitor *sv = new SemanticVisitor(stmgr, new PropertyManager());
+
+  sv->visitCompilationUnit(tree);
+
+  REQUIRE(sv->hasErrors(ERROR));
+}
+
+TEST_CASE("Basic select - Dead Code - proc", "[semantic][conditional]")
+{
+  antlr4::ANTLRInputStream input(
+    R""""(
+      select {
+        false : proc prog() {}
+
+
+      }
+    )""""
+  );
+  WPLLexer lexer(&input);
+  // lexer.removeErrorListeners();
+  // lexer.addErrorListener(new TestErrorListener());
+  antlr4::CommonTokenStream tokens(&lexer);
+  WPLParser parser(&tokens);
+  parser.removeErrorListeners();
+  parser.addErrorListener(new TestErrorListener());
+
+  WPLParser::CompilationUnitContext *tree = NULL;
+  REQUIRE_NOTHROW(tree = parser.compilationUnit());
+  REQUIRE(tree != NULL);
+  REQUIRE(tree->getText() != "");
+
+  STManager *stmgr = new STManager();
+  SemanticVisitor *sv = new SemanticVisitor(stmgr, new PropertyManager());
+
+  sv->visitCompilationUnit(tree);
+
+  REQUIRE(sv->hasErrors(ERROR));
+}
+
+TEST_CASE("Basic select - Dead Code - func", "[semantic][conditional]")
+{
+  antlr4::ANTLRInputStream input(
+    R""""(
+      select {
+        false : int func prog() {return -1;}
+
+
+      }
+    )""""
+  );
+  WPLLexer lexer(&input);
+  // lexer.removeErrorListeners();
+  // lexer.addErrorListener(new TestErrorListener());
+  antlr4::CommonTokenStream tokens(&lexer);
+  WPLParser parser(&tokens);
+  parser.removeErrorListeners();
+  parser.addErrorListener(new TestErrorListener());
+
+  WPLParser::CompilationUnitContext *tree = NULL;
+  REQUIRE_NOTHROW(tree = parser.compilationUnit());
+  REQUIRE(tree != NULL);
+  REQUIRE(tree->getText() != "");
+
+  STManager *stmgr = new STManager();
+  SemanticVisitor *sv = new SemanticVisitor(stmgr, new PropertyManager());
+
+  sv->visitCompilationUnit(tree);
+
+  REQUIRE(sv->hasErrors(ERROR));
 }

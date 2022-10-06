@@ -7,12 +7,6 @@
 
 #include "test_error_handlers.h"
 
-
-//FIXME: DO BETTER TYPE INF TESTS (INLUDING NEGATIVE + NEVER DEFINED)
-//FIXME: MAKE SURE WE CANT DEFINE FUNCTIONS IN FUNCTIONS, RETURN EARLy, ETC/
-
-// FIXME: REQUIRE END IN RETURN
-
 TEST_CASE("Sample Progam one", "[semantic]")
 {
   antlr4::ANTLRInputStream input(
@@ -50,7 +44,6 @@ TEST_CASE("Sample Progam one", "[semantic]")
   REQUIRE(tree != NULL);
 
   // Any errors should be syntax errors.
-  // FIXME: Should probably confirm the above statement through testing for syntax errors
   REQUIRE(tree->getText() != "");
 
   STManager *stmgr = new STManager();
@@ -101,7 +94,6 @@ TEST_CASE("Sample Progam one w/ Inf", "[semantic]")
   REQUIRE(tree != NULL);
 
   // Any errors should be syntax errors.
-  // FIXME: Should probably confirm the above statement through testing for syntax errors
   REQUIRE(tree->getText() != "");
 
   STManager *stmgr = new STManager();
@@ -124,7 +116,7 @@ TEST_CASE("Block", "[semantic]")
       "   if (n / i * i = n) then { return false; } \n"
       "   i <- i + 2;\n"
       "   {\n"
-      "     int i <- 0;\n" //FIXME: TEST THIS CASE IN WPLC
+      "     int i <- 0;\n"
       "   }\n"
       " }\n"
       " return true;\n"
@@ -152,134 +144,6 @@ TEST_CASE("Block", "[semantic]")
   REQUIRE(tree != NULL);
 
   // Any errors should be syntax errors.
-  // FIXME: Should probably confirm the above statement through testing for syntax errors
-  REQUIRE(tree->getText() != "");
-
-  STManager *stmgr = new STManager();
-  SemanticVisitor *sv = new SemanticVisitor(stmgr, new PropertyManager());
-
-  sv->visitCompilationUnit(tree);
-
-  std::cout << stmgr->toString() << std::endl;
-  std::cout << sv->getErrors() << std::endl; 
-
-  CHECK_FALSE(sv->hasErrors(0));
-}
-
-
-TEST_CASE("Inference If Errors - 1", "[semantic]")
-{
-  antlr4::ANTLRInputStream input(
-      R""""(
-      proc infTest() {
-        var a; 
-        
-        if(1 < 2) then {
-          a <- true; 
-        } else {
-          a <- 10; 
-        }
-      }
-      )""""
-    );
-  WPLLexer lexer(&input);
-  // lexer.removeErrorListeners();
-  // lexer.addErrorListener(new TestErrorListener());
-  antlr4::CommonTokenStream tokens(&lexer);
-  WPLParser parser(&tokens);
-  parser.removeErrorListeners();
-  parser.addErrorListener(new TestErrorListener());
-
-  WPLParser::CompilationUnitContext *tree = NULL;
-  REQUIRE_NOTHROW(tree = parser.compilationUnit());
-  REQUIRE(tree != NULL);
-
-  // Any errors should be syntax errors.
-  // FIXME: Should probably confirm the above statement through testing for syntax errors
-  REQUIRE(tree->getText() != "");
-
-  STManager *stmgr = new STManager();
-  SemanticVisitor *sv = new SemanticVisitor(stmgr, new PropertyManager());
-
-  sv->visitCompilationUnit(tree);
-
-  // std::cout << stmgr->toString() << std::endl;
-  // std::cout << sv->getErrors() << std::endl; 
-
-  CHECK(sv->hasErrors(0));
-}
-
-TEST_CASE("Inference If - 1", "[semantic]")
-{
-  antlr4::ANTLRInputStream input(
-      R""""(
-      proc infTest() {
-        var a; 
-        
-        if(1 < 2) then {
-          var a <- false; 
-        } else {
-          a <- 10; 
-        }
-      }
-      )""""
-    );
-  WPLLexer lexer(&input);
-  // lexer.removeErrorListeners();
-  // lexer.addErrorListener(new TestErrorListener());
-  antlr4::CommonTokenStream tokens(&lexer);
-  WPLParser parser(&tokens);
-  parser.removeErrorListeners();
-  parser.addErrorListener(new TestErrorListener());
-
-  WPLParser::CompilationUnitContext *tree = NULL;
-  REQUIRE_NOTHROW(tree = parser.compilationUnit());
-  REQUIRE(tree != NULL);
-
-  // Any errors should be syntax errors.
-  // FIXME: Should probably confirm the above statement through testing for syntax errors
-  REQUIRE(tree->getText() != "");
-
-  STManager *stmgr = new STManager();
-  SemanticVisitor *sv = new SemanticVisitor(stmgr, new PropertyManager());
-
-  sv->visitCompilationUnit(tree);
-
-  std::cout << stmgr->toString() << std::endl;
-  std::cout << sv->getErrors() << std::endl; 
-
-  CHECK_FALSE(sv->hasErrors(0));
-}
-
-TEST_CASE("Inference If - 2", "[semantic]")
-{
-  antlr4::ANTLRInputStream input(
-      R""""(
-      proc infTest() {
-        var a; 
-        
-        if(1 < 2) then {
-          a <- false; 
-        } else {
-          var a <- 10; 
-        }
-      }
-      )""""
-    );
-  WPLLexer lexer(&input);
-  // lexer.removeErrorListeners();
-  // lexer.addErrorListener(new TestErrorListener());
-  antlr4::CommonTokenStream tokens(&lexer);
-  WPLParser parser(&tokens);
-  parser.removeErrorListeners();
-  parser.addErrorListener(new TestErrorListener());
-
-  WPLParser::CompilationUnitContext *tree = NULL;
-  REQUIRE_NOTHROW(tree = parser.compilationUnit());
-  REQUIRE(tree != NULL);
-
-  // Any errors should be syntax errors.
-  // FIXME: Should probably confirm the above statement through testing for syntax errors
   REQUIRE(tree->getText() != "");
 
   STManager *stmgr = new STManager();
@@ -321,6 +185,31 @@ TEST_CASE("programs/test4 - Don't allow void to be sent to fn", "[codegen]")
 TEST_CASE("programs/test9Err - Test assign var to array", "[codegen]")
 {
     std::fstream *inStream = new std::fstream("/home/shared/programs/test9Err.wpl");
+    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+
+    WPLLexer lexer(input);
+    antlr4::CommonTokenStream tokens(&lexer);
+    WPLParser parser(&tokens);
+    parser.removeErrorListeners();
+    WPLParser::CompilationUnitContext *tree = NULL;
+    REQUIRE_NOTHROW(tree = parser.compilationUnit());
+    REQUIRE(tree != NULL);
+    STManager *stm = new STManager();
+    PropertyManager *pm = new PropertyManager();
+    SemanticVisitor *sv = new SemanticVisitor(stm, pm);
+    sv->visitCompilationUnit(tree);
+
+
+    // if(sv->hasErrors(0))
+    // {
+    //     CHECK("foo" == sv->getErrors());
+    // }
+    REQUIRE(sv->hasErrors(0));
+}
+
+TEST_CASE("programs/test11Err - Prevent global exprs", "[codegen]")
+{
+    std::fstream *inStream = new std::fstream("/home/shared/programs/test11err.wpl");
     antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
 
     WPLLexer lexer(input);

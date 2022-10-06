@@ -1,6 +1,5 @@
 extern int func printf(...);
 
-# FIXME: TEST BOTH SIDES + TEST WITH PROC
 int func mutArgsOne(int i) {
     if ~(5 < 10) then {
         i <- 20;
@@ -51,7 +50,7 @@ int func program() {
 
     printf("ANS: %d\n", mutArgsOne(0));
     printf("ANS: %d\n", mutArgsTwo(0));
-    PROCmutArgsOne(0); # FIXME: NEED TO FIX THIS; CODEGEN FAILS, BUT IT APPEARS TO BE ALLOWED!!!
+    PROCmutArgsOne(0);
     PROCmutArgsTwo(0);
 
     return -1; 

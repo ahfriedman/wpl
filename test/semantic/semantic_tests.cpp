@@ -17,15 +17,29 @@ TEST_CASE("Development Semantic tests", "[semantic]")
   WPLParser::CompilationUnitContext *tree = NULL;
   REQUIRE_NOTHROW(tree = parser.compilationUnit());
   REQUIRE(tree != NULL);
-  SemanticVisitor *sv = new SemanticVisitor(new STManager(), new PropertyManager()); // NEW
-  sv->visitCompilationUnit(tree);                                                    // NEW
-  // Error checking is NEW
+  SemanticVisitor *sv = new SemanticVisitor(new STManager(), new PropertyManager());
+  sv->visitCompilationUnit(tree);                                                    
   // if (sv->hasErrors(ERROR)) {
   //   CHECK("foo" == sv->getErrors());
   // }
   CHECK_FALSE(sv->hasErrors(ERROR));
 }
 
+
+TEST_CASE("Invalid Array Semantics", "[semantic]")
+{
+  antlr4::ANTLRInputStream input("int [0] a;");
+  WPLLexer lexer(&input);
+  antlr4::CommonTokenStream tokens(&lexer);
+  WPLParser parser(&tokens);
+  parser.removeErrorListeners();
+  WPLParser::CompilationUnitContext *tree = NULL;
+  REQUIRE_NOTHROW(tree = parser.compilationUnit());
+  REQUIRE(tree != NULL);
+  SemanticVisitor *sv = new SemanticVisitor(new STManager(), new PropertyManager());
+  sv->visitCompilationUnit(tree);                                                    
+  REQUIRE(sv->hasErrors(ERROR));
+}
 TEST_CASE("Bool Const Tests", "[semantic]")
 {
   antlr4::ANTLRInputStream input("false; true;");

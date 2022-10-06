@@ -312,7 +312,6 @@ std::optional<Value *> CodegenVisitor::TvisitCallExpr(WPLParser::CallExprContext
 
 std::optional<Value *> CodegenVisitor::TvisitVariableExpr(WPLParser::VariableExprContext *ctx)
 {
-    // FIXME: should probably methodize...
     std::string id = ctx->v->getText();
     Symbol *sym = props->getBinding(ctx);
 
@@ -332,7 +331,7 @@ std::optional<Value *> CodegenVisitor::TvisitVariableExpr(WPLParser::VariableExp
     {
         if (sym->isGlobal)
         {
-            llvm::GlobalVariable *glob = module->getNamedGlobal(sym->identifier); // FIXME: VERIFY THIS WORKS WITH ARRAYS!!
+            llvm::GlobalVariable *glob = module->getNamedGlobal(sym->identifier);
 
             if (!glob)
             {
@@ -348,16 +347,13 @@ std::optional<Value *> CodegenVisitor::TvisitVariableExpr(WPLParser::VariableExp
     }
 
     Value *v = builder->CreateLoad(type, sym->val, id);
-
-    std::cout << "323 " << ctx->getText() << std::endl;
     return v;
 }
 
 std::optional<Value *> CodegenVisitor::TvisitFieldAccessExpr(WPLParser::FieldAccessExprContext *ctx)
 {
-
     // This is ONLY array length for now...
-    Symbol *sym = props->getBinding(ctx->ex); // FIXME: DO WE NEED TO VISIT? -> I guess not currently b/c all type stuff, but probably should and/or remove and change it to VAR?
+    Symbol *sym = props->getBinding(ctx->VARIABLE().at(0));
 
     if (!sym || !sym->val || !sym->type)
     {
@@ -400,13 +396,13 @@ std::optional<Value *> CodegenVisitor::TvisitBinaryRelExpr(WPLParser::BinaryRelE
         v1 = builder->CreateICmpSLT(lhs.value(), rhs.value());
         break;
     case WPLParser::LESS_EQ:
-        v1 = builder->CreateICmpSLE(lhs.value(), rhs.value()); // FIXME: VERIFY
+        v1 = builder->CreateICmpSLE(lhs.value(), rhs.value());
         break;
     case WPLParser::GREATER:
         v1 = builder->CreateICmpSGT(lhs.value(), rhs.value());
         break;
     case WPLParser::GREATER_EQ:
-        v1 = builder->CreateICmpSGE(lhs.value(), rhs.value()); // FIXME: VERIFY
+        v1 = builder->CreateICmpSGE(lhs.value(), rhs.value());
         break;
 
     default:
@@ -455,196 +451,80 @@ std::optional<Value *> CodegenVisitor::TvisitExternStatement(WPLParser::ExternSt
 
 std::optional<Value *> CodegenVisitor::TvisitFuncDef(WPLParser::FuncDefContext *ctx)
 {
-    std::vector<llvm::Type *> typeVec;
-
-    Symbol *sym = props->getBinding(ctx);
-    if (!sym)
-    {
-        errorHandler.addCodegenError(ctx->getStart(), "Unbound function: " + ctx->name->getText());
-        return {};
-    }
-
-    // const TypeInvoke *inv = dynamic_cast<const TypeInvoke *>(sym->type);
-
-    if (ctx->paramList)
-    {
-        for (auto e : ctx->paramList->params)
-        {
-            llvm::Type *type = CodegenVisitor::llvmTypeFor(e->ty);
-            typeVec.push_back(type);
-        }
-    }
-    ArrayRef<llvm::Type *> paramRef = ArrayRef(typeVec);
-
-    FunctionType *fnType = FunctionType::get(
-        CodegenVisitor::llvmTypeFor(ctx->ty),
-        paramRef,
-        false);
-
-    Function *fn = Function::Create(fnType, GlobalValue::ExternalLinkage, ctx->name->getText(), module);
-
-    // Create block
-    BasicBlock *bBlk = BasicBlock::Create(module->getContext(), "entry", fn);
-    builder->SetInsertPoint(bBlk);
-
-    for (auto &arg : fn->args())
-    {
-        int argNumber = arg.getArgNo();
-        llvm::Type *type = typeVec.at(argNumber);
-
-        std::string argName = ctx->paramList->params.at(argNumber)->getText();
-
-        llvm::AllocaInst *v = builder->CreateAlloca(type, 0, argName);
-        Symbol *sym = props->getBinding(ctx->paramList->params.at(argNumber));
-
-        if (!sym)
-        {
-            errorHandler.addCodegenError(ctx->getStart(), "Unable to generate parameter for function: " + argName);
-        }
-        else
-        {
-            sym->val = v;
-
-            builder->CreateStore(&arg, v);
-        }
-    }
-
-    std::any last = nullptr;
-    for (auto e : ctx->block()->stmts)
-    {
-        last = e->accept(this);
-    }
-
-    return {};
+    return CodegenVisitor::visitInvokeable(ctx);
 }
 
 std::optional<Value *> CodegenVisitor::TvisitProcDef(WPLParser::ProcDefContext *ctx)
 {
-    // FIXME: VERIFY + METHODIZE
-    std::vector<llvm::Type *> typeVec;
-
-    Symbol *sym = props->getBinding(ctx);
-    if (!sym)
-    {
-        errorHandler.addCodegenError(ctx->getStart(), "Unbound function: " + ctx->name->getText());
-        return {};
-    }
-
-    // const TypeInvoke *inv = dynamic_cast<const TypeInvoke *>(sym->type);
-
-    if (ctx->paramList)
-    {
-        for (auto e : ctx->paramList->params)
-        {
-            llvm::Type *type = this->llvmTypeFor(e->ty);
-            typeVec.push_back(type);
-        }
-    }
-    ArrayRef<llvm::Type *> paramRef = ArrayRef(typeVec);
-
-    FunctionType *fnType = FunctionType::get(
-        VoidTy,
-        paramRef,
-        false);
-
-    Function *fn = Function::Create(fnType, GlobalValue::ExternalLinkage, ctx->name->getText(), module);
-
-    // Create block
-    BasicBlock *bBlk = BasicBlock::Create(module->getContext(), "entry", fn);
-    builder->SetInsertPoint(bBlk);
-
-    for (auto &arg : fn->args())
-    {
-        int argNumber = arg.getArgNo();
-        llvm::Type *type = typeVec.at(argNumber);
-
-        std::string argName = ctx->paramList->params.at(argNumber)->getText();
-
-        llvm::AllocaInst *v = builder->CreateAlloca(type, 0, argName);
-        Symbol *sym = props->getBinding(ctx->paramList->params.at(argNumber));
-
-        if (!sym)
-        {
-            errorHandler.addCodegenError(ctx->getStart(), "Unable to generate parameter for function: " + argName);
-        }
-        else
-        {
-            sym->val = v;
-
-            builder->CreateStore(&arg, v);
-        }
-    }
-
-    for (auto e : ctx->block()->stmts)
-    {
-        e->accept(this);
-    }
-
-    if (!CodegenVisitor::blockEndsInReturn(ctx->block()))
-    {
-        builder->CreateRetVoid();
-    }
-
-    return {};
+    return CodegenVisitor::visitInvokeable(ctx);
 }
 
 std::optional<Value *> CodegenVisitor::TvisitAssignStatement(WPLParser::AssignStatementContext *ctx)
 {
-    // FIXME: Might not work perfectly due to no arrays/vars yet.... or strings...
+    //Visit the expression to get the value we will assign
     std::optional<Value *> exprVal = std::any_cast<std::optional<Value *>>(ctx->ex->accept(this));
 
+    //Check that the expression generated
     if (!exprVal)
     {
         errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code for: " + ctx->ex->getText());
         return {};
     }
 
+    //Lookup the binding for the variable we are assigning to and and ensure that we find it
     Symbol *varSym = props->getBinding(ctx->to);
-
     if (varSym == nullptr)
     {
         errorHandler.addCodegenError(ctx->getStart(), "Incorrectly processed variable in assignment: " + ctx->to->getText());
         return {};
     }
 
+    //Get the allocation instruction for the symbol 
     Value *val = varSym->val;
 
+    //If the symbol is global 
     if (varSym->isGlobal)
     {
-        llvm::GlobalVariable *glob = module->getNamedGlobal(varSym->identifier); // FIXME: VERIFY THIS WORKS WITH ARRAYS!!
+        //Find the global variable that corresponds to our symbol
+        llvm::GlobalVariable *glob = module->getNamedGlobal(varSym->identifier);
 
+        //If we can't find it, then throw an error. 
         if (!glob)
         {
             errorHandler.addCodegenError(ctx->getStart(), "Unable to find global variable: " + varSym->identifier);
             return {};
         }
 
+        //Load a pointer to the global variable
         val = builder->CreateLoad(glob)->getPointerOperand();
     }
 
-    // Shouldn't need this in the end....
+    //Sanity check to ensure that we now have a value for the variable
     if (val == nullptr)
     {
         errorHandler.addCodegenError(ctx->getStart(), "Improperly initialized variable in assignment: " + ctx->to->getText() + "@" + varSym->identifier);
-        std::cout << "IMPROP VAR @ " << varSym << std::endl;
         return {};
     }
 
+    //Checks to see if we are dealing with an array
     if (!ctx->to->VARIABLE())
     {
-        // Dealing with an array //FIXME: REFACTOR!!!
+        //As this is an array access, we need to determine the index we will be accessing
         std::optional<Value *> index = std::any_cast<std::optional<Value *>>(ctx->to->array->index->accept(this));
 
+        //Ensure we built an index
         if (!index)
         {
             errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code for: " + ctx->to->getText());
+            return {};
         }
 
+        //Create a GEP to the index based on our previously calculated value and index
         Value *built = builder->CreateGEP(val, {Int32Zero, index.value()});
-
         val = built;
     }
 
+    //Store the expression's value
     builder->CreateStore(exprVal.value(), val);
 
     return {};
@@ -652,18 +532,32 @@ std::optional<Value *> CodegenVisitor::TvisitAssignStatement(WPLParser::AssignSt
 
 std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDeclStatementContext *ctx)
 {
-    std::cout << "625" << std::endl;
+    /*
+     * Visit each of the assignments in the context (variables paired with an expression)
+     */
     for (auto e : ctx->assignments)
     {
-        // FIXME: DOESNT WORK WHEN NO VALUE!!!
-        std::optional<Value *> exVal = (e->ex) ? std::any_cast<std::optional<Value *>>(e->ex->accept(this)) : std::nullopt;
+        std::optional<Value *> exVal = std::nullopt; 
 
-        std::cout << "599" << std::endl;
+        if(e->ex)
+        {
+            std::any anyVal = e->ex->accept(this); 
+
+            if(std::optional<Value *> opt = std::any_cast<std::optional<Value*>>(anyVal))
+            {
+                exVal = opt; 
+            }
+            else
+            {
+                errorHandler.addCodegenError(e->ex->getStart(), "Could not generate code for: " + e->ex->getText());
+                return {};
+            }
+        }
+
         if ((e->ex) && !exVal)
         {
             errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code for: " + e->ex->getText());
         }
-        std::cout << "604" << std::endl;
         for (auto var : e->VARIABLE())
         {
             Symbol *varSymbol = props->getBinding(var);
@@ -675,7 +569,6 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
             }
 
             llvm::Type *ty = varSymbol->type->getLLVMType(module->getContext());
-
             if (varSymbol->isGlobal)
             {
                 module->getOrInsertGlobal(var->getText(), ty);
@@ -683,12 +576,17 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
                 glob->setLinkage(GlobalValue::ExternalLinkage);
                 glob->setDSOLocal(true);
 
-                //FIXME: VARS NEED DECL IN GLOBAL SCOPE!!!
                 if (e->ex)
                 {
                     if (llvm::Constant *constant = static_cast<llvm::Constant *>(exVal.value()))
                     {
                         glob->setInitializer(constant);
+                    }
+                    else 
+                    {
+                        //Should already be checked in semantic, and I don't think we could get here anyways, but still might as well have it. 
+                        errorHandler.addCodegenError(ctx->getStart(), "Global variable can only be initalized to a constant!"); 
+                        return {};
                     }
                 }
                 else 
@@ -735,7 +633,7 @@ std::optional<Value *> CodegenVisitor::TvisitLoopStatement(WPLParser::LoopStatem
 
     // In the loop block
     builder->SetInsertPoint(loopBlk);
-    for (auto e : ctx->block()->stmts) // FIXME: DO WE NEED TO CHECK RETURNS?
+    for (auto e : ctx->block()->stmts)
     {
         e->accept(this);
     }
@@ -762,8 +660,6 @@ std::optional<Value *> CodegenVisitor::TvisitLoopStatement(WPLParser::LoopStatem
 
 std::optional<Value *> CodegenVisitor::TvisitConditionalStatement(WPLParser::ConditionalStatementContext *ctx)
 {
-    // FIXME: THIS MIGHT NOT WORK OUTSIDE A FUNCTION
-
     // Get the condition that the if statement is for
     std::optional<Value *> cond = this->TvisitCondition(ctx->check);
 
@@ -836,7 +732,7 @@ std::optional<Value *> CodegenVisitor::TvisitConditionalStatement(WPLParser::Con
 std::optional<Value *> CodegenVisitor::TvisitSelectStatement(WPLParser::SelectStatementContext *ctx)
 {
     std::cout << "761!" << std::endl;
-    // FIXME: WILL NEED TO CHECK FOR RETURNS AND RETURNS IN BLOCKS!!! + VERIFY NESTED SELECTS WORK!
+    // FIXME: WILL NEED TO CHECK FOR RETURNS AND RETURNS IN BLOCKS!!!
 
     /*
      * Set up the merge block that all cases go to after the select statement

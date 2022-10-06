@@ -11,8 +11,6 @@ compilationUnit   :  (stmts+=statement | extens+=externStatement)* EOF ;
 
 externStatement : EXTERN (ty=type FUNC | PROC) name=VARIABLE '(' ((paramList=parameterList variadic=VariadicParam?)? | ELLIPSIS) ')' ';';
 
-//FIXME: CURRENTLY ALLOWS THINGS LIKE FUNCTIONS IN FUNCTIONS!
-
 invocation          :  VARIABLE '(' (args+=expression (',' args+=expression)* )? ')' ;
 
 //Helps allow us to use VARIABLE or arrayAccess and not other expressions (such as for assignments)
@@ -41,7 +39,7 @@ arrayOrVar          : var=VARIABLE | array=arrayAccess  ;
  *      11-14. Typical boolean and variable constants. 
  */
 expression          : '(' ex=expression ')'                         # ParenExpr
-                    | ex=expression '.' field=VARIABLE       # FieldAccessExpr 
+                    | ex=VARIABLE '.' field=VARIABLE       # FieldAccessExpr 
                     | <assoc=right> op=(MINUS | NOT) ex=expression  # UnaryExpr 
                     | left=expression op=(MULTIPLY | DIVIDE) right=expression # BinaryArithExpr
                     | left=expression op=(PLUS | MINUS) right=expression      # BinaryArithExpr

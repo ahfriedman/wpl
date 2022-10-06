@@ -129,8 +129,7 @@ public:
 
         return Types::UNDEFINED; 
     }
-
-    //FIXME: USES NULLS!
+    
     const Type * visitInvokeable(antlr4::ParserRuleContext * ctx, std::string funcId, WPLParser::ParameterListContext *paramList, WPLParser::TypeContext * ty, WPLParser::BlockContext * block)
     {
         // FIXME: NEEDS TO BE LOCAL SCOPE ONLY AND THEN NEEDS TO COMPARE TYPES (OR JUST GLOBAL SCOPE)
@@ -157,7 +156,7 @@ public:
         Symbol * funcSymbol = new Symbol(funcId, funcType);
 
         stmgr->addSymbol(funcSymbol);
-        stmgr->enterScope(); // FIXME DOUBLING SCOPES!
+        stmgr->enterScope(); //NOTE: We do NOT duplicate scopes here because we use a saveVisitBlock with newScope=false
 
         stmgr->addSymbol(new Symbol("@RETURN", retType));
 
@@ -174,8 +173,7 @@ public:
                 bindings->bind(param, paramSymbol);
             }
         }
-
-        //FIXME: TEST THAT WE CAN'T REDEFINE ARGS!
+        
         this->safeVisitBlock(block, false);
 
         if(ty && (block->stmts.size() == 0 || !dynamic_cast<WPLParser::ReturnStatementContext *>(block->stmts.at(block->stmts.size() - 1))))
@@ -183,8 +181,7 @@ public:
             errorHandler.addSemanticError(ctx->getStart(), "Function must end in return statement");
         }
 
-        // Double scope for params.... should maybe make this a function....
-        // stmgr->exitScope();
+        //Safe exit the scope. 
         safeExitScope(ctx);
 
         bindings->bind(ctx, funcSymbol);
@@ -198,7 +195,7 @@ private:
     PropertyManager *bindings;
     WPLErrorHandler errorHandler;
 
-    //FIXME: TEST UNERLYING FNS!!!
+    //INFO: TEST UNERLYING FNS!!!
     std::optional<Scope*> safeExitScope(antlr4::ParserRuleContext * ctx) {
         std::optional<Scope*> res = stmgr->exitScope(); 
 

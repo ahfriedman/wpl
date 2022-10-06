@@ -85,6 +85,13 @@ int main(int argc, const char *argv[])
   if (inputFileName != "-")
   {
     std::fstream *inStream = new std::fstream(inputFileName);
+
+    if(inStream->fail())
+    {
+      std::cerr << "Error loading file: " << inputFileName << ". Does it exist?" << std::endl; 
+      return -1; 
+    }
+
     input = new antlr4::ANTLRInputStream(*inStream);
   }
   else
@@ -102,14 +109,11 @@ int main(int argc, const char *argv[])
   parser.addErrorListener(syntaxListener);
   // delete syntaxListener;
 
-  // FIXME: ADD WAY OF CHECKING PARSER ERRORS
-
   WPLParser::CompilationUnitContext *tree = NULL;
 
   // 3. Parse the program and get the parse tree
   tree = parser.compilationUnit();
-
-  // FIXME: WHY CAN I JUST DO INT?
+  
   if (syntaxListener->hasErrors(0)) //Want to see all errors. 
   {
     std::cout << "ERRORS" << std::endl;

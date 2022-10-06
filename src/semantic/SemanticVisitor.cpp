@@ -14,7 +14,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::CompilationUnitContext *ctx)
     // Visit the statements contained in the unit
     for (auto e : ctx->stmts)
     {
-        if (!(dynamic_cast<WPLParser::FuncDefContext *>(e) || dynamic_cast<WPLParser::ProcDefContext *>(e) || dynamic_cast<WPLParser::VarDeclStatementContext *>(e))) // FIXME: ENSURE VAR DECL WORKS IN TOP LEVEL! AND THAT WE DON'T ALLOW FUNC DEF IN SELECT!
+        if (!(dynamic_cast<WPLParser::FuncDefContext *>(e) || dynamic_cast<WPLParser::ProcDefContext *>(e) || dynamic_cast<WPLParser::VarDeclStatementContext *>(e)))
         {
             errorHandler.addSemanticCritWarning(ctx->getStart(), "Currently, only FUNC, PROC, EXTERN, and variable declarations allowed at top-level. Not: " + e->getText());
         }
@@ -164,37 +164,49 @@ const Type *SemanticVisitor::visitCtx(WPLParser::ArrayAccessContext *ctx)
 
 const Type *SemanticVisitor::visitCtx(WPLParser::ArrayOrVarContext *ctx)
 {
+    // Check if we are a var or an array
     if (ctx->var)
     {
-        //  Based on starter; Same as VAR
+        /*
+         * Based on starter; Same as VAR
+         *
+         * Get the variable name and look it up in the symbol table
+         */
         std::string id = ctx->var->getText();
-
         std::optional<Symbol *> opt = stmgr->lookup(id);
 
+        // If we can't find the variable, report an error as it is undefined.
         if (!opt)
         {
             errorHandler.addSemanticError(ctx->getStart(), "Undefined variable in expression: " + id);
             return Types::UNDEFINED;
         }
 
+        // Otherwise, get the symbol's value
         Symbol *symbol = opt.value();
 
-        std::cout << "Bind @ Array or Var" << std::endl;
+        // Bind the larger context to the symbol, and return the symbol's type.
         bindings->bind(ctx, symbol);
         return symbol->type;
     }
 
+    /*
+     * As we are not a var, we must be an array access, so we must visit that context.
+     */
     const Type *arrType = this->visitCtx(ctx->array);
 
+    // Lookup the binding of the array
     Symbol *binding = bindings->getBinding(ctx->array);
 
-    if(!binding)
+    // If we didn't get a binding, report an error.
+    if (!binding)
     {
         errorHandler.addSemanticError(ctx->array->getStart(), "Could not correctly bind to array access!");
         return Types::UNDEFINED;
     }
 
-    bindings->bind(ctx, binding); // FIXME: DO BETTER; Seems hacky to be passing like this!
+    // Otherwise, bind this context to the same binding as the array access, and return its type.
+    bindings->bind(ctx, binding);
     return arrType;
 }
 
@@ -267,7 +279,6 @@ const Type *SemanticVisitor::visitCtx(WPLParser::BinaryArithExprContext *ctx)
 
 const Type *SemanticVisitor::visitCtx(WPLParser::EqExprContext *ctx)
 {
-    // FIXME: do better! WILL THIS EVEN WORK FOR ARRAYS, STRINGS, ETC? AND WHICH SIDE DETERMINES WHICH? SHOULD IT BE SUB OR SUPER?
     auto right = std::any_cast<const Type *>(ctx->right->accept(this));
     auto left = std::any_cast<const Type *>(ctx->left->accept(this));
     if (right->isNotSubtype(left))
@@ -366,8 +377,17 @@ const Type *SemanticVisitor::visitCtx(WPLParser::VariableExprContext *ctx)
 const Type *SemanticVisitor::visitCtx(WPLParser::FieldAccessExprContext *ctx)
 {
     // Determine the type of the expression we are visiting
-    const Type *ty = std::any_cast<const Type *>(ctx->ex->accept(this));
-    std::cout << "SV354 - Finish FA EX visit - " << bindings->getBinding(ctx->ex)->val << std::endl;
+    std::optional<Symbol *> opt = stmgr->lookup(ctx->VARIABLE().at(0)->getText());
+    if(!opt)
+    {
+        errorHandler.addSemanticError(ctx->getStart(), "Undefined variable reference: " + ctx->ex->getText());
+        return Types::UNDEFINED;
+    }
+
+    Symbol * sym = opt.value(); 
+    bindings->bind(ctx->VARIABLE().at(0), sym);
+
+    const Type* ty = sym->type;
 
     // Currently we only support arrays, so if its not an array, report an error.
     if (const TypeArray *a = dynamic_cast<const TypeArray *>(ty))
@@ -448,10 +468,24 @@ const Type *SemanticVisitor::visitCtx(WPLParser::ConditionContext *ctx)
 
 const Type *SemanticVisitor::visitCtx(WPLParser::SelectAlternativeContext *ctx)
 {
-    // Need to have this b/c we may define variables
-    stmgr->enterScope(); // FIXME: SHOULD WE ENTER SCOPE HERE? OR LATER?
+    //Enter the scope (needed as we may define variables or do other stuff)
+    stmgr->enterScope(); 
+    //Accept the evaluation context
     ctx->eval->accept(this);
+    //Safe exit the scope 
+    this->safeExitScope(ctx);
 
+    /*
+     *  Just make sure that we don't try to define functions and stuff in a select as that doesn't make sense (and would cause codegen issues as it stands).
+     */ 
+    if (dynamic_cast<WPLParser::FuncDefContext *>(ctx->eval) ||
+        dynamic_cast<WPLParser::ProcDefContext *>(ctx->eval) ||
+        dynamic_cast<WPLParser::VarDeclStatementContext *>(ctx->eval))
+    {
+        errorHandler.addSemanticError(ctx->getStart(), "Dead code: definition as select alternative.");
+    }
+    
+    //Confirm that the check type is a boolean 
     const Type *checkType = std::any_cast<const Type *>(ctx->check->accept(this));
 
     if (const TypeBool *b = dynamic_cast<const TypeBool *>(checkType))
@@ -462,8 +496,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::SelectAlternativeContext *ctx)
         errorHandler.addSemanticError(ctx->getStart(), "Select alternative expected BOOL but got " + checkType->toString());
     }
 
-    this->safeExitScope(ctx);
-
+    //Return UNDEFINED as its a statement.
     return Types::UNDEFINED;
 }
 
@@ -490,7 +523,6 @@ const Type *SemanticVisitor::visitCtx(WPLParser::ParameterListContext *ctx)
 // Passthrough to visit the inner expression
 const Type *SemanticVisitor::visitCtx(WPLParser::ParameterContext *ctx) { return this->visitCtx(ctx->ty); }
 
-// Unused
 const Type *SemanticVisitor::visitCtx(WPLParser::AssignmentContext *ctx)
 {
     errorHandler.addSemanticError(ctx->getStart(), "Assignment should never be visited directly during type checking!");
@@ -512,14 +544,12 @@ const Type *SemanticVisitor::visitCtx(WPLParser::ExternStatementContext *ctx)
         errorHandler.addSemanticError(ctx->getStart(), "Unsupported redeclaration of " + id);
         return Types::UNDEFINED;
     }
-
-    // FIXME: test breaking params somehow!! like using something thats not a type!!!!
+    
     const Type *ty = (ctx->paramList) ? this->visitCtx(ctx->paramList)
                                       : new TypeInvoke();
 
     const TypeInvoke *procType = dynamic_cast<const TypeInvoke *>(ty); // Always true, but needs separate statement to make C happy.
 
-    // FIXME: DO BETTER
     const Type *retType = ctx->ty ? this->visitCtx(ctx->ty)
                                   : Types::UNDEFINED;
 
@@ -578,6 +608,16 @@ const Type *SemanticVisitor::visitCtx(WPLParser::VarDeclStatementContext *ctx)
     for (auto e : ctx->assignments)
     {
         auto exprType = (e->ex) ? std::any_cast<const Type *>(e->ex->accept(this)) : assignType;
+
+        if (e->ex && stmgr->isGlobalScope())
+        {
+            if (!(dynamic_cast<WPLParser::BConstExprContext *>(e->ex) ||
+                  dynamic_cast<WPLParser::IConstExprContext *>(e->ex) ||
+                  dynamic_cast<WPLParser::SConstExprContext *>(e->ex)))
+            {
+                errorHandler.addSemanticError(e->ex->getStart(), "Global variables must be assigned explicit constants or initialized at runtime!");
+            }
+        }
 
         // Note: This automatically performs checks to prevent issues with setting VAR = VAR
         if (e->ex && exprType->isNotSubtype(assignType))
@@ -757,6 +797,12 @@ const Type *SemanticVisitor::visitCtx(WPLParser::TypeContext *ctx)
     if (ctx->len)
     {
         int len = std::stoi(ctx->len->getText());
+
+        if (len < 1)
+        {
+            errorHandler.addSemanticError(ctx->getStart(), "Cannot initialize array with a size of less than 1!");
+        }
+
         const Type *arr = new TypeArray(
             ty, len);
         return arr;

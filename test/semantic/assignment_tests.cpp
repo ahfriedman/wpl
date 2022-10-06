@@ -9,7 +9,6 @@
 
 TEST_CASE("Basic Assignments", "[semantic]")
 {
-  // FIXME: is a <- 2 allowed without a type/previous definition?
   SECTION("Basic Int Test")
   {
     antlr4::ANTLRInputStream input("int a <- 2;");
@@ -42,7 +41,7 @@ TEST_CASE("Basic Assignments", "[semantic]")
 
 TEST_CASE("Assignment: Int Expr", "[semantic]")
 {
-  antlr4::ANTLRInputStream input("int a <- 2 * (2 / 4 + 3 - -2);");
+  antlr4::ANTLRInputStream input("int a; {a <- 2 * (2 / 4 + 3 - -2);}");
   WPLLexer lexer(&input);
   // lexer.removeErrorListeners();
   // lexer.addErrorListener(new TestErrorListener());
@@ -100,7 +99,7 @@ TEST_CASE("Assignment: Bool const", "[semantic]")
 
 TEST_CASE("Assignment: Bool expr", "[semantic]")
 {
-  antlr4::ANTLRInputStream input("boolean a <- (false | true) & ~false;");
+  antlr4::ANTLRInputStream input("boolean a; {a <- (false | true) & ~false;}");
   WPLLexer lexer(&input);
   // lexer.removeErrorListeners();
   // lexer.addErrorListener(new TestErrorListener());
@@ -155,6 +154,3 @@ TEST_CASE("Assignment: String const", "[semantic]")
   CHECK(opt.has_value());
   CHECK(opt.value()->type->isSubtype(Types::STR));
 }
-
-//FIXME: CAN PARENS BE USED ON STRINGS?
-//FIXME: Add some tests to verify that we don't allow ops to be use incorrectly!
