@@ -589,8 +589,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::ExternStatementContext *ctx)
     std::string id = ctx->name->getText();
 
     std::optional<Symbol *> opt = stmgr->lookup(id);
-
-    // FIXME: DO BETTER, NEED ORDERING TO CATCH ALL ERRORS (BASICALLY SEE ANY ISSUE THAT APPLIES TO PROCs)
+    
     if (opt)
     {
         errorHandler.addSemanticError(ctx->getStart(), "Unsupported redeclaration of " + id);

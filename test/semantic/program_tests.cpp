@@ -231,3 +231,33 @@ TEST_CASE("programs/test11Err - Prevent global exprs", "[codegen]")
     // }
     REQUIRE(sv->hasErrors(0));
 }
+
+TEST_CASE("Duplicate parameter tests", "[semantic][conditional]")
+{
+  antlr4::ANTLRInputStream input(
+    R""""(
+    proc test (int a, int a) {
+
+    }
+    )""""
+  );
+  WPLLexer lexer(&input);
+  // lexer.removeErrorListeners();
+  // lexer.addErrorListener(new TestErrorListener());
+  antlr4::CommonTokenStream tokens(&lexer);
+  WPLParser parser(&tokens);
+  parser.removeErrorListeners();
+  parser.addErrorListener(new TestErrorListener());
+
+  WPLParser::CompilationUnitContext *tree = NULL;
+  REQUIRE_NOTHROW(tree = parser.compilationUnit());
+  REQUIRE(tree != NULL);
+  REQUIRE(tree->getText() != "");
+
+  STManager *stmgr = new STManager();
+  SemanticVisitor *sv = new SemanticVisitor(stmgr, new PropertyManager());
+
+  sv->visitCompilationUnit(tree);
+
+  REQUIRE(sv->hasErrors(ERROR));
+}
