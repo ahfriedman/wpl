@@ -112,7 +112,7 @@ TEST_CASE("programs/test1-full - General Overview - full", "[codegen]")
     REQUIRE(llvmIrToSHA256(cv->getModule()) == "4ec8bf45d3a4b2114b2bd691018473cfed3b8f7688e626a626ea3cf691ad8f4f");
 }
 
-TEST_CASE("programs/test1a - FIXME: DO BETTER", "[codegen]")
+TEST_CASE("programs/test1a", "[codegen]")
 {
     std::fstream *inStream = new std::fstream("/home/shared/programs/test1a.wpl");
     antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
