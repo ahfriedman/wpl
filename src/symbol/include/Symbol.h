@@ -222,8 +222,7 @@ protected:
             if (p->paramTypes.size() != this->paramTypes.size())
                 return false;
 
-            // FIXME: ensure good enough! Probbaly is wrong for arrays--esp if not given len!!!
-            for (unsigned int i = 0; i < this->paramTypes.size(); i++)
+            for (unsigned int i = 0; i < this->paramTypes.size(); i++)  
             {
                 if (this->paramTypes.at(i)->isNotSubtype(p->paramTypes.at(i)))
                     return false;
