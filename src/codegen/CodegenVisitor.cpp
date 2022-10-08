@@ -22,7 +22,7 @@ std::optional<Value *> CodegenVisitor::TvisitCompilationUnit(WPLParser::Compilat
         /*
          * Need to create main method and invoke program()
          * Based on semantic analysis, both of these should be defined.
-         * 
+         *
          * This will segfault if not found, but, as stated, that should be impossible.
          */
 
@@ -274,18 +274,44 @@ std::optional<Value *> CodegenVisitor::TvisitEqExpr(WPLParser::EqExprContext *ct
  */
 std::optional<Value *> CodegenVisitor::TvisitLogAndExpr(WPLParser::LogAndExprContext *ctx)
 {
-    std::optional<Value *> lhs = std::any_cast<std::optional<Value *>>(ctx->left->accept(this));
-    std::optional<Value *> rhs = std::any_cast<std::optional<Value *>>(ctx->right->accept(this));
 
-    if (!lhs || !rhs)
+    std::optional<Value *> lhs = std::any_cast<std::optional<Value *>>(ctx->left->accept(this));
+
+    if (!lhs)
     {
-        errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code for: " + ctx->getText());
+        errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code for: " + ctx->left->getText());
         return {};
     }
 
-    Value *IR = builder->CreateAnd(lhs.value(), rhs.value());
-    Value *v = builder->CreateZExtOrTrunc(IR, Int1Ty);
-    return v;
+    BasicBlock *current = builder->GetInsertBlock();
+    auto parent = current->getParent();
+    BasicBlock *trueBlk = BasicBlock::Create(module->getContext(), "lhsTrue", parent);
+    BasicBlock *falseBlk = BasicBlock::Create(module->getContext(), "lhsFalse");
+
+    builder->CreateCondBr(lhs.value(), trueBlk, falseBlk);
+
+    /*
+     * LHS True
+     */
+    builder->SetInsertPoint(trueBlk);
+    std::optional<Value *> rhs = std::any_cast<std::optional<Value *>>(ctx->right->accept(this));
+
+    if (!rhs)
+    {
+        errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code for: " + ctx->right->getText());
+        return {};
+    }
+
+    builder->CreateBr(falseBlk);
+    trueBlk = builder->GetInsertBlock();
+
+    parent->getBasicBlockList().push_back(falseBlk);
+    builder->SetInsertPoint(falseBlk);
+
+    PHINode *phi = builder->CreatePHI(Int1Ty, 2, "logAnd");
+    phi->addIncoming(builder->getFalse(), current);
+    phi->addIncoming(rhs.value(), trueBlk);
+    return phi;
 }
 
 /**
@@ -299,17 +325,55 @@ std::optional<Value *> CodegenVisitor::TvisitLogAndExpr(WPLParser::LogAndExprCon
 std::optional<Value *> CodegenVisitor::TvisitLogOrExpr(WPLParser::LogOrExprContext *ctx)
 {
     std::optional<Value *> lhs = std::any_cast<std::optional<Value *>>(ctx->left->accept(this));
-    std::optional<Value *> rhs = std::any_cast<std::optional<Value *>>(ctx->right->accept(this));
 
-    if (!lhs || !rhs)
+    if (!lhs)
     {
-        errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code for: " + ctx->getText());
+        errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code for: " + ctx->left->getText());
         return {};
     }
 
-    Value *IR = builder->CreateOr(lhs.value(), rhs.value());
-    Value *v = builder->CreateZExtOrTrunc(IR, Int1Ty);
-    return v;
+    BasicBlock *current = builder->GetInsertBlock();
+    auto parent = current->getParent();
+    BasicBlock *falseBlk = BasicBlock::Create(module->getContext(), "lhsFalse", parent);
+    BasicBlock *trueBlk = BasicBlock::Create(module->getContext(), "lhsTrue");
+
+    builder->CreateCondBr(lhs.value(), trueBlk, falseBlk);
+
+    /*
+     * LHS False
+     */
+    builder->SetInsertPoint(falseBlk);
+
+    std::optional<Value *> rhs = std::any_cast<std::optional<Value *>>(ctx->right->accept(this));
+
+    if (!rhs)
+    {
+        errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code for: " + ctx->right->getText());
+        return {};
+    }
+
+    builder->CreateBr(trueBlk);
+    falseBlk = builder->GetInsertBlock();
+
+    parent->getBasicBlockList().push_back(trueBlk);
+    builder->SetInsertPoint(trueBlk);
+
+    PHINode *phi = builder->CreatePHI(Int1Ty, 2, "logOr");
+    phi->addIncoming(lhs.value(), current);
+    phi->addIncoming(rhs.value(), falseBlk);
+    return phi;
+
+    // std::optional<Value *> rhs = std::any_cast<std::optional<Value *>>(ctx->right->accept(this));
+
+    // if (!lhs || !rhs)
+    // {
+    //     errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code for: " + ctx->getText());
+    //     return {};
+    // }
+
+    // Value *IR = builder->CreateOr(lhs.value(), rhs.value());
+    // Value *v = builder->CreateZExtOrTrunc(IR, Int1Ty);
+    // return v;
 }
 
 // Passthrough to TvisitInvocation

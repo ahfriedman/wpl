@@ -181,7 +181,7 @@ TEST_CASE("programs/test2 - Scopes, multiple assignments, equality (non-arrays)"
     }
     CHECK_FALSE(cv->hasErrors(0));
 
-    REQUIRE(llvmIrToSHA256(cv->getModule()) == "8975ef09cde54e108972189d9e7a8337aa89418c7fd94fd8ca14bc31d1cbc8c9");
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "f4b7fbda0e0f7f25c20056aacce4eed4c1bcfffb1464c6ba525d9f156238b4c9");
 }
 
 TEST_CASE("programs/test3 - If w/o else - FIXME: DO BETTER", "[codegen]")
@@ -867,7 +867,7 @@ TEST_CASE("programs/test13 - Recursive Fibonacci", "[codegen]")
     }
     CHECK_FALSE(cv->hasErrors(0));
 
-    REQUIRE(llvmIrToSHA256(cv->getModule()) == "f3c7607f0c257f5d14ace925ba3337dd3901a42501cb57c9ea255dff2e3f489b");
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "e1e33543132cb39593a2b3bac2192c7b657c38c7c6c1f3c708c5b2a7bb7aa2bc");
 }
 
 TEST_CASE("programs/test-runtime - Basic runtime tests", "[codegen]")
@@ -905,4 +905,76 @@ TEST_CASE("programs/test-runtime - Basic runtime tests", "[codegen]")
     CHECK_FALSE(cv->hasErrors(0));
 
     REQUIRE(llvmIrToSHA256(cv->getModule()) == "6c84e861ca345b6cf3b11cf5abe99daed731acac1e48a302ac8efe6640cad7b6");
+}
+
+TEST_CASE("programs/test-shortcircuit - Basic Short Circuit (and)", "[codegen]")
+{
+    std::fstream *inStream = new std::fstream("/home/shared/programs/test-shortcircuit.wpl");
+    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+
+    WPLLexer lexer(input);
+    antlr4::CommonTokenStream tokens(&lexer);
+    WPLParser parser(&tokens);
+    parser.removeErrorListeners();
+    WPLParser::CompilationUnitContext *tree = NULL;
+    REQUIRE_NOTHROW(tree = parser.compilationUnit());
+    REQUIRE(tree != NULL);
+    STManager *stm = new STManager();
+    PropertyManager *pm = new PropertyManager();
+    SemanticVisitor *sv = new SemanticVisitor(stm, pm, CompilerFlags::NO_RUNTIME);
+    sv->visitCompilationUnit(tree);
+
+
+    if(sv->hasErrors(0))
+    {
+        CHECK("foo" == sv->getErrors());
+    }
+    REQUIRE_FALSE(sv->hasErrors(0));
+
+    CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll", CompilerFlags::NO_RUNTIME);
+    cv->visitCompilationUnit(tree);
+
+    if (cv->hasErrors(0))
+    {
+        CHECK("foo" == cv->getErrors());
+    }
+    CHECK_FALSE(cv->hasErrors(0));
+
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "875789f4dd74cb624ba74d21d3079a6fd89076028f5c8065875aa170cf94f785");
+}
+
+TEST_CASE("programs/test-shortcircuit-rt - Basic Short Circuit (and + or) w/ Runtime", "[codegen]")
+{
+    std::fstream *inStream = new std::fstream("/home/shared/programs/test-shortcircuit-rt.wpl");
+    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+
+    WPLLexer lexer(input);
+    antlr4::CommonTokenStream tokens(&lexer);
+    WPLParser parser(&tokens);
+    parser.removeErrorListeners();
+    WPLParser::CompilationUnitContext *tree = NULL;
+    REQUIRE_NOTHROW(tree = parser.compilationUnit());
+    REQUIRE(tree != NULL);
+    STManager *stm = new STManager();
+    PropertyManager *pm = new PropertyManager();
+    SemanticVisitor *sv = new SemanticVisitor(stm, pm, 0);
+    sv->visitCompilationUnit(tree);
+
+
+    // if(sv->hasErrors(0))
+    // {
+    //     CHECK("foo" == sv->getErrors());
+    // }
+    REQUIRE_FALSE(sv->hasErrors(0));
+
+    CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll", 0);
+    cv->visitCompilationUnit(tree);
+
+    if (cv->hasErrors(0))
+    {
+        CHECK("foo" == cv->getErrors());
+    }
+    CHECK_FALSE(cv->hasErrors(0));
+
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "759cb24b5efa3fa2fc27b00fc36c7b7863b312f156c6489e5cb802926a5bcd24");
 }
