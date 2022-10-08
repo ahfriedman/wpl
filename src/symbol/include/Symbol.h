@@ -178,21 +178,27 @@ public:
 
         variadic = v;
     }
-
-    // FIXME: do better
+    
     std::string toString() const override
     {
-        bool isProc = dynamic_cast<const TypeBot*>(retType);//!retType.has_value();
+        bool isProc = dynamic_cast<const TypeBot*>(retType);
 
         std::ostringstream description;
         description << (isProc ? "PROC " : "FUNC ");
-        for (auto param : paramTypes)
+        for(unsigned int i = 0; i < paramTypes.size(); i++)
         {
-            description << param->toString() << " ";
+            description << paramTypes.at(i)->toString(); 
+
+            if(i + 1 < paramTypes.size())
+            {
+                description << ", "; 
+            }
         }
 
         if (variadic)
-            description << "... ";
+            description << ", ... ";
+
+        description << "-> ";
 
         description << retType->toString();
         return description.str();
