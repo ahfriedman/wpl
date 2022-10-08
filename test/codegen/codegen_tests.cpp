@@ -181,7 +181,7 @@ TEST_CASE("programs/test2 - Scopes, multiple assignments, equality (non-arrays)"
     }
     CHECK_FALSE(cv->hasErrors(0));
 
-    REQUIRE(llvmIrToSHA256(cv->getModule()) == "8975ef09cde54e108972189d9e7a8337aa89418c7fd94fd8ca14bc31d1cbc8c9");
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "f4b7fbda0e0f7f25c20056aacce4eed4c1bcfffb1464c6ba525d9f156238b4c9");
 }
 
 TEST_CASE("programs/test3 - If w/o else - FIXME: DO BETTER", "[codegen]")
