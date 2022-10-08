@@ -60,7 +60,7 @@ TEST_CASE("Bool Const Tests", "[semantic]")
 
 TEST_CASE("Type from compilationUnit", "[semantic]")
 {
-  antlr4::ANTLRInputStream input("int"); // FIXME: We get filtered out, don't we
+  antlr4::ANTLRInputStream input("int"); // We should get filtered out here
   WPLLexer lexer(&input);
   antlr4::CommonTokenStream tokens(&lexer);
   WPLParser parser(&tokens);
@@ -73,7 +73,7 @@ TEST_CASE("Type from compilationUnit", "[semantic]")
 
 TEST_CASE("Visit Type - INT", "[semantic]")
 {
-  antlr4::ANTLRInputStream input("int"); // FIXME: We get filtered out, don't we
+  antlr4::ANTLRInputStream input("int"); // We shouldn't get filtered out here
   WPLLexer lexer(&input);
   antlr4::CommonTokenStream tokens(&lexer);
   WPLParser parser(&tokens);

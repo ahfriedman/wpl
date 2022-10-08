@@ -81,6 +81,17 @@ protected:
     bool isSupertypeFor(const Type *other) const override;
 };
 
+
+
+namespace Types
+{
+    inline const Type *INT = new TypeInt();
+    inline const Type *BOOL = new TypeBool();
+    inline const Type *STR = new TypeStr();
+    inline const Type *UNDEFINED = new TypeBot();
+};
+
+
 class TypeArray : public Type
 {
 private:
@@ -96,7 +107,10 @@ public:
 
     std::string toString() const override
     {
-        return valueType->toString() + "[]";
+        std::ostringstream description;
+        description << valueType->toString()  << "[" << length << "]";
+
+        return description.str(); 
     }
 
     const Type *getValueType() const { return valueType; }
@@ -116,10 +130,9 @@ public:
 protected:
     bool isSupertypeFor(const Type *other) const override
     {
-        // FIXME: do better!
         if (const TypeArray *p = dynamic_cast<const TypeArray *>(other))
         {
-            return valueType->isSubtype(p->valueType) && this->length == p->length;
+            return p->valueType->isSubtype(valueType) && this->length == p->length;
         }
 
         return false;
@@ -130,26 +143,26 @@ class TypeInvoke : public Type
 {
 private:
     std::vector<const Type *> paramTypes;
-    std::optional<const Type *> retType;
+    const Type * retType;
 
     bool variadic = false;
 
 public:
     TypeInvoke()
     {
-        retType = {};
+        retType = Types::UNDEFINED;
     }
 
     TypeInvoke(std::vector<const Type *> p)
     {
         paramTypes = p;
-        retType = {};
+        retType = Types::UNDEFINED;
     }
 
     TypeInvoke(std::vector<const Type *> p, bool v)
     {
         paramTypes = p;
-        retType = {};
+        retType = Types::UNDEFINED;
 
         variadic = v;
     }
@@ -167,30 +180,36 @@ public:
 
         variadic = v;
     }
-
-    // FIXME: do better
+    
     std::string toString() const override
     {
-        bool isProc = !retType.has_value();
+        bool isProc = dynamic_cast<const TypeBot*>(retType);
 
         std::ostringstream description;
         description << (isProc ? "PROC " : "FUNC ");
-        for (auto param : paramTypes)
+        for(unsigned int i = 0; i < paramTypes.size(); i++)
         {
-            description << param->toString() << " ";
+            description << paramTypes.at(i)->toString(); 
+
+            if(i + 1 < paramTypes.size())
+            {
+                description << ", "; 
+            }
         }
 
         if (variadic)
-            description << "... "; // FIXME: DO BETTER!
+            description << ", ... ";
 
-        description << (isProc ? "-> BOT" : ("-> " + retType.value()->toString()));
+        description << "-> ";
+
+        description << retType->toString();
         return description.str();
     }
 
     // FIXME: DO THESE NEED LLVM TYPES???
 
     std::vector<const Type *> getParamTypes() const { return paramTypes; }
-    std::optional<const Type *> getReturnType() const { return retType; }
+    const Type * getReturnType() const { return retType; }
 
     bool isVariadic() const { return variadic; }
 
@@ -202,20 +221,19 @@ protected:
             if (p->paramTypes.size() != this->paramTypes.size())
                 return false;
 
-            // FIXME: ensure good enough! Probbaly is wrong for arrays--esp if not given len!!!
-            for (unsigned int i = 0; i < this->paramTypes.size(); i++)
+            for (unsigned int i = 0; i < this->paramTypes.size(); i++)  
             {
                 if (this->paramTypes.at(i)->isNotSubtype(p->paramTypes.at(i)))
                     return false;
             }
 
-            // check returnh types
-            if ((this->retType.has_value() ^ p->retType.has_value()))
-                return false;
-            if (this->retType.has_value())
-            {
-                return this->retType.value()->isSubtype(p->retType.value());
-            }
+            // check return types
+            // if ((this->retType.has_value() ^ p->retType.has_value()))
+            //     return false;
+            // if (this->retType.has_value())
+            // {
+                return this->retType->isSubtype(p->retType);
+            // }
 
             return (this->variadic == p->variadic);
         }
@@ -278,14 +296,6 @@ protected:
 
         return true;
     }
-};
-
-namespace Types
-{
-    inline const Type *INT = new TypeInt();
-    inline const Type *BOOL = new TypeBool();
-    inline const Type *STR = new TypeStr();
-    inline const Type *UNDEFINED = new TypeBot();
 };
 
 struct Symbol

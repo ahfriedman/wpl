@@ -112,7 +112,7 @@ TEST_CASE("programs/test1-full - General Overview - full", "[codegen]")
     REQUIRE(llvmIrToSHA256(cv->getModule()) == "4ec8bf45d3a4b2114b2bd691018473cfed3b8f7688e626a626ea3cf691ad8f4f");
 }
 
-TEST_CASE("programs/test1a - FIXME: DO BETTER", "[codegen]")
+TEST_CASE("programs/test1a", "[codegen]")
 {
     std::fstream *inStream = new std::fstream("/home/shared/programs/test1a.wpl");
     antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
@@ -184,7 +184,7 @@ TEST_CASE("programs/test2 - Scopes, multiple assignments, equality (non-arrays)"
     REQUIRE(llvmIrToSHA256(cv->getModule()) == "f4b7fbda0e0f7f25c20056aacce4eed4c1bcfffb1464c6ba525d9f156238b4c9");
 }
 
-TEST_CASE("programs/test3 - If w/o else - FIXME: DO BETTER", "[codegen]")
+TEST_CASE("programs/test3 - If w/o else", "[codegen]")
 {
     std::fstream *inStream = new std::fstream("/home/shared/programs/test3.wpl");
     antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
@@ -256,7 +256,7 @@ TEST_CASE("programs/test4a - Use and redeclaration of parameters", "[codegen]")
     REQUIRE(llvmIrToSHA256(cv->getModule()) == "18abfc620390385733b70c402618a1d51c779c39021c07a5d0800be830e70513");
 }
 
-TEST_CASE("programs/test5 - Nested ifs and if equality - FIXME: DO BETTER", "[codegen]")
+TEST_CASE("programs/test5 - Nested ifs and if equality", "[codegen]")
 {
     std::fstream *inStream = new std::fstream("/home/shared/programs/test5.wpl");
     antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
@@ -292,7 +292,7 @@ TEST_CASE("programs/test5 - Nested ifs and if equality - FIXME: DO BETTER", "[co
     REQUIRE(llvmIrToSHA256(cv->getModule()) == "6499fa76c19d5f518248a26b68be585002588e2a52851469d37dd3c6e7529f0b");
 }
 
-TEST_CASE("programs/test6 - Basic Select with Return - FIXME: DO BETTER", "[codegen]")
+TEST_CASE("programs/test6 - Basic Select with Return", "[codegen]")
 {
     std::fstream *inStream = new std::fstream("/home/shared/programs/test6.wpl");
     antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
@@ -977,4 +977,43 @@ TEST_CASE("programs/test-shortcircuit-rt - Basic Short Circuit (and + or) w/ Run
     CHECK_FALSE(cv->hasErrors(0));
 
     REQUIRE(llvmIrToSHA256(cv->getModule()) == "759cb24b5efa3fa2fc27b00fc36c7b7863b312f156c6489e5cb802926a5bcd24");
+}
+
+
+TEST_CASE("programs/test-arrayAssign - Assigning one array to another and editing arrays in functions", "[codegen]")
+{
+    //WPL is pass by value! 
+
+    std::fstream *inStream = new std::fstream("/home/shared/programs/test-arrayAssign.wpl");
+    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+
+    WPLLexer lexer(input);
+    antlr4::CommonTokenStream tokens(&lexer);
+    WPLParser parser(&tokens);
+    parser.removeErrorListeners();
+    WPLParser::CompilationUnitContext *tree = NULL;
+    REQUIRE_NOTHROW(tree = parser.compilationUnit());
+    REQUIRE(tree != NULL);
+    STManager *stm = new STManager();
+    PropertyManager *pm = new PropertyManager();
+    SemanticVisitor *sv = new SemanticVisitor(stm, pm, CompilerFlags::NO_RUNTIME);
+    sv->visitCompilationUnit(tree);
+
+
+    if(sv->hasErrors(0))
+    {
+        CHECK("foo" == sv->getErrors());
+    }
+    REQUIRE_FALSE(sv->hasErrors(0));
+
+    CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll", CompilerFlags::NO_RUNTIME);
+    cv->visitCompilationUnit(tree);
+
+    if (cv->hasErrors(0))
+    {
+        CHECK("foo" == cv->getErrors());
+    }
+    CHECK_FALSE(cv->hasErrors(0));
+
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "62fbd52566574970733029781d99322e75c828df74aece217c00f0fb1795dcf1");
 }

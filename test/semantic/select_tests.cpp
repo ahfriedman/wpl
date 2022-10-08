@@ -13,7 +13,6 @@
 
 TEST_CASE("Basic select", "[semantic][conditional]")
 {
-  //FIXME: should select allow 0 cases then throw an error semantically?
   antlr4::ANTLRInputStream input(
     R""""(
       select {
@@ -42,6 +41,36 @@ TEST_CASE("Basic select", "[semantic][conditional]")
   sv->visitCompilationUnit(tree);
 
   CHECK_FALSE(sv->hasErrors(ERROR));
+}
+
+
+TEST_CASE("Select without any cases", "[semantic][conditional]")
+{
+  antlr4::ANTLRInputStream input(
+    R""""(
+      select {
+      }
+    )""""
+  );
+  WPLLexer lexer(&input);
+  // lexer.removeErrorListeners();
+  // lexer.addErrorListener(new TestErrorListener());
+  antlr4::CommonTokenStream tokens(&lexer);
+  WPLParser parser(&tokens);
+  parser.removeErrorListeners();
+  parser.addErrorListener(new TestErrorListener());
+
+  WPLParser::CompilationUnitContext *tree = NULL;
+  REQUIRE_NOTHROW(tree = parser.compilationUnit());
+  REQUIRE(tree != NULL);
+  REQUIRE(tree->getText() != "");
+
+  STManager *stmgr = new STManager();
+  SemanticVisitor *sv = new SemanticVisitor(stmgr, new PropertyManager());
+
+  sv->visitCompilationUnit(tree);
+
+  REQUIRE(sv->hasErrors(ERROR));
 }
 
 

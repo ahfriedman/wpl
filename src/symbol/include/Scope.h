@@ -28,7 +28,6 @@ class Scope {
          * @param p The parent to the current scope
          */
         Scope(std::optional<Scope*> p) {
-            // assert(p->has_value());  //Ensure we have a value. //FIXME: should probably do this better
             parent = p;
         }
 

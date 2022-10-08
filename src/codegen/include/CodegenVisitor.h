@@ -209,19 +209,32 @@ public:
         {
             for (auto e : paramList->params)
             {
-                llvm::Type *type = CodegenVisitor::llvmTypeFor(e->ty);
-                typeVec.push_back(type);
+                std::optional<llvm::Type *> type = CodegenVisitor::llvmTypeFor(e->ty);
+
+                if(!type)
+                {
+                    errorHandler.addCodegenError(ctx->getStart(), "Could not generate code for type: " + e->ty->toString());
+                    return {};
+                }
+
+                typeVec.push_back(type.value());
             }
         }
 
         ArrayRef<llvm::Type *> paramRef = ArrayRef(typeVec);
 
         // Can't use visitor because visitor can't see `this'
-        llvm::Type *retType = std::holds_alternative<WPLParser::FuncDefContext *>(sum) ? CodegenVisitor::llvmTypeFor(std::get<WPLParser::FuncDefContext *>(sum)->ty)
+        std::optional<llvm::Type *>retType = std::holds_alternative<WPLParser::FuncDefContext *>(sum) ? CodegenVisitor::llvmTypeFor(std::get<WPLParser::FuncDefContext *>(sum)->ty)
                                                                                        : VoidTy;
 
+        if(!retType)
+        {
+            errorHandler.addCodegenError(ctx->getStart(), "Could not generate code for return type of " + funcId);
+            return {};
+        }
+
         FunctionType *fnType = FunctionType::get(
-            retType,
+            retType.value(),
             paramRef,
             false);
 
@@ -236,7 +249,7 @@ public:
             int argNumber = arg.getArgNo();
             llvm::Type *type = typeVec.at(argNumber);
 
-            // FIXME: not convinced this will work with arrays--not that WPL requires that... seems suspicious like it'd include the type here??
+            //This even works for arrays!
             std::string argName = paramList->params.at(argNumber)->getText();
 
             llvm::AllocaInst *v = builder->CreateAlloca(type, 0, argName);
@@ -279,8 +292,7 @@ protected:
         return ctx->stmts.size() > 0 && dynamic_cast<WPLParser::ReturnStatementContext *>(ctx->stmts.at(ctx->stmts.size() - 1));
     }
 
-    // FIXME: Maybe use optionals? But types should always be defined... unless expanding lang...
-    llvm::Type *llvmTypeFor(WPLParser::TypeContext *ctx)
+    std::optional<llvm::Type *>llvmTypeFor(WPLParser::TypeContext *ctx)
     {
         llvm::Type *ty;
         bool valid = false;
@@ -304,7 +316,7 @@ protected:
         if (!valid)
         {
             errorHandler.addCodegenError(ctx->getStart(), "Unknown type: " + ctx->getText());
-            return nullptr;
+            return {};
         }
 
         if (ctx->len)
