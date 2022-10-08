@@ -4,6 +4,7 @@
 #include "STManager.h"
 #include "PropertyManager.h"
 #include "WPLErrorHandler.h"
+#include "CompilerFlags.h"
 
 #include "TypeVisitor.h"
 
@@ -11,10 +12,12 @@ class SemanticVisitor : WPLBaseVisitor
 {
 
 public:
-    SemanticVisitor(STManager *s, PropertyManager *p)
+    SemanticVisitor(STManager *s, PropertyManager *p, int f=0)
     {
         stmgr = s;
         bindings = p;
+
+        flags = f; 
     }
 
     std::string getErrors() { return errorHandler.errorList(); }
@@ -194,6 +197,8 @@ private:
     STManager *stmgr;
     PropertyManager *bindings;
     WPLErrorHandler errorHandler;
+
+    int flags; 
 
     //INFO: TEST UNERLYING FNS!!!
     std::optional<Scope*> safeExitScope(antlr4::ParserRuleContext * ctx) {

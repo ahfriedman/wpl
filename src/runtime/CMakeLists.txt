@@ -2,6 +2,6 @@
 
 include(Runtime)
 
-add_library(calc_runtime OBJECT
+add_library(wpl_runtime OBJECT
   ${RUNTIME_SOURCES}
 )

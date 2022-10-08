@@ -54,6 +54,11 @@ static llvm::cl::opt<bool>
            llvm::cl::desc("Do not generate any output file"),
            llvm::cl::cat(WPLCOptions));
 
+static llvm::cl::opt<bool>
+    noRuntime("no-runtime", 
+               llvm::cl::desc("Program will not use the WPL runtime; Compiler will automatically treat program() as the entry point."),
+               llvm::cl::cat(WPLCOptions));
+
 /**
  * @brief Main compiler driver.
  */
@@ -121,6 +126,12 @@ int main(int argc, const char *argv[])
     return -1;
   }
 
+  /*
+   * Sets up compiler flags. These need to be sent to the visitors.
+   */
+
+
+
   /******************************************************************
    * Perform semantic analysis and populate the symbol table
    * and bind nodes to Symbols using the property manager. If
@@ -171,6 +182,15 @@ int main(int argc, const char *argv[])
     llvm::raw_fd_ostream irFileStream(irFileName, ec);
     module->print(irFileStream, nullptr);
     irFileStream.flush();
+  }
+
+  if(noRuntime)
+  {
+    std::cout << "noRuntime = true" << std::endl;
+  }
+  else 
+  {
+    std::cout << "noRuntime = false" << std::endl;
   }
 
   return 0;
