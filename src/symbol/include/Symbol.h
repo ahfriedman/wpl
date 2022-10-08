@@ -181,7 +181,7 @@ public:
         }
 
         if (variadic)
-            description << "... "; // FIXME: DO BETTER!
+            description << "... ";
 
         description << (isProc ? "-> BOT" : ("-> " + retType.value()->toString()));
         return description.str();
