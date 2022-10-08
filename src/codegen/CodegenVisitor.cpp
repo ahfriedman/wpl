@@ -13,23 +13,29 @@ std::optional<Value *> CodegenVisitor::TvisitCompilationUnit(WPLParser::Compilat
         e->accept(this);
     }
 
-    /*
-     * Create main to invoke program
-     */
+    /*******************************************
+     * Extra checks depending on compiler flags
+     *******************************************/
 
-    // FIXME: SHOULD WE DISALLOW MAIN?
+    if (flags & CompilerFlags::NO_RUNTIME)
+    {
+        /*
+         * Need to create main method and invoke program()
+         * Based on semantic analysis, both of these should be defined.
+         * 
+         * This will segfault if not found, but, as stated, that should be impossible.
+         */
 
-    FunctionType *mainFuncType = FunctionType::get(Int32Ty, {Int32Ty, Int8PtrPtrTy}, false);
-    Function *mainFunc = Function::Create(mainFuncType, GlobalValue::ExternalLinkage, "main", module);
+        FunctionType *mainFuncType = FunctionType::get(Int32Ty, {Int32Ty, Int8PtrPtrTy}, false);
+        Function *mainFunc = Function::Create(mainFuncType, GlobalValue::ExternalLinkage, "main", module);
 
-    // Create block to attach to main
-    BasicBlock *bBlk = BasicBlock::Create(module->getContext(), "entry", mainFunc);
-    builder->SetInsertPoint(bBlk);
+        // Create block to attach to main
+        BasicBlock *bBlk = BasicBlock::Create(module->getContext(), "entry", mainFunc);
+        builder->SetInsertPoint(bBlk);
 
-    // FIXME: WE SEGFAULT IF NOT FOUND!!!
-
-    llvm::Function *progFn = module->getFunction("program");
-    builder->CreateRet(builder->CreateCall(progFn, {}));
+        llvm::Function *progFn = module->getFunction("program");
+        builder->CreateRet(builder->CreateCall(progFn, {}));
+    }
 
     return {};
 }
@@ -144,16 +150,15 @@ std::optional<Value *> CodegenVisitor::TvisitSConstExpr(WPLParser::SConstExprCon
         GlobalValue::PrivateLinkage,
         dat,
         "");
-    glob->setAlignment(llvm::MaybeAlign(1)); 
-    glob->setUnnamedAddr(llvm::GlobalValue::UnnamedAddr::Global); 
+    glob->setAlignment(llvm::MaybeAlign(1));
+    glob->setUnnamedAddr(llvm::GlobalValue::UnnamedAddr::Global);
 
     llvm::Constant *Indices[] = {Int32Zero, Int32Zero};
 
-    Value * val = llvm::ConstantExpr::getInBoundsGetElementPtr(
-        glob->getValueType(), 
-        glob, 
-        Indices
-    );
+    Value *val = llvm::ConstantExpr::getInBoundsGetElementPtr(
+        glob->getValueType(),
+        glob,
+        Indices);
     // llvm::GlobalVariable * glob = builder->CreateGlobalString(out);
 
     // Value *strVal = builder->CreateGlobalStringPtr(out); // For some reason, I can't return this directly...
@@ -435,7 +440,7 @@ std::optional<Value *> CodegenVisitor::TvisitExternStatement(WPLParser::ExternSt
         }
     }
 
-    //FIXME: FIX VARIADIC TYPES!!
+    // FIXME: FIX VARIADIC TYPES!!
 
     ArrayRef<llvm::Type *> paramRef = ArrayRef(typeVec);
     bool isVariadic = ctx->variadic || ctx->ELLIPSIS();
@@ -461,17 +466,17 @@ std::optional<Value *> CodegenVisitor::TvisitProcDef(WPLParser::ProcDefContext *
 
 std::optional<Value *> CodegenVisitor::TvisitAssignStatement(WPLParser::AssignStatementContext *ctx)
 {
-    //Visit the expression to get the value we will assign
+    // Visit the expression to get the value we will assign
     std::optional<Value *> exprVal = std::any_cast<std::optional<Value *>>(ctx->ex->accept(this));
 
-    //Check that the expression generated
+    // Check that the expression generated
     if (!exprVal)
     {
         errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code for: " + ctx->ex->getText());
         return {};
     }
 
-    //Lookup the binding for the variable we are assigning to and and ensure that we find it
+    // Lookup the binding for the variable we are assigning to and and ensure that we find it
     Symbol *varSym = props->getBinding(ctx->to);
     if (varSym == nullptr)
     {
@@ -479,52 +484,52 @@ std::optional<Value *> CodegenVisitor::TvisitAssignStatement(WPLParser::AssignSt
         return {};
     }
 
-    //Get the allocation instruction for the symbol 
+    // Get the allocation instruction for the symbol
     Value *val = varSym->val;
 
-    //If the symbol is global 
+    // If the symbol is global
     if (varSym->isGlobal)
     {
-        //Find the global variable that corresponds to our symbol
+        // Find the global variable that corresponds to our symbol
         llvm::GlobalVariable *glob = module->getNamedGlobal(varSym->identifier);
 
-        //If we can't find it, then throw an error. 
+        // If we can't find it, then throw an error.
         if (!glob)
         {
             errorHandler.addCodegenError(ctx->getStart(), "Unable to find global variable: " + varSym->identifier);
             return {};
         }
 
-        //Load a pointer to the global variable
+        // Load a pointer to the global variable
         val = builder->CreateLoad(glob)->getPointerOperand();
     }
 
-    //Sanity check to ensure that we now have a value for the variable
+    // Sanity check to ensure that we now have a value for the variable
     if (val == nullptr)
     {
         errorHandler.addCodegenError(ctx->getStart(), "Improperly initialized variable in assignment: " + ctx->to->getText() + "@" + varSym->identifier);
         return {};
     }
 
-    //Checks to see if we are dealing with an array
+    // Checks to see if we are dealing with an array
     if (!ctx->to->VARIABLE())
     {
-        //As this is an array access, we need to determine the index we will be accessing
+        // As this is an array access, we need to determine the index we will be accessing
         std::optional<Value *> index = std::any_cast<std::optional<Value *>>(ctx->to->array->index->accept(this));
 
-        //Ensure we built an index
+        // Ensure we built an index
         if (!index)
         {
             errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code for: " + ctx->to->getText());
             return {};
         }
 
-        //Create a GEP to the index based on our previously calculated value and index
+        // Create a GEP to the index based on our previously calculated value and index
         Value *built = builder->CreateGEP(val, {Int32Zero, index.value()});
         val = built;
     }
 
-    //Store the expression's value
+    // Store the expression's value
     builder->CreateStore(exprVal.value(), val);
 
     return {};
@@ -537,15 +542,15 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
      */
     for (auto e : ctx->assignments)
     {
-        std::optional<Value *> exVal = std::nullopt; 
+        std::optional<Value *> exVal = std::nullopt;
 
-        if(e->ex)
+        if (e->ex)
         {
-            std::any anyVal = e->ex->accept(this); 
+            std::any anyVal = e->ex->accept(this);
 
-            if(std::optional<Value *> opt = std::any_cast<std::optional<Value*>>(anyVal))
+            if (std::optional<Value *> opt = std::any_cast<std::optional<Value *>>(anyVal))
             {
-                exVal = opt; 
+                exVal = opt;
             }
             else
             {
@@ -582,16 +587,16 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
                     {
                         glob->setInitializer(constant);
                     }
-                    else 
+                    else
                     {
-                        //Should already be checked in semantic, and I don't think we could get here anyways, but still might as well have it. 
-                        errorHandler.addCodegenError(ctx->getStart(), "Global variable can only be initalized to a constant!"); 
+                        // Should already be checked in semantic, and I don't think we could get here anyways, but still might as well have it.
+                        errorHandler.addCodegenError(ctx->getStart(), "Global variable can only be initalized to a constant!");
                         return {};
                     }
                 }
-                else 
+                else
                 {
-                    llvm::ConstantAggregateZero* constant = llvm::ConstantAggregateZero::get(ty);
+                    llvm::ConstantAggregateZero *constant = llvm::ConstantAggregateZero::get(ty);
                     glob->setInitializer(constant);
                 }
             }

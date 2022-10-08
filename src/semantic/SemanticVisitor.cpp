@@ -21,6 +21,56 @@ const Type *SemanticVisitor::visitCtx(WPLParser::CompilationUnitContext *ctx)
         e->accept(this);
     }
 
+    /*******************************************
+     * Extra checks depending on compiler flags
+     *******************************************/
+
+    if(flags & CompilerFlags::NO_RUNTIME)
+    {
+        /**********************************************************
+         * As there is no runtime, we need to make sure that 
+         * there is NO main block and that we have a program block
+         **********************************************************/
+
+        if(stmgr->lookup("main"))
+        {
+            errorHandler.addSemanticError(ctx->getStart(), "When compiling with no-runtime, main is reserved!");
+        }
+        
+        //Check that program is invokeable and correctly defined. 
+        {
+            std::optional<Symbol *> opt = stmgr->lookup("program");
+            if(!opt) {
+                errorHandler.addSemanticError(ctx->getStart(), "When compiling with no-runtime, program() must be defined!");
+            }
+            else 
+            {
+                Symbol * sym = opt.value(); 
+
+                if(const TypeInvoke * inv = dynamic_cast<const TypeInvoke*>(sym->type))
+                {
+                    if(inv->getParamTypes().size() != 0)
+                    {
+                        errorHandler.addSemanticError(ctx->getStart(), "When compiling with no-runtime, program must not require arguments!");
+                    }
+
+                    {
+                        std::optional<const Type*> retOpt = inv->getReturnType(); 
+
+                        if(!retOpt || !dynamic_cast<const TypeInt*>(retOpt.value())) {
+                            errorHandler.addSemanticError(ctx->getStart(), "When compiling with no-runtime, program() must return INT");
+                        }
+                    }
+                }
+                else 
+                {
+                    errorHandler.addSemanticError(ctx->getStart(), "When compiling with no-runtime, program() must be an invokable!");
+                }
+            }
+        }
+    }
+
+
     // Return UNDEFINED as this should be viewed as a statement and not something assignable
     return Types::UNDEFINED;
 }

@@ -11,6 +11,7 @@
 #pragma once
 #include "antlr4-runtime.h"
 #include "WPLBaseVisitor.h"
+#include "CompilerFlags.h"
 
 // #include "WPLTypedVisitor.h"
 
@@ -51,9 +52,10 @@ class CodegenVisitor : WPLBaseVisitor
 {
 
 public:
-    CodegenVisitor(PropertyManager *p, std::string moduleName)
+    CodegenVisitor(PropertyManager *p, std::string moduleName, int f=0)
     {
         props = p;
+        flags = f; 
 
         // LLVM Stuff
         context = new LLVMContext();
@@ -318,6 +320,8 @@ protected:
 
 private:
     PropertyManager *props;
+    int flags; 
+
     WPLErrorHandler errorHandler;
 
     // LLVM
