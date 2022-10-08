@@ -85,7 +85,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::InvocationContext *ctx)
 
             // If the invokable is variadic and has no specified type parameters, then we can
             // skip over subsequent checks--we just needed to run type checking on each parameter.
-            if (invokeable->isVariadic() && fnParams.size() == 0)
+            if (invokeable->isVariadic() && i >= fnParams.size())//&& fnParams.size() == 0)
             {
                 if (dynamic_cast<const TypeBot *>(providedType))
                 {
