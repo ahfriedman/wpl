@@ -154,3 +154,64 @@ TEST_CASE("Assignment: String const", "[semantic]")
   CHECK(opt.has_value());
   CHECK(opt.value()->type->isSubtype(Types::STR));
 }
+
+
+TEST_CASE("Inequal array lengths 1", "[semantic][conditional]")
+{
+  antlr4::ANTLRInputStream input(
+    R""""(
+      int [3] a; 
+      int [5] b; 
+
+      a <- b;
+    )""""
+  );
+  WPLLexer lexer(&input);
+  // lexer.removeErrorListeners();
+  // lexer.addErrorListener(new TestErrorListener());
+  antlr4::CommonTokenStream tokens(&lexer);
+  WPLParser parser(&tokens);
+  parser.removeErrorListeners();
+  parser.addErrorListener(new TestErrorListener());
+
+  WPLParser::CompilationUnitContext *tree = NULL;
+  REQUIRE_NOTHROW(tree = parser.compilationUnit());
+  REQUIRE(tree != NULL);
+  REQUIRE(tree->getText() != "");
+
+  STManager *stmgr = new STManager();
+  SemanticVisitor *sv = new SemanticVisitor(stmgr, new PropertyManager());
+
+  sv->visitCompilationUnit(tree);
+  CHECK(sv->hasErrors(ERROR));
+}
+
+TEST_CASE("Inequal array lengths 2", "[semantic][conditional]")
+{
+  antlr4::ANTLRInputStream input(
+    R""""(
+      int [5] a; 
+      int [3] b; 
+
+      a <- b;
+    )""""
+  );
+  WPLLexer lexer(&input);
+  // lexer.removeErrorListeners();
+  // lexer.addErrorListener(new TestErrorListener());
+  antlr4::CommonTokenStream tokens(&lexer);
+  WPLParser parser(&tokens);
+  parser.removeErrorListeners();
+  parser.addErrorListener(new TestErrorListener());
+
+  WPLParser::CompilationUnitContext *tree = NULL;
+  REQUIRE_NOTHROW(tree = parser.compilationUnit());
+  REQUIRE(tree != NULL);
+  REQUIRE(tree->getText() != "");
+
+  STManager *stmgr = new STManager();
+  SemanticVisitor *sv = new SemanticVisitor(stmgr, new PropertyManager());
+
+  sv->visitCompilationUnit(tree);
+  CHECK(sv->hasErrors(ERROR));
+}

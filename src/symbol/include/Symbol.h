@@ -107,7 +107,10 @@ public:
 
     std::string toString() const override
     {
-        return valueType->toString() + "[]";
+        std::ostringstream description;
+        description << valueType->toString()  << "[" << length << "]";
+
+        return description.str(); 
     }
 
     const Type *getValueType() const { return valueType; }
