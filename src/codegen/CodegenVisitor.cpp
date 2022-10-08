@@ -499,16 +499,32 @@ std::optional<Value *> CodegenVisitor::TvisitExternStatement(WPLParser::ExternSt
     {
         for (auto e : ctx->paramList->params)
         {
-            llvm::Type *type = CodegenVisitor::llvmTypeFor(e->ty);
-            typeVec.push_back(type);
+            std::optional<llvm::Type *> type = CodegenVisitor::llvmTypeFor(e->ty);
+            
+            if(!type)
+            {
+                errorHandler.addCodegenError(e->getStart(), "Could not generate code to represent type: " + e->ty->toString());
+                return {};
+            }
+
+            typeVec.push_back(type.value());
         }
     }
 
     ArrayRef<llvm::Type *> paramRef = ArrayRef(typeVec);
     bool isVariadic = ctx->variadic || ctx->ELLIPSIS();
 
+
+    std::optional<llvm::Type*> retOpt = CodegenVisitor::llvmTypeFor(ctx->ty);
+
+    if(!retOpt)
+    {
+        errorHandler.addCodegenError(ctx->ty->getStart(), "Could not generate code for type: " + ctx->ty->toString());
+        return {}; 
+    }
+
     FunctionType *fnType = FunctionType::get(
-        CodegenVisitor::llvmTypeFor(ctx->ty),
+        retOpt.value(),
         paramRef,
         isVariadic);
 
