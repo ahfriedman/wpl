@@ -734,6 +734,12 @@ const Type *SemanticVisitor::visitCtx(WPLParser::ConditionalStatementContext *ct
 
 const Type *SemanticVisitor::visitCtx(WPLParser::SelectStatementContext *ctx)
 {
+
+    if(ctx->cases.size() < 1)
+    {
+        errorHandler.addSemanticError(ctx->getStart(), "Select statement expected at least one alternative, but was given 0!");
+        return Types::UNDEFINED; //Shouldn't matter as the for loop won't have anything to do 
+    }
     // Here we just need to visit each of the individual cases; they each handle their own logic.
     for (auto e : ctx->cases)
     {

@@ -114,7 +114,7 @@ statement           : ty=type FUNC name=VARIABLE '(' (paramList=parameterList)? 
                     | <assoc=right> ty=typeOrVar assignments+=assignment (',' assignments+=assignment)* ';'   # VarDeclStatement
                     | WHILE check=condition DO block                                # LoopStatement 
                     | IF check=condition IF_THEN? trueBlk=block (ELSE falseBlk=block)? # ConditionalStatement
-                    | SELECT '{' (cases+=selectAlternative)+ '}'  # SelectStatement  
+                    | SELECT '{' (cases+=selectAlternative)* '}'  # SelectStatement  
                     | call=invocation  ';'?    # CallStatement 
                     | RETURN expression? ';'  # ReturnStatement 
                     | block # BlockStatement
