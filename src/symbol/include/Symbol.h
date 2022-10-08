@@ -81,6 +81,17 @@ protected:
     bool isSupertypeFor(const Type *other) const override;
 };
 
+
+
+namespace Types
+{
+    inline const Type *INT = new TypeInt();
+    inline const Type *BOOL = new TypeBool();
+    inline const Type *STR = new TypeStr();
+    inline const Type *UNDEFINED = new TypeBot();
+};
+
+
 class TypeArray : public Type
 {
 private:
@@ -130,26 +141,26 @@ class TypeInvoke : public Type
 {
 private:
     std::vector<const Type *> paramTypes;
-    std::optional<const Type *> retType;
+    const Type * retType;
 
     bool variadic = false;
 
 public:
     TypeInvoke()
     {
-        retType = {};
+        retType = Types::UNDEFINED;
     }
 
     TypeInvoke(std::vector<const Type *> p)
     {
         paramTypes = p;
-        retType = {};
+        retType = Types::UNDEFINED;
     }
 
     TypeInvoke(std::vector<const Type *> p, bool v)
     {
         paramTypes = p;
-        retType = {};
+        retType = Types::UNDEFINED;
 
         variadic = v;
     }
@@ -171,7 +182,7 @@ public:
     // FIXME: do better
     std::string toString() const override
     {
-        bool isProc = !retType.has_value();
+        bool isProc = dynamic_cast<const TypeBot*>(retType);//!retType.has_value();
 
         std::ostringstream description;
         description << (isProc ? "PROC " : "FUNC ");
@@ -183,14 +194,14 @@ public:
         if (variadic)
             description << "... ";
 
-        description << (isProc ? "-> BOT" : ("-> " + retType.value()->toString()));
+        description << retType->toString();
         return description.str();
     }
 
     // FIXME: DO THESE NEED LLVM TYPES???
 
     std::vector<const Type *> getParamTypes() const { return paramTypes; }
-    std::optional<const Type *> getReturnType() const { return retType; }
+    const Type * getReturnType() const { return retType; }
 
     bool isVariadic() const { return variadic; }
 
@@ -209,13 +220,13 @@ protected:
                     return false;
             }
 
-            // check returnh types
-            if ((this->retType.has_value() ^ p->retType.has_value()))
-                return false;
-            if (this->retType.has_value())
-            {
-                return this->retType.value()->isSubtype(p->retType.value());
-            }
+            // check return types
+            // if ((this->retType.has_value() ^ p->retType.has_value()))
+            //     return false;
+            // if (this->retType.has_value())
+            // {
+                return this->retType->isSubtype(p->retType);
+            // }
 
             return (this->variadic == p->variadic);
         }
@@ -278,14 +289,6 @@ protected:
 
         return true;
     }
-};
-
-namespace Types
-{
-    inline const Type *INT = new TypeInt();
-    inline const Type *BOOL = new TypeBool();
-    inline const Type *STR = new TypeStr();
-    inline const Type *UNDEFINED = new TypeBot();
 };
 
 struct Symbol

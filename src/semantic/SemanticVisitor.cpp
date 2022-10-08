@@ -162,7 +162,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::InvocationContext *ctx)
         }
 
         // Return the type of the invokable or BOT if it has none.
-        return invokeable->getReturnType().has_value() ? invokeable->getReturnType().value() : Types::UNDEFINED;
+        return invokeable->getReturnType();//.has_value() ? invokeable->getReturnType().value() : Types::UNDEFINED;
     }
 
     // Symbol was not an invokeable type, so report an error & return UNDEFINED.
