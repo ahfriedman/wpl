@@ -77,8 +77,6 @@ const Type *SemanticVisitor::visitCtx(WPLParser::CompilationUnitContext *ctx)
 
 const Type *SemanticVisitor::visitCtx(WPLParser::InvocationContext *ctx)
 {
-    // FIXME: should probably make it so that InvokableTypes use BOT instead of optionals...
-
     /*
      * Look up the symbol to make sure that it is defined
      */
