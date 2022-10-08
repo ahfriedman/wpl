@@ -184,7 +184,7 @@ TEST_CASE("programs/test2 - Scopes, multiple assignments, equality (non-arrays)"
     REQUIRE(llvmIrToSHA256(cv->getModule()) == "f4b7fbda0e0f7f25c20056aacce4eed4c1bcfffb1464c6ba525d9f156238b4c9");
 }
 
-TEST_CASE("programs/test3 - If w/o else - FIXME: DO BETTER", "[codegen]")
+TEST_CASE("programs/test3 - If w/o else", "[codegen]")
 {
     std::fstream *inStream = new std::fstream("/home/shared/programs/test3.wpl");
     antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
@@ -256,7 +256,7 @@ TEST_CASE("programs/test4a - Use and redeclaration of parameters", "[codegen]")
     REQUIRE(llvmIrToSHA256(cv->getModule()) == "18abfc620390385733b70c402618a1d51c779c39021c07a5d0800be830e70513");
 }
 
-TEST_CASE("programs/test5 - Nested ifs and if equality - FIXME: DO BETTER", "[codegen]")
+TEST_CASE("programs/test5 - Nested ifs and if equality", "[codegen]")
 {
     std::fstream *inStream = new std::fstream("/home/shared/programs/test5.wpl");
     antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
@@ -292,7 +292,7 @@ TEST_CASE("programs/test5 - Nested ifs and if equality - FIXME: DO BETTER", "[co
     REQUIRE(llvmIrToSHA256(cv->getModule()) == "6499fa76c19d5f518248a26b68be585002588e2a52851469d37dd3c6e7529f0b");
 }
 
-TEST_CASE("programs/test6 - Basic Select with Return - FIXME: DO BETTER", "[codegen]")
+TEST_CASE("programs/test6 - Basic Select with Return", "[codegen]")
 {
     std::fstream *inStream = new std::fstream("/home/shared/programs/test6.wpl");
     antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
