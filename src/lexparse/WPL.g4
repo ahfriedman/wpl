@@ -79,9 +79,9 @@ selectAlternative   : check=expression ':' eval=statement ;
  *
  * Parameter defines a parameter: its just a type and name.
  */
-parameterList          : params+=parameter (',' params+=parameter)* ;
+parameterList          : params+=parameter (',' params+=parameter)*? ;
 parameter           :  ty=type name=VARIABLE ;
-VariadicParam : ',' '...'; //TODO: could probably make this work better
+VariadicParam : ',' [ \t]* '...'; //For some reason, need to match the whitespace so that way we can allow spaces between the two...
 
 /*
  * Assignment fragment: this contains the information about variables

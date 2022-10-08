@@ -440,8 +440,6 @@ std::optional<Value *> CodegenVisitor::TvisitExternStatement(WPLParser::ExternSt
         }
     }
 
-    // FIXME: FIX VARIADIC TYPES!!
-
     ArrayRef<llvm::Type *> paramRef = ArrayRef(typeVec);
     bool isVariadic = ctx->variadic || ctx->ELLIPSIS();
 
@@ -660,8 +658,6 @@ std::optional<Value *> CodegenVisitor::TvisitLoopStatement(WPLParser::LoopStatem
 
     return {};
 }
-
-// FIXME: EXTERNS CANT HAVE A SPACE?
 
 std::optional<Value *> CodegenVisitor::TvisitConditionalStatement(WPLParser::ConditionalStatementContext *ctx)
 {
