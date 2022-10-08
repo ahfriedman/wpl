@@ -1,6 +1,5 @@
 extern int func printf(...);
 
-# FIXME: TEST TO SEE IF WE CAN HAVE MULTIPLE FNS W/ SAME NAME PROVIDED DIFF TYPES!
 str func nestedIf(int a) {
     if( a > 0) {
         if(a > 10)
