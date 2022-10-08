@@ -139,14 +139,13 @@ public:
 
         std::optional<Symbol *> opt = stmgr->lookup(funcId);
 
-        // FIXME: DO BETTER, NEED ORDERING TO CATCH ALL ERRORS (BASICALLY SEE ANY ISSUE THAT APPLIES TO PROCs)
+        // FIXME: DO BETTER, NEED ORDERING TO CATCH ALL ERRORS
         if (opt)
         {
             errorHandler.addSemanticError(ctx->getStart(), "Unsupported redeclaration of " + funcId);
             return Types::UNDEFINED;
         }
 
-        // FIXME: test breaking params somehow!! like using something thats not a type!!!!
         const Type* tmpTy = (paramList) ? visitCtx(paramList) : new TypeInvoke(); 
 
         const TypeInvoke * procType = dynamic_cast<const TypeInvoke*>(tmpTy); // Always true, but needs separate statement to make C happy.
