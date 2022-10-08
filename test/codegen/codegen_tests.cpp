@@ -867,7 +867,7 @@ TEST_CASE("programs/test13 - Recursive Fibonacci", "[codegen]")
     }
     CHECK_FALSE(cv->hasErrors(0));
 
-    REQUIRE(llvmIrToSHA256(cv->getModule()) == "f3c7607f0c257f5d14ace925ba3337dd3901a42501cb57c9ea255dff2e3f489b");
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "e1e33543132cb39593a2b3bac2192c7b657c38c7c6c1f3c708c5b2a7bb7aa2bc");
 }
 
 TEST_CASE("programs/test-runtime - Basic runtime tests", "[codegen]")
