@@ -47,6 +47,7 @@ using llvm::Module;
 using llvm::NoFolder;
 using llvm::StringRef;
 using llvm::Value;
+using llvm::PHINode; 
 
 class CodegenVisitor : WPLBaseVisitor
 {

@@ -130,6 +130,7 @@ int main(int argc, const char *argv[])
    * Sets up compiler flags. These need to be sent to the visitors.
    */
 
+  int flags = (noRuntime) ? CompilerFlags::NO_RUNTIME : 0; 
 
 
   /******************************************************************
@@ -139,7 +140,7 @@ int main(int argc, const char *argv[])
    ******************************************************************/
   STManager *stm = new STManager();
   PropertyManager *pm = new PropertyManager();
-  SemanticVisitor *sv = new SemanticVisitor(stm, pm);
+  SemanticVisitor *sv = new SemanticVisitor(stm, pm, flags);
   sv->visitCompilationUnit(tree);
   std::cout << "OUT" << std::endl;
   if (sv->hasErrors(0)) //Want to see all errors
@@ -149,7 +150,7 @@ int main(int argc, const char *argv[])
   }
 
   // Generate the LLVM IR code
-  CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll");
+  CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll", flags);
   cv->visitCompilationUnit(tree);
   if (cv->hasErrors(0)) //Want to see all errors
   {

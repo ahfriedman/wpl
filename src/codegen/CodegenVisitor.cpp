@@ -274,18 +274,44 @@ std::optional<Value *> CodegenVisitor::TvisitEqExpr(WPLParser::EqExprContext *ct
  */
 std::optional<Value *> CodegenVisitor::TvisitLogAndExpr(WPLParser::LogAndExprContext *ctx)
 {
-    std::optional<Value *> lhs = std::any_cast<std::optional<Value *>>(ctx->left->accept(this));
-    std::optional<Value *> rhs = std::any_cast<std::optional<Value *>>(ctx->right->accept(this));
 
-    if (!lhs || !rhs)
+    std::optional<Value *> lhs = std::any_cast<std::optional<Value *>>(ctx->left->accept(this));
+    
+    if(!lhs)
     {
-        errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code for: " + ctx->getText());
-        return {};
+        errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code for: " + ctx->left->getText());
+        return {}; 
     }
 
-    Value *IR = builder->CreateAnd(lhs.value(), rhs.value());
-    Value *v = builder->CreateZExtOrTrunc(IR, Int1Ty);
-    return v;
+    BasicBlock* current = builder->GetInsertBlock(); 
+    auto parent = current->getParent(); 
+    BasicBlock* trueBlk = BasicBlock::Create(module->getContext(), "lhsTrue", parent);
+    BasicBlock* falseBlk = BasicBlock::Create(module->getContext(), "lhsFalse");
+    
+    builder->CreateCondBr(lhs.value(), trueBlk, falseBlk);
+
+    /*
+     * LHS True
+     */
+    builder->SetInsertPoint(trueBlk);
+    std::optional<Value *> rhs = std::any_cast<std::optional<Value *>>(ctx->right->accept(this));
+
+    if(!rhs)
+    {
+        errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code for: " + ctx->right->getText());
+        return {}; 
+    }
+
+    builder->CreateBr(falseBlk);
+    trueBlk = builder->GetInsertBlock(); 
+
+    parent->getBasicBlockList().push_back(falseBlk);
+    builder->SetInsertPoint(falseBlk);
+
+    PHINode *phi = builder->CreatePHI(Int1Ty, 2, "logAnd");
+    phi->addIncoming(builder->getFalse(), current);
+    phi->addIncoming(rhs.value(), trueBlk);
+    return phi;
 }
 
 /**
