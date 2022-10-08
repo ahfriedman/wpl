@@ -249,7 +249,7 @@ public:
             int argNumber = arg.getArgNo();
             llvm::Type *type = typeVec.at(argNumber);
 
-            // FIXME: not convinced this will work with arrays--not that WPL requires that... seems suspicious like it'd include the type here??
+            // FIXME: not convinced this will work with arrays--not that WPL requires that... seems suspicious like it'd include the type here?? Also, CHECK THAT ARRAYS CAN BE DEFINED DIRECTLY. IE, int [5] a; int [5] b; a <- b;
             std::string argName = paramList->params.at(argNumber)->getText();
 
             llvm::AllocaInst *v = builder->CreateAlloca(type, 0, argName);
