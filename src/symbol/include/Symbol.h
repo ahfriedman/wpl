@@ -130,10 +130,9 @@ public:
 protected:
     bool isSupertypeFor(const Type *other) const override
     {
-        // FIXME: do better!
         if (const TypeArray *p = dynamic_cast<const TypeArray *>(other))
         {
-            return valueType->isSubtype(p->valueType) && this->length == p->length;
+            return p->valueType->isSubtype(valueType) && this->length == p->length;
         }
 
         return false;
