@@ -97,7 +97,6 @@ std::optional<Value *> CodegenVisitor::TvisitArrayAccessExpr(WPLParser::ArrayAcc
 
 std::optional<Value *> CodegenVisitor::TvisitSConstExpr(WPLParser::SConstExprContext *ctx)
 {
-    std::cout << "94" << std::endl;
     // TODO: do this better, ensure that we can only escape these chars...
     std::string full(ctx->s->getText());
     std::string actual = full.substr(1, full.length() - 2);
@@ -136,8 +135,6 @@ std::optional<Value *> CodegenVisitor::TvisitSConstExpr(WPLParser::SConstExprCon
         out = regex_replace(out, e.first, e.second);
     }
 
-    std::cout << "133" << std::endl;
-
     llvm::Constant *dat = llvm::ConstantDataArray::getString(module->getContext(), out);
 
     // llvm::Constant * var = module->getOrInsertGlobal("", dat->getType());
@@ -159,11 +156,6 @@ std::optional<Value *> CodegenVisitor::TvisitSConstExpr(WPLParser::SConstExprCon
         glob->getValueType(),
         glob,
         Indices);
-    // llvm::GlobalVariable * glob = builder->CreateGlobalString(out);
-
-    // Value *strVal = builder->CreateGlobalStringPtr(out); // For some reason, I can't return this directly...
-
-    std::cout << "137" << std::endl;
 
     return val;
 }
@@ -812,9 +804,6 @@ std::optional<Value *> CodegenVisitor::TvisitConditionalStatement(WPLParser::Con
 
 std::optional<Value *> CodegenVisitor::TvisitSelectStatement(WPLParser::SelectStatementContext *ctx)
 {
-    std::cout << "761!" << std::endl;
-    // FIXME: WILL NEED TO CHECK FOR RETURNS AND RETURNS IN BLOCKS!!!
-
     /*
      * Set up the merge block that all cases go to after the select statement
      */
@@ -906,7 +895,6 @@ std::optional<Value *> CodegenVisitor::TvisitSelectStatement(WPLParser::SelectSt
     origParent->getBasicBlockList().push_back(mergeBlk);
     builder->SetInsertPoint(mergeBlk);
 
-    std::cout << "870" << std::endl;
     std::optional<Value *> ans = {};
     return ans;
 }
