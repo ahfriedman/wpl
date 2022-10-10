@@ -1048,3 +1048,30 @@ TEST_CASE("C Level Positive Test #1", "[codegen]")
 
     REQUIRE(llvmIrToSHA256(cv->getModule()) == "fdf9d19f4d205022b83770d7ec87c120a51d65fc5719eaad7d3a65d955aee64c");
 }
+
+TEST_CASE("C Level Positive Test #2", "[codegen]")
+{
+    std::fstream *inStream = new std::fstream("/home/shared/programs/CLevel/CPositive2.wpl");
+    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+
+    WPLLexer lexer(input);
+    antlr4::CommonTokenStream tokens(&lexer);
+    WPLParser parser(&tokens);
+    parser.removeErrorListeners();
+    WPLParser::CompilationUnitContext *tree = NULL;
+    REQUIRE_NOTHROW(tree = parser.compilationUnit());
+    REQUIRE(tree != NULL);
+    STManager *stm = new STManager();
+    PropertyManager *pm = new PropertyManager();
+    SemanticVisitor *sv = new SemanticVisitor(stm, pm, 0);
+    sv->visitCompilationUnit(tree);
+
+    REQUIRE_FALSE(sv->hasErrors(0));
+
+    CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll", 0);
+    cv->visitCompilationUnit(tree);
+
+    REQUIRE_FALSE(cv->hasErrors(0));
+
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "638d4d94b07e609e157cf894755225435fd1d19d52f47f5c4a0b1eb8ca08e2b2");
+}
