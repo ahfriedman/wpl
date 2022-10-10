@@ -60,7 +60,7 @@ testoutput/
 testdata/*.ll
 testdata/*.bc
 
-programs/*.ll
+programs/**/*.ll
 programs/*.c
 programs/*.s
 a.out
