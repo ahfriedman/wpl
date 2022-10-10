@@ -1132,3 +1132,60 @@ TEST_CASE("B Level Positive Test #2", "[codegen]")
 
     REQUIRE(llvmIrToSHA256(cv->getModule()) == "a7d0860f47d046fb0a819057f8abc6cac2fc3046f0dd8b9ad631a6ededb7c328");
 }
+
+/************************************
+ * Example A-Level Tests
+ ************************************/
+TEST_CASE("A Level Positive Test #1", "[codegen]")
+{
+    std::fstream *inStream = new std::fstream("/home/shared/programs/ALevel/APositive1.wpl");
+    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+
+    WPLLexer lexer(input);
+    antlr4::CommonTokenStream tokens(&lexer);
+    WPLParser parser(&tokens);
+    parser.removeErrorListeners();
+    WPLParser::CompilationUnitContext *tree = NULL;
+    REQUIRE_NOTHROW(tree = parser.compilationUnit());
+    REQUIRE(tree != NULL);
+    STManager *stm = new STManager();
+    PropertyManager *pm = new PropertyManager();
+    SemanticVisitor *sv = new SemanticVisitor(stm, pm, 0);
+    sv->visitCompilationUnit(tree);
+
+    REQUIRE_FALSE(sv->hasErrors(0));
+
+    CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll", 0);
+    cv->visitCompilationUnit(tree);
+
+    REQUIRE_FALSE(cv->hasErrors(0));
+
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "2838be9e472fa2455af9851905f03f970170d67e7c1ba49cc110a274d578651b");
+}
+
+TEST_CASE("A Level Positive Test #2", "[codegen]")
+{
+    std::fstream *inStream = new std::fstream("/home/shared/programs/ALevel/APositive2.wpl");
+    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+
+    WPLLexer lexer(input);
+    antlr4::CommonTokenStream tokens(&lexer);
+    WPLParser parser(&tokens);
+    parser.removeErrorListeners();
+    WPLParser::CompilationUnitContext *tree = NULL;
+    REQUIRE_NOTHROW(tree = parser.compilationUnit());
+    REQUIRE(tree != NULL);
+    STManager *stm = new STManager();
+    PropertyManager *pm = new PropertyManager();
+    SemanticVisitor *sv = new SemanticVisitor(stm, pm, 0);
+    sv->visitCompilationUnit(tree);
+
+    REQUIRE_FALSE(sv->hasErrors(0));
+
+    CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll", 0);
+    cv->visitCompilationUnit(tree);
+
+    REQUIRE_FALSE(cv->hasErrors(0));
+
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "3ab074cdd00ea287689233a158d1bc268eaa11ac1d07fb1e2fb633e8bca8eaca");
+}
