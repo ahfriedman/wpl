@@ -506,14 +506,15 @@ std::optional<Value *> CodegenVisitor::TvisitExternStatement(WPLParser::ExternSt
     ArrayRef<llvm::Type *> paramRef = ArrayRef(typeVec);
     bool isVariadic = ctx->variadic || ctx->ELLIPSIS();
 
-
-    std::optional<llvm::Type*> retOpt = CodegenVisitor::llvmTypeFor(ctx->ty);
+    std::optional<llvm::Type*> retOpt = ctx->ty ? CodegenVisitor::llvmTypeFor(ctx->ty) : VoidTy; 
 
     if(!retOpt)
     {
+        std::cout << "514!" << std::endl;
         errorHandler.addCodegenError(ctx->ty->getStart(), "Could not generate code for type: " + ctx->ty->toString());
         return {}; 
     }
+
 
     FunctionType *fnType = FunctionType::get(
         retOpt.value(),
