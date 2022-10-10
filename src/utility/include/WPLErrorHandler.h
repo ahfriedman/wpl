@@ -123,7 +123,7 @@ public:
 
     for(WPLError * err : errors)
     {
-      std::cout << err->severity << " & " << errorFlags << std::endl; 
+      std::cerr << err->severity << " & " << errorFlags << std::endl; 
       if(err->severity & errorFlags) return true; 
     }
 

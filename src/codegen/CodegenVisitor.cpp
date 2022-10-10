@@ -510,7 +510,6 @@ std::optional<Value *> CodegenVisitor::TvisitExternStatement(WPLParser::ExternSt
 
     if(!retOpt)
     {
-        std::cout << "514!" << std::endl;
         errorHandler.addCodegenError(ctx->ty->getStart(), "Could not generate code for type: " + ctx->ty->toString());
         return {}; 
     }
