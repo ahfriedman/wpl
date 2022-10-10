@@ -32,9 +32,6 @@ TEST_CASE("visitbasicProc", "[semantic][proc]")
 
     sv->visitCompilationUnit(tree);
 
-    std::cout << stmgr->toString() << std::endl;
-    std::cout << tree->getText() << std::endl;
-
     CHECK_FALSE(sv->hasErrors(ERROR));
   }
 
@@ -50,7 +47,6 @@ TEST_CASE("visitbasicProc", "[semantic][proc]")
     REQUIRE_NOTHROW(tree = parser.compilationUnit());
     REQUIRE(tree != NULL);
 
-    std::cout << "PAST" << std::endl;
     // Any errors should be syntax errors.
     REQUIRE(tree->getText() != "");
 
@@ -59,8 +55,8 @@ TEST_CASE("visitbasicProc", "[semantic][proc]")
 
     sv->visitCompilationUnit(tree);
 
-    std::cout << stmgr->toString() << std::endl;
-    std::cout << tree->getText() << std::endl;
+    // std::cout << stmgr->toString() << std::endl;
+    // std::cout << tree->getText() << std::endl;
 
     CHECK_FALSE(sv->hasErrors(ERROR));
   }

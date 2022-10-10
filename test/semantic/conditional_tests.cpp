@@ -332,10 +332,7 @@ TEST_CASE("Inference If - 2", "[semantic]")
   SemanticVisitor *sv = new SemanticVisitor(stmgr, new PropertyManager());
 
   sv->visitCompilationUnit(tree);
-
-  // std::cout << stmgr->toString() << std::endl;
-  // std::cout << sv->getErrors() << std::endl; 
-
+  
   CHECK_FALSE(sv->hasErrors(0));
 }
 

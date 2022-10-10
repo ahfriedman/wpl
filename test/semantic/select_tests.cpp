@@ -8,7 +8,7 @@
 #include "test_error_handlers.h"
 
 /*
- * FIXME: Make select tests more robust
+ * : Make select tests more robust
  */
 
 TEST_CASE("Basic select", "[semantic][conditional]")

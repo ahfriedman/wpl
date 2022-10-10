@@ -561,9 +561,22 @@ const Type *SemanticVisitor::visitCtx(WPLParser::SelectAlternativeContext *ctx)
 const Type *SemanticVisitor::visitCtx(WPLParser::ParameterListContext *ctx)
 {
     std::vector<const Type *> params;
+    std::map<std::string, WPLParser::ParameterContext *> map; 
 
     for (auto param : ctx->params)
     {
+        std::string name = param->name->getText(); 
+
+        auto prevUse = map.find(name);
+        if(prevUse != map.end())
+        {
+            errorHandler.addSemanticError(param->getStart(), "Re-use of previously defined parameter " + name + ".");
+        }
+        else 
+        {
+            map.insert({name, param});
+        }
+
         const Type *type = this->visitCtx(param);
         params.push_back(type);
     }
@@ -590,11 +603,10 @@ const Type *SemanticVisitor::visitCtx(WPLParser::ExternStatementContext *ctx)
 
     std::optional<Symbol *> opt = stmgr->lookup(id);
 
-    // FIXME: DO BETTER, NEED ORDERING TO CATCH ALL ERRORS (BASICALLY SEE ANY ISSUE THAT APPLIES TO PROCs)
     if (opt)
     {
         errorHandler.addSemanticError(ctx->getStart(), "Unsupported redeclaration of " + id);
-        return Types::UNDEFINED;
+        // return Types::UNDEFINED;
     }
     
     const Type *ty = (ctx->paramList) ? this->visitCtx(ctx->paramList)

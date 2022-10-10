@@ -55,9 +55,9 @@ static llvm::cl::opt<bool>
            llvm::cl::cat(WPLCOptions));
 
 static llvm::cl::opt<bool>
-    noRuntime("no-runtime", 
-               llvm::cl::desc("Program will not use the WPL runtime; Compiler will automatically treat program() as the entry point."),
-               llvm::cl::cat(WPLCOptions));
+    noRuntime("no-runtime",
+              llvm::cl::desc("Program will not use the WPL runtime; Compiler will automatically treat program() as the entry point."),
+              llvm::cl::cat(WPLCOptions));
 
 /**
  * @brief Main compiler driver.
@@ -91,10 +91,10 @@ int main(int argc, const char *argv[])
   {
     std::fstream *inStream = new std::fstream(inputFileName);
 
-    if(inStream->fail())
+    if (inStream->fail())
     {
-      std::cerr << "Error loading file: " << inputFileName << ". Does it exist?" << std::endl; 
-      return -1; 
+      std::cerr << "Error loading file: " << inputFileName << ". Does it exist?" << std::endl;
+      return -1;
     }
 
     input = new antlr4::ANTLRInputStream(*inStream);
@@ -118,10 +118,9 @@ int main(int argc, const char *argv[])
 
   // 3. Parse the program and get the parse tree
   tree = parser.compilationUnit();
-  
-  if (syntaxListener->hasErrors(0)) //Want to see all errors. 
+
+  if (syntaxListener->hasErrors(0)) // Want to see all errors.
   {
-    std::cout << "ERRORS" << std::endl;
     std::cerr << syntaxListener->errorList() << std::endl;
     return -1;
   }
@@ -130,8 +129,7 @@ int main(int argc, const char *argv[])
    * Sets up compiler flags. These need to be sent to the visitors.
    */
 
-  int flags = (noRuntime) ? CompilerFlags::NO_RUNTIME : 0; 
-
+  int flags = (noRuntime) ? CompilerFlags::NO_RUNTIME : 0;
 
   /******************************************************************
    * Perform semantic analysis and populate the symbol table
@@ -142,17 +140,19 @@ int main(int argc, const char *argv[])
   PropertyManager *pm = new PropertyManager();
   SemanticVisitor *sv = new SemanticVisitor(stm, pm, flags);
   sv->visitCompilationUnit(tree);
-  std::cout << "OUT" << std::endl;
-  if (sv->hasErrors(0)) //Want to see all errors
+
+  if (sv->hasErrors(0)) // Want to see all errors
   {
     std::cerr << sv->getErrors() << std::endl;
     return -1;
   }
 
+  std::cout << "Semantic analysis completed without errors. Starting code generation..." << std::endl;
+
   // Generate the LLVM IR code
   CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll", flags);
   cv->visitCompilationUnit(tree);
-  if (cv->hasErrors(0)) //Want to see all errors
+  if (cv->hasErrors(0)) // Want to see all errors
   {
     std::cerr << cv->getErrors() << std::endl;
     return -1;
@@ -185,13 +185,13 @@ int main(int argc, const char *argv[])
     irFileStream.flush();
   }
 
-  if(noRuntime)
+  if (noRuntime)
   {
-    std::cout << "noRuntime = true" << std::endl;
+    std::cout << "Code generation completed; program does NOT support runtime." << std::endl;
   }
-  else 
+  else
   {
-    std::cout << "noRuntime = false" << std::endl;
+    std::cout << "Code generation completed; program may require runtime." << std::endl;
   }
 
   return 0;

@@ -1,0 +1,10 @@
+extern int func printf(...);
+
+proc foo(int a, int a, int b) {
+
+}
+
+int func program() {
+ var current <- 1;        
+ return -1;
+}

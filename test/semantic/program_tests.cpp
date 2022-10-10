@@ -157,7 +157,7 @@ TEST_CASE("Block", "[semantic]")
   CHECK_FALSE(sv->hasErrors(0));
 }
 
-TEST_CASE("programs/test4 - Don't allow void to be sent to fn", "[codegen]")
+TEST_CASE("programs/test4 - Don't allow void to be sent to fn", "[semantic]")
 {
     std::fstream *inStream = new std::fstream("/home/shared/programs/test4.wpl");
     antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
@@ -182,7 +182,7 @@ TEST_CASE("programs/test4 - Don't allow void to be sent to fn", "[codegen]")
     REQUIRE(sv->hasErrors(0));
 }
 
-TEST_CASE("programs/test9Err - Test assign var to array", "[codegen]")
+TEST_CASE("programs/test9Err - Test assign var to array", "[semantic]")
 {
     std::fstream *inStream = new std::fstream("/home/shared/programs/test9Err.wpl");
     antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
@@ -207,7 +207,7 @@ TEST_CASE("programs/test9Err - Test assign var to array", "[codegen]")
     REQUIRE(sv->hasErrors(0));
 }
 
-TEST_CASE("programs/test11Err - Prevent global exprs", "[codegen]")
+TEST_CASE("programs/test11Err - Prevent global exprs", "[semantic]")
 {
     std::fstream *inStream = new std::fstream("/home/shared/programs/test11err.wpl");
     antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
@@ -229,5 +229,204 @@ TEST_CASE("programs/test11Err - Prevent global exprs", "[codegen]")
     // {
     //     CHECK("foo" == sv->getErrors());
     // }
+    REQUIRE(sv->hasErrors(0));
+}
+
+TEST_CASE("programs/doubleArg1 - Prevent Argument reuse in func", "[semantic]")
+{
+    std::fstream *inStream = new std::fstream("/home/shared/programs/doubleArg1.wpl");
+    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+
+    WPLLexer lexer(input);
+    antlr4::CommonTokenStream tokens(&lexer);
+    WPLParser parser(&tokens);
+    parser.removeErrorListeners();
+    WPLParser::CompilationUnitContext *tree = NULL;
+    REQUIRE_NOTHROW(tree = parser.compilationUnit());
+    REQUIRE(tree != NULL);
+    STManager *stm = new STManager();
+    PropertyManager *pm = new PropertyManager();
+    SemanticVisitor *sv = new SemanticVisitor(stm, pm);
+    sv->visitCompilationUnit(tree);
+
+
+    // if(sv->hasErrors(0))
+    // {
+    //     CHECK("foo" == sv->getErrors());
+    // }
+    REQUIRE(sv->hasErrors(0));
+}
+
+TEST_CASE("programs/doubleArg2 - Prevent Argument reuse in extern", "[semantic]")
+{
+    std::fstream *inStream = new std::fstream("/home/shared/programs/doubleArg2.wpl");
+    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+
+    WPLLexer lexer(input);
+    antlr4::CommonTokenStream tokens(&lexer);
+    WPLParser parser(&tokens);
+    parser.removeErrorListeners();
+    WPLParser::CompilationUnitContext *tree = NULL;
+    REQUIRE_NOTHROW(tree = parser.compilationUnit());
+    REQUIRE(tree != NULL);
+    STManager *stm = new STManager();
+    PropertyManager *pm = new PropertyManager();
+    SemanticVisitor *sv = new SemanticVisitor(stm, pm);
+    sv->visitCompilationUnit(tree);
+
+
+    // if(sv->hasErrors(0))
+    // {
+    //     CHECK("foo" == sv->getErrors());
+    // }
+    REQUIRE(sv->hasErrors(0));
+}
+
+TEST_CASE("programs/doubleArg3 - Prevent Argument reuse in func and that we don't crash", "[semantic]")
+{
+    std::fstream *inStream = new std::fstream("/home/shared/programs/doubleArg3.wpl");
+    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+
+    WPLLexer lexer(input);
+    antlr4::CommonTokenStream tokens(&lexer);
+    WPLParser parser(&tokens);
+    parser.removeErrorListeners();
+    WPLParser::CompilationUnitContext *tree = NULL;
+    REQUIRE_NOTHROW(tree = parser.compilationUnit());
+    REQUIRE(tree != NULL);
+    STManager *stm = new STManager();
+    PropertyManager *pm = new PropertyManager();
+    SemanticVisitor *sv = new SemanticVisitor(stm, pm);
+    sv->visitCompilationUnit(tree);
+
+
+    // if(sv->hasErrors(0))
+    // {
+    //     CHECK("foo" == sv->getErrors());
+    // }
+    REQUIRE(sv->hasErrors(0));
+}
+
+/*********************************
+ * C-Level Example tests
+ *********************************/
+TEST_CASE("C Level Negative Test #1", "[semantic]")
+{
+    std::fstream *inStream = new std::fstream("/home/shared/programs/CLevel/CNegative1.wpl");
+    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+
+    WPLLexer lexer(input);
+    antlr4::CommonTokenStream tokens(&lexer);
+    WPLParser parser(&tokens);
+    parser.removeErrorListeners();
+    WPLParser::CompilationUnitContext *tree = NULL;
+    REQUIRE_NOTHROW(tree = parser.compilationUnit());
+    REQUIRE(tree != NULL);
+    STManager *stm = new STManager();
+    PropertyManager *pm = new PropertyManager();
+    SemanticVisitor *sv = new SemanticVisitor(stm, pm);
+    sv->visitCompilationUnit(tree);
+    REQUIRE(sv->hasErrors(0));
+}
+
+TEST_CASE("C Level Negative Test #2", "[semantic]")
+{
+    std::fstream *inStream = new std::fstream("/home/shared/programs/CLevel/CNegative2.wpl");
+    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+
+    WPLLexer lexer(input);
+    antlr4::CommonTokenStream tokens(&lexer);
+    WPLParser parser(&tokens);
+    parser.removeErrorListeners();
+    WPLParser::CompilationUnitContext *tree = NULL;
+    REQUIRE_NOTHROW(tree = parser.compilationUnit());
+    REQUIRE(tree != NULL);
+    STManager *stm = new STManager();
+    PropertyManager *pm = new PropertyManager();
+    SemanticVisitor *sv = new SemanticVisitor(stm, pm);
+    sv->visitCompilationUnit(tree);
+    REQUIRE(sv->hasErrors(0));
+}
+
+
+/*********************************
+ * B-Level Example tests
+ *********************************/
+TEST_CASE("B Level Negative Test #1", "[semantic]")
+{
+    std::fstream *inStream = new std::fstream("/home/shared/programs/BLevel/BNegative1.wpl");
+    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+
+    WPLLexer lexer(input);
+    antlr4::CommonTokenStream tokens(&lexer);
+    WPLParser parser(&tokens);
+    parser.removeErrorListeners();
+    WPLParser::CompilationUnitContext *tree = NULL;
+    REQUIRE_NOTHROW(tree = parser.compilationUnit());
+    REQUIRE(tree != NULL);
+    STManager *stm = new STManager();
+    PropertyManager *pm = new PropertyManager();
+    SemanticVisitor *sv = new SemanticVisitor(stm, pm);
+    sv->visitCompilationUnit(tree);
+    REQUIRE(sv->hasErrors(0));
+}
+
+TEST_CASE("B Level Negative Test #2", "[semantic]")
+{
+    std::fstream *inStream = new std::fstream("/home/shared/programs/BLevel/BNegative2.wpl");
+    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+
+    WPLLexer lexer(input);
+    antlr4::CommonTokenStream tokens(&lexer);
+    WPLParser parser(&tokens);
+    parser.removeErrorListeners();
+    WPLParser::CompilationUnitContext *tree = NULL;
+    REQUIRE_NOTHROW(tree = parser.compilationUnit());
+    REQUIRE(tree != NULL);
+    STManager *stm = new STManager();
+    PropertyManager *pm = new PropertyManager();
+    SemanticVisitor *sv = new SemanticVisitor(stm, pm);
+    sv->visitCompilationUnit(tree);
+    REQUIRE(sv->hasErrors(0));
+}
+
+/*********************************
+ * A-Level Example tests
+ *********************************/
+TEST_CASE("A Level Negative Test #1", "[semantic]")
+{
+    std::fstream *inStream = new std::fstream("/home/shared/programs/ALevel/ANegative1.wpl");
+    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+
+    WPLLexer lexer(input);
+    antlr4::CommonTokenStream tokens(&lexer);
+    WPLParser parser(&tokens);
+    parser.removeErrorListeners();
+    WPLParser::CompilationUnitContext *tree = NULL;
+    REQUIRE_NOTHROW(tree = parser.compilationUnit());
+    REQUIRE(tree != NULL);
+    STManager *stm = new STManager();
+    PropertyManager *pm = new PropertyManager();
+    SemanticVisitor *sv = new SemanticVisitor(stm, pm);
+    sv->visitCompilationUnit(tree);
+    REQUIRE(sv->hasErrors(0));
+}
+
+TEST_CASE("A Level Negative Test #2", "[semantic]")
+{
+    std::fstream *inStream = new std::fstream("/home/shared/programs/ALevel/ANegative2.wpl");
+    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+
+    WPLLexer lexer(input);
+    antlr4::CommonTokenStream tokens(&lexer);
+    WPLParser parser(&tokens);
+    parser.removeErrorListeners();
+    WPLParser::CompilationUnitContext *tree = NULL;
+    REQUIRE_NOTHROW(tree = parser.compilationUnit());
+    REQUIRE(tree != NULL);
+    STManager *stm = new STManager();
+    PropertyManager *pm = new PropertyManager();
+    SemanticVisitor *sv = new SemanticVisitor(stm, pm);
+    sv->visitCompilationUnit(tree);
     REQUIRE(sv->hasErrors(0));
 }

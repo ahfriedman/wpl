@@ -15,7 +15,7 @@ str func nestedIf(int a) {
     {
         if( a = 0 )
         {
-            return "CASE 3 (0)";  # FIXME: DIV BY ZERO CAUSES EXCEPION?
+            return "CASE 3 (0)";  # NOTE: DIV BY ZERO CAUSES EXCEPION?
         }
         else 
         {

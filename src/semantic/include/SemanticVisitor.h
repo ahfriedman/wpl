@@ -12,12 +12,12 @@ class SemanticVisitor : WPLBaseVisitor
 {
 
 public:
-    SemanticVisitor(STManager *s, PropertyManager *p, int f=0)
+    SemanticVisitor(STManager *s, PropertyManager *p, int f = 0)
     {
         stmgr = s;
         bindings = p;
 
-        flags = f; 
+        flags = f;
     }
 
     std::string getErrors() { return errorHandler.errorList(); }
@@ -48,7 +48,7 @@ public:
     const Type *visitCtx(WPLParser::SelectAlternativeContext *ctx);
     const Type *visitCtx(WPLParser::ParameterListContext *ctx);
     const Type *visitCtx(WPLParser::ParameterContext *ctx);
-        const Type * visitCtx(WPLParser::AssignmentContext *ctx) ;
+    const Type *visitCtx(WPLParser::AssignmentContext *ctx);
     const Type *visitCtx(WPLParser::ExternStatementContext *ctx);
     const Type *visitCtx(WPLParser::FuncDefContext *ctx);
     const Type *visitCtx(WPLParser::ProcDefContext *ctx);
@@ -63,7 +63,6 @@ public:
     const Type *visitCtx(WPLParser::TypeOrVarContext *ctx);
     const Type *visitCtx(WPLParser::TypeContext *ctx);
     const Type *visitCtx(WPLParser::BooleanConstContext *ctx);
-
 
     std::any visitCompilationUnit(WPLParser::CompilationUnitContext *ctx) override { return visitCtx(ctx); }
     std::any visitInvocation(WPLParser::InvocationContext *ctx) override { return visitCtx(ctx); }
@@ -104,40 +103,40 @@ public:
     std::any visitType(WPLParser::TypeContext *ctx) override { return visitCtx(ctx); }
     std::any visitBooleanConst(WPLParser::BooleanConstContext *ctx) override { return visitCtx(ctx); }
 
-    const Type* safeVisitBlock(WPLParser::BlockContext* ctx, bool newScope)
+    const Type *safeVisitBlock(WPLParser::BlockContext *ctx, bool newScope)
     {
-        if(newScope)
+        if (newScope)
             stmgr->enterScope();
 
-        bool foundReturn = false; 
-        for(auto e : ctx->stmts)
+        bool foundReturn = false;
+        for (auto e : ctx->stmts)
         {
 
             e->accept(this);
 
-            if(foundReturn) {
+            if (foundReturn)
+            {
                 errorHandler.addSemanticError(ctx->getStart(), "Dead code.");
-                break; 
+                break;
             }
-            if(dynamic_cast<WPLParser::ReturnStatementContext *>(e)) foundReturn = true; 
+            if (dynamic_cast<WPLParser::ReturnStatementContext *>(e))
+                foundReturn = true;
 
-            if(dynamic_cast<WPLParser::FuncDefContext*>(e) || dynamic_cast<WPLParser::ProcDefContext*>(e))
+            if (dynamic_cast<WPLParser::FuncDefContext *>(e) || dynamic_cast<WPLParser::ProcDefContext *>(e))
             {
                 errorHandler.addSemanticError(ctx->getStart(), "Currenly, nested PROC/FUNCs are not supported by codegen.");
             }
         }
 
-        if(newScope)
-            this->safeExitScope(ctx); 
+        if (newScope)
+            this->safeExitScope(ctx);
 
-        return Types::UNDEFINED; 
+        return Types::UNDEFINED;
     }
-    
-    const Type * visitInvokeable(antlr4::ParserRuleContext * ctx, std::string funcId, WPLParser::ParameterListContext *paramList, WPLParser::TypeContext * ty, WPLParser::BlockContext * block)
-    {
-        // FIXME: NEEDS TO BE LOCAL SCOPE ONLY AND THEN NEEDS TO COMPARE TYPES (OR JUST GLOBAL SCOPE)
 
-        std::optional<Symbol *> opt = stmgr->lookup(funcId);
+    const Type *visitInvokeable(antlr4::ParserRuleContext *ctx, std::string funcId, WPLParser::ParameterListContext *paramList, WPLParser::TypeContext *ty, WPLParser::BlockContext *block)
+    {
+        std::optional<Symbol *> opt = stmgr->lookupInCurrentScope(funcId);
 
         // FIXME: DO BETTER, NEED ORDERING TO CATCH ALL ERRORS
         if (opt)
@@ -146,28 +145,31 @@ public:
             return Types::UNDEFINED;
         }
 
-        const Type* tmpTy = (paramList) ? visitCtx(paramList) : new TypeInvoke(); 
+        const Type *tmpTy = (paramList) ? visitCtx(paramList) : new TypeInvoke();
 
-        const TypeInvoke * procType = dynamic_cast<const TypeInvoke*>(tmpTy); // Always true, but needs separate statement to make C happy.
+        const TypeInvoke *procType = dynamic_cast<const TypeInvoke *>(tmpTy); // Always true, but needs separate statement to make C happy.
         const Type *retType = ty ? this->visitCtx(ty)
-                                 : Types::UNDEFINED; 
+                                 : Types::UNDEFINED;
 
-        const TypeInvoke * funcType = ty ? new TypeInvoke(procType->getParamTypes(), retType) 
-                                         : procType;
+        const TypeInvoke *funcType = ty ? new TypeInvoke(procType->getParamTypes(), retType)
+                                        : procType;
 
-        Symbol * funcSymbol = new Symbol(funcId, funcType);
+        Symbol *funcSymbol = new Symbol(funcId, funcType);
 
         stmgr->addSymbol(funcSymbol);
-        stmgr->enterScope(); //NOTE: We do NOT duplicate scopes here because we use a saveVisitBlock with newScope=false
+        stmgr->enterScope(); // NOTE: We do NOT duplicate scopes here because we use a saveVisitBlock with newScope=false
 
         stmgr->addSymbol(new Symbol("@RETURN", retType));
 
-        // FIXME: we double up work here b/c we essentially get the type twice....
         if (paramList)
         {
-            for (auto param : paramList->params)
+            for (unsigned int i = 0; i < paramList->params.size(); i++)
             {
-                const Type *paramType = this->visitCtx(param->ty);
+
+                const Type *paramType = funcType->getParamTypes().at(i);
+
+                auto param = paramList->params.at(i);
+
                 Symbol *paramSymbol = new Symbol(param->name->getText(), paramType);
 
                 stmgr->addSymbol(paramSymbol);
@@ -175,19 +177,18 @@ public:
                 bindings->bind(param, paramSymbol);
             }
         }
-        
+
         this->safeVisitBlock(block, false);
 
-        if(ty && (block->stmts.size() == 0 || !dynamic_cast<WPLParser::ReturnStatementContext *>(block->stmts.at(block->stmts.size() - 1))))
+        if (ty && (block->stmts.size() == 0 || !dynamic_cast<WPLParser::ReturnStatementContext *>(block->stmts.at(block->stmts.size() - 1))))
         {
             errorHandler.addSemanticError(ctx->getStart(), "Function must end in return statement");
         }
 
-        //Safe exit the scope. 
+        // Safe exit the scope.
         safeExitScope(ctx);
 
         bindings->bind(ctx, funcSymbol);
-
 
         return funcType;
     }
@@ -197,31 +198,31 @@ private:
     PropertyManager *bindings;
     WPLErrorHandler errorHandler;
 
-    int flags; 
+    int flags;
 
-    //INFO: TEST UNERLYING FNS!!!
-    std::optional<Scope*> safeExitScope(antlr4::ParserRuleContext * ctx) {
-        std::optional<Scope*> res = stmgr->exitScope(); 
+    // INFO: TEST UNERLYING FNS!!!
+    std::optional<Scope *> safeExitScope(antlr4::ParserRuleContext *ctx)
+    {
+        std::optional<Scope *> res = stmgr->exitScope();
 
-        if(res)
+        if (res)
         {
-            Scope* scope = res.value(); 
-            std::vector<const Symbol*> uninf = scope->getUninferred(); 
+            Scope *scope = res.value();
+            std::vector<const Symbol *> uninf = scope->getUninferred();
 
-            if(uninf.size() > 0)
+            if (uninf.size() > 0)
             {
                 std::ostringstream details;
 
-                for(auto e : uninf)
+                for (auto e : uninf)
                 {
                     details << e->toString() << "; ";
                 }
 
                 errorHandler.addSemanticError(ctx->getStart(), "Uninferred types in context: " + details.str());
             }
-            
         }
 
-        return res; 
+        return res;
     }
 };

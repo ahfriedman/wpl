@@ -275,7 +275,6 @@ public:
 protected:
     bool isSupertypeFor(const Type *other) const override
     {
-        // std::cout << "SYM 300" << std::endl;
         if(valueType) return valueType.value()->isSubtype(other);
 
         TypeInfer * mthis =  const_cast<TypeInfer*> (this);
