@@ -561,9 +561,22 @@ const Type *SemanticVisitor::visitCtx(WPLParser::SelectAlternativeContext *ctx)
 const Type *SemanticVisitor::visitCtx(WPLParser::ParameterListContext *ctx)
 {
     std::vector<const Type *> params;
+    std::map<std::string, WPLParser::ParameterContext *> map; 
 
     for (auto param : ctx->params)
     {
+        std::string name = param->name->getText(); 
+
+        auto prevUse = map.find(name);
+        if(prevUse != map.end())
+        {
+            errorHandler.addSemanticError(param->getStart(), "Re-use of previously defined parameter " + name + ".");
+        }
+        else 
+        {
+            map.insert({name, param});
+        }
+
         const Type *type = this->visitCtx(param);
         params.push_back(type);
     }
