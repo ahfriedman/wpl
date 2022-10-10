@@ -161,7 +161,6 @@ public:
 
         stmgr->addSymbol(new Symbol("@RETURN", retType));
 
-        // FIXME: we double up work here b/c we essentially get the type twice....
         if (paramList)
         {
             for (unsigned int i = 0; i < paramList->params.size(); i++)
