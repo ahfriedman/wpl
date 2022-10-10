@@ -135,9 +135,7 @@ public:
     
     const Type * visitInvokeable(antlr4::ParserRuleContext * ctx, std::string funcId, WPLParser::ParameterListContext *paramList, WPLParser::TypeContext * ty, WPLParser::BlockContext * block)
     {
-        // FIXME: NEEDS TO BE LOCAL SCOPE ONLY AND THEN NEEDS TO COMPARE TYPES (OR JUST GLOBAL SCOPE)
-
-        std::optional<Symbol *> opt = stmgr->lookup(funcId);
+        std::optional<Symbol *> opt = stmgr->lookupInCurrentScope(funcId);
 
         // FIXME: DO BETTER, NEED ORDERING TO CATCH ALL ERRORS
         if (opt)
