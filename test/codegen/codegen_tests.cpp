@@ -872,7 +872,7 @@ TEST_CASE("programs/test13 - Recursive Fibonacci", "[codegen]")
 
 TEST_CASE("programs/test-runtime - Basic runtime tests", "[codegen]")
 {
-    //FIXME: TEST USING EACH INDIVIDUAL RUNTIME FN?
+    //NOTE: tested linking each runtime function locally 
     std::fstream *inStream = new std::fstream("/home/shared/programs/test-runtime.wpl");
     antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
 
