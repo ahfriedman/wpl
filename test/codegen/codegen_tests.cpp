@@ -1057,6 +1057,7 @@ TEST_CASE("programs/externProc - Declaring an external proc", "[codegen]")
 
 TEST_CASE("programs/test14a - Test nested/more complex shorting", "[codegen]")
 {
+    //TODO: MANY OF THE SHORT CIRCUITING CASES COULD BE OPTIMIZED!!!
     std::fstream *inStream = new std::fstream("/home/shared/programs/test14a.wpl");
     antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
 
