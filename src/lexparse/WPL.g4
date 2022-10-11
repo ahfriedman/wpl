@@ -44,7 +44,7 @@ expression          : '(' ex=expression ')'                         # ParenExpr
                     | left=expression op=(MULTIPLY | DIVIDE) right=expression # BinaryArithExpr
                     | left=expression op=(PLUS | MINUS) right=expression      # BinaryArithExpr
                     | left=expression op=(LESS | LESS_EQ | GREATER | GREATER_EQ) right=expression # BinaryRelExpr 
-                    | left=expression op=(EQUAL | NOT_EQUAL) right=expression # EqExpr
+                    | <assoc=right> left=expression op=(EQUAL | NOT_EQUAL) right=expression # EqExpr
                     | left=expression AND right=expression   # LogAndExpr 
                     | left=expression OR  right=expression   # LogOrExpr
                     | call=invocation                        # CallExpr
