@@ -218,7 +218,7 @@ fragment SAFE_STRING : ~["\\]    ;
  */
  
 //Inline comments start with a # and go to the end of line. NOTE: ANTLR uses ~ instead of ^ for negation in regex
-INLINE_COMMENT  :   '#' ~('\n')*  -> skip;
+INLINE_COMMENT  :   '#' .*? ('\n'|EOF)  -> skip;
 
 /*
  * Regular comments start with (* and go until *) while supporting nesting comments. 
