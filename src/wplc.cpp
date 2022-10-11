@@ -125,7 +125,7 @@ int main(int argc, const char *argv[])
   else
   {
     inputs.push_back({new antlr4::ANTLRInputStream(inputString),
-                     outputFileName});
+                      outputFileName});
   }
 
   for (auto input : inputs)
@@ -174,7 +174,7 @@ int main(int argc, const char *argv[])
       return -1;
     }
 
-    std::cout << "Semantic analysis completed without errors. Starting code generation..." << std::endl;
+    std::cout << "Semantic analysis completed for " << input.second << " without errors. Starting code generation..." << std::endl;
 
     // Generate the LLVM IR code
     CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll", flags);
@@ -187,17 +187,18 @@ int main(int argc, const char *argv[])
 
     // Print out the module contents.
     llvm::Module *module = cv->getModule();
-    std::cout << std::endl
-              << std::endl;
+
     if (printOutput)
     {
+      std::cout << std::endl
+                << std::endl;
       cv->modPrint();
     }
 
     // Dump the code to an output file
     if (!noCode)
     {
-      std::string irFileName = input.second; 
+      std::string irFileName = input.second;
       std::error_code ec;
       llvm::raw_fd_ostream irFileStream(irFileName, ec);
       module->print(irFileStream, nullptr);
