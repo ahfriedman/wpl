@@ -332,6 +332,37 @@ TEST_CASE("programs/test15 - No array equalities", "[semantic]")
     REQUIRE(sv->hasErrors(0));
 }
 
+
+TEST_CASE("Comment EOF", "[semantic]")
+{
+  antlr4::ANTLRInputStream input(
+      "# Hello # there!");
+  WPLLexer lexer(&input);
+  // lexer.removeErrorListeners();
+  // lexer.addErrorListener(new TestErrorListener());
+  antlr4::CommonTokenStream tokens(&lexer);
+  WPLParser parser(&tokens);
+  parser.removeErrorListeners();
+  parser.addErrorListener(new TestErrorListener());
+
+  WPLParser::CompilationUnitContext *tree = NULL;
+  REQUIRE_NOTHROW(tree = parser.compilationUnit());
+  REQUIRE(tree != NULL);
+
+  // Any errors should be syntax errors.
+  REQUIRE(tree->getText() != "");
+
+  STManager *stmgr = new STManager();
+  SemanticVisitor *sv = new SemanticVisitor(stmgr, new PropertyManager());
+
+  sv->visitCompilationUnit(tree);
+
+  std::cout << stmgr->toString() << std::endl;
+  std::cout << sv->getErrors() << std::endl; 
+
+  CHECK_FALSE(sv->hasErrors(0));
+}
+
 /*********************************
  * C-Level Example tests
  *********************************/
