@@ -24,10 +24,11 @@
 #include "llvm/Support/InitLLVM.h"
 
 llvm::cl::OptionCategory WPLCOptions("wplc Options");
-static llvm::cl::opt<std::string>
+static llvm::cl::list<std::string>
     inputFileName(llvm::cl::Positional,
-                  llvm::cl::desc("<input file>"),
-                  llvm::cl::init("-"),
+                  llvm::cl::desc("<input files>"),
+                  // llvm::cl::init("-")
+                  llvm::cl::OneOrMore,
                   llvm::cl::cat(WPLCOptions));
 
 static llvm::cl::opt<bool>
@@ -46,7 +47,7 @@ static llvm::cl::opt<std::string>
     outputFileName("o",
                    llvm::cl::desc("supply alternate output file"),
                    llvm::cl::value_desc("output file"),
-                   llvm::cl::init("-"),
+                   llvm::cl::init("-.ll"),
                    llvm::cl::cat(WPLCOptions));
 
 static llvm::cl::opt<bool>
@@ -71,7 +72,13 @@ int main(int argc, const char *argv[])
   llvm::cl::HideUnrelatedOptions(WPLCOptions);
   llvm::cl::ParseCommandLineOptions(argc, argv);
 
-  if (((inputFileName == "-") && (inputString == "-")) || ((inputFileName != "-") && (inputString != "-")))
+  if (inputFileName.empty() && inputString == "-")
+  {
+    std::cerr << "Please enter a file or an input string to compile." << std::endl;
+    std::exit(-1);
+  }
+
+  if (!inputFileName.empty() && inputString != "-")
   {
     std::cerr << "You can only have an input file or and input string, but not both" << std::endl;
     std::exit(-1);
@@ -86,103 +93,116 @@ int main(int argc, const char *argv[])
    ******************************************************************/
 
   // 1. Create the lexer
-  antlr4::ANTLRInputStream *input = nullptr;
-  if (inputFileName != "-")
-  {
-    std::fstream *inStream = new std::fstream(inputFileName);
 
-    if (inStream->fail())
+  std::vector<std::pair<antlr4::ANTLRInputStream *, std::string>> inputs;
+
+  if (!inputFileName.empty())
+  {
+
+    bool useOutputFileName = outputFileName != "-.ll";
+
+    if (inputFileName.size() > 1 && useOutputFileName)
     {
-      std::cerr << "Error loading file: " << inputFileName << ". Does it exist?" << std::endl;
-      return -1;
+      std::cerr << "Cannot specify output file name when generating multiple files." << std::endl;
+      std::exit(-1);
     }
 
-    input = new antlr4::ANTLRInputStream(*inStream);
+    for (auto fileName : inputFileName)
+    {
+      std::fstream *inStream = new std::fstream(fileName);
+
+      if (inStream->fail())
+      {
+        std::cerr << "Error loading file: " << fileName << ". Does it exist?" << std::endl;
+        std::exit(-1);
+      }
+
+      // inputFileName.substr(0, inputFileName.find_last_of('.')) + ".ll"
+      inputs.push_back({new antlr4::ANTLRInputStream(*inStream),
+                        useOutputFileName ? outputFileName : fileName.substr(0, fileName.find_last_of('.')) + ".ll"});
+    }
   }
   else
   {
-    input = new antlr4::ANTLRInputStream(inputString);
-  }
-  WPLLexer lexer(input);
-  antlr4::CommonTokenStream tokens(&lexer);
-
-  // 2. Create a parser from the token stream
-  WPLParser parser(&tokens);
-
-  parser.removeErrorListeners();
-  WPLSyntaxErrorListener *syntaxListener = new WPLSyntaxErrorListener();
-  parser.addErrorListener(syntaxListener);
-  // delete syntaxListener;
-
-  WPLParser::CompilationUnitContext *tree = NULL;
-
-  // 3. Parse the program and get the parse tree
-  tree = parser.compilationUnit();
-
-  if (syntaxListener->hasErrors(0)) // Want to see all errors.
-  {
-    std::cerr << syntaxListener->errorList() << std::endl;
-    return -1;
+    inputs.push_back({new antlr4::ANTLRInputStream(inputString),
+                     outputFileName});
   }
 
-  /*
-   * Sets up compiler flags. These need to be sent to the visitors.
-   */
-
-  int flags = (noRuntime) ? CompilerFlags::NO_RUNTIME : 0;
-
-  /******************************************************************
-   * Perform semantic analysis and populate the symbol table
-   * and bind nodes to Symbols using the property manager. If
-   * there are any errors we print them out and exit.
-   ******************************************************************/
-  STManager *stm = new STManager();
-  PropertyManager *pm = new PropertyManager();
-  SemanticVisitor *sv = new SemanticVisitor(stm, pm, flags);
-  sv->visitCompilationUnit(tree);
-
-  if (sv->hasErrors(0)) // Want to see all errors
+  for (auto input : inputs)
   {
-    std::cerr << sv->getErrors() << std::endl;
-    return -1;
-  }
+    WPLLexer lexer(input.first);
+    antlr4::CommonTokenStream tokens(&lexer);
 
-  std::cout << "Semantic analysis completed without errors. Starting code generation..." << std::endl;
+    // 2. Create a parser from the token stream
+    WPLParser parser(&tokens);
 
-  // Generate the LLVM IR code
-  CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll", flags);
-  cv->visitCompilationUnit(tree);
-  if (cv->hasErrors(0)) // Want to see all errors
-  {
-    std::cerr << cv->getErrors() << std::endl;
-    return -1;
-  }
+    parser.removeErrorListeners();
+    WPLSyntaxErrorListener *syntaxListener = new WPLSyntaxErrorListener();
+    parser.addErrorListener(syntaxListener);
+    // delete syntaxListener;
 
-  // Print out the module contents.
-  llvm::Module *module = cv->getModule();
-  std::cout << std::endl
-            << std::endl;
-  if (printOutput)
-  {
-    cv->modPrint();
-  }
+    WPLParser::CompilationUnitContext *tree = NULL;
 
-  // Dump the code to an output file
-  if (!noCode)
-  {
-    std::string irFileName;
-    if (outputFileName != "-")
+    // 3. Parse the program and get the parse tree
+    tree = parser.compilationUnit();
+
+    if (syntaxListener->hasErrors(0)) // Want to see all errors.
     {
-      irFileName = outputFileName;
+      std::cerr << syntaxListener->errorList() << std::endl;
+      return -1;
     }
-    else
+
+    /*
+     * Sets up compiler flags. These need to be sent to the visitors.
+     */
+
+    int flags = (noRuntime) ? CompilerFlags::NO_RUNTIME : 0;
+
+    /******************************************************************
+     * Perform semantic analysis and populate the symbol table
+     * and bind nodes to Symbols using the property manager. If
+     * there are any errors we print them out and exit.
+     ******************************************************************/
+    STManager *stm = new STManager();
+    PropertyManager *pm = new PropertyManager();
+    SemanticVisitor *sv = new SemanticVisitor(stm, pm, flags);
+    sv->visitCompilationUnit(tree);
+
+    if (sv->hasErrors(0)) // Want to see all errors
     {
-      irFileName = inputFileName.substr(0, inputFileName.find_last_of('.')) + ".ll";
+      std::cerr << sv->getErrors() << std::endl;
+      return -1;
     }
-    std::error_code ec;
-    llvm::raw_fd_ostream irFileStream(irFileName, ec);
-    module->print(irFileStream, nullptr);
-    irFileStream.flush();
+
+    std::cout << "Semantic analysis completed without errors. Starting code generation..." << std::endl;
+
+    // Generate the LLVM IR code
+    CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll", flags);
+    cv->visitCompilationUnit(tree);
+    if (cv->hasErrors(0)) // Want to see all errors
+    {
+      std::cerr << cv->getErrors() << std::endl;
+      return -1;
+    }
+
+    // Print out the module contents.
+    llvm::Module *module = cv->getModule();
+    std::cout << std::endl
+              << std::endl;
+    if (printOutput)
+    {
+      cv->modPrint();
+    }
+
+    // Dump the code to an output file
+    if (!noCode)
+    {
+      std::string irFileName = input.second; 
+      std::error_code ec;
+      llvm::raw_fd_ostream irFileStream(irFileName, ec);
+      module->print(irFileStream, nullptr);
+      irFileStream.flush();
+    }
   }
 
   if (noRuntime)
