@@ -170,8 +170,10 @@ int main(int argc, const char *argv[])
 
     if (sv->hasErrors(0)) // Want to see all errors
     {
+      std::cout << "Semantic analysis completed for " << input.second << " with errors: " << std::endl;
       std::cerr << sv->getErrors() << std::endl;
-      return -1;
+      // return -1;
+      continue;
     }
 
     std::cout << "Semantic analysis completed for " << input.second << " without errors. Starting code generation..." << std::endl;
@@ -182,7 +184,8 @@ int main(int argc, const char *argv[])
     if (cv->hasErrors(0)) // Want to see all errors
     {
       std::cerr << cv->getErrors() << std::endl;
-      return -1;
+      // return -1;
+      continue;
     }
 
     // Print out the module contents.
@@ -204,15 +207,15 @@ int main(int argc, const char *argv[])
       module->print(irFileStream, nullptr);
       irFileStream.flush();
     }
-  }
 
-  if (noRuntime)
-  {
-    std::cout << "Code generation completed; program does NOT support runtime." << std::endl;
-  }
-  else
-  {
-    std::cout << "Code generation completed; program may require runtime." << std::endl;
+    if (noRuntime)
+    {
+      std::cout << "Code generation completed for " << input.second <<  "; program does NOT support runtime." << std::endl;
+    }
+    else
+    {
+      std::cout << "Code generation completed for " << input.second << "; program may require runtime." << std::endl;
+    }
   }
 
   return 0;
