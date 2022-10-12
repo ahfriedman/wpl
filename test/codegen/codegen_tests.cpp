@@ -1092,6 +1092,42 @@ TEST_CASE("programs/test14a - Test nested/more complex shorting", "[codegen]")
     REQUIRE(llvmIrToSHA256(cv->getModule()) == "e6a2a65891ddb6fdc968fea7091c96cbceefca2f243e18c3f1aceb5776e04dfe");
 }
 
+TEST_CASE("programs/test18 - Parody", "[codegen]")
+{
+    std::fstream *inStream = new std::fstream("/home/shared/programs/test18.wpl");
+    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+
+    WPLLexer lexer(input);
+    antlr4::CommonTokenStream tokens(&lexer);
+    WPLParser parser(&tokens);
+    parser.removeErrorListeners();
+    WPLParser::CompilationUnitContext *tree = NULL;
+    REQUIRE_NOTHROW(tree = parser.compilationUnit());
+    REQUIRE(tree != NULL);
+    STManager *stm = new STManager();
+    PropertyManager *pm = new PropertyManager();
+    SemanticVisitor *sv = new SemanticVisitor(stm, pm, 0);
+    sv->visitCompilationUnit(tree);
+
+
+    if(sv->hasErrors(0))
+    {
+        CHECK("foo" == sv->getErrors());
+    }
+    REQUIRE_FALSE(sv->hasErrors(0));
+
+    CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll", 0);
+    cv->visitCompilationUnit(tree);
+
+    if (cv->hasErrors(0))
+    {
+        CHECK("foo" == cv->getErrors());
+    }
+    CHECK_FALSE(cv->hasErrors(0));
+
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "9c4c64be2b335ecf58d9bbe4b267adc12a5b74518f587f30ba37591be79b09c1");
+}
+
 
 /************************************
  * Example C-Level Tests
