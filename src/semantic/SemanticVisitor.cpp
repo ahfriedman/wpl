@@ -667,10 +667,11 @@ const Type *SemanticVisitor::visitCtx(WPLParser::AssignStatementContext *ctx)
 
 const Type *SemanticVisitor::visitCtx(WPLParser::VarDeclStatementContext *ctx)
 {
-    const Type *assignType = this->visitCtx(ctx->typeOrVar());
 
     for (auto e : ctx->assignments)
     {
+        //Needs to happen in case we have vars
+        const Type *assignType = this->visitCtx(ctx->typeOrVar());
         auto exprType = (e->ex) ? std::any_cast<const Type *>(e->ex->accept(this)) : assignType;
 
         if (e->ex && stmgr->isGlobalScope())
@@ -701,7 +702,11 @@ const Type *SemanticVisitor::visitCtx(WPLParser::VarDeclStatementContext *ctx)
             }
             else
             {
-                Symbol *symbol = new Symbol(id, exprType, stmgr->isGlobalScope()); // Done with exprType for later inferencing purposes
+                //Needed to ensure vars get their own inf type
+                const Type * newAssignType = this->visitCtx(ctx->typeOrVar());
+                const Type * newExprType = (e->ex) ? std::any_cast<const Type *>(e->ex->accept(this)) : newAssignType;
+
+                Symbol *symbol = new Symbol(id, newExprType, stmgr->isGlobalScope()); // Done with exprType for later inferencing purposes
                 stmgr->addSymbol(symbol);
                 bindings->bind(var, symbol);
             }

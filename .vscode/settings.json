@@ -92,7 +92,8 @@
     "version": "cpp",
     "*.cp": "cpp",
     "forward_list": "cpp",
-    "complex": "cpp"
+    "complex": "cpp",
+    "*.inc": "cpp"
   },
   "cmake.configureOnOpen": true
 }

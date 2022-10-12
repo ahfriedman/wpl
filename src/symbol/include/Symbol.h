@@ -245,55 +245,106 @@ protected:
 class TypeInfer : public Type
 {
 private:
-    std::optional<const Type *> valueType; //Actual type acting as 
+    std::optional<const Type *> * valueType; //Actual type acting as 
+    std::vector<const TypeInfer *> infTypes; 
 
 public:
     TypeInfer()
     {
-        valueType = {};
+        valueType = new std::optional<const Type*>;
     }
+
+    bool hasBeenInferred() const {return valueType->has_value(); }
 
     std::string toString() const override
     {
-        if(valueType)
+        if(valueType->has_value())
         {
-            return "{VAR/" + valueType.value()->toString() + "}";
+            return "{VAR/" + valueType->value()->toString() + "}";
         }
         return "VAR";
     }
 
-    std::optional<const Type *> getValueType() const { return valueType; }
+    // std::optional<const Type *> getValueType() const { return valueType; }
+
     
     llvm::Type *getLLVMType(llvm::LLVMContext &C) const override
     {
-        if(valueType) return valueType.value()->getLLVMType(C); 
+        if(valueType->has_value()) return valueType->value()->getLLVMType(C); 
 
         //This should never happen: we should have always detected such cases in our semantic analyis
         return nullptr; 
     }
 
+    //FIXME: VERIFY NO PARODY IN CODEGEN!
+
+    //NOTE: SHOULD NEVER PASS INF TO THIS!
+    bool setValue(const Type * other) const
+    {   
+        if(dynamic_cast<const TypeInfer*>(other)) return false; 
+
+        if(valueType->has_value())
+        {
+            return valueType->value()->isSubtype(other);
+        }
+        
+        
+        TypeInfer * mthis =  const_cast<TypeInfer*> (this);
+        *mthis->valueType = other;
+
+        bool valid = true; 
+        for(const TypeInfer* ty : infTypes) {
+            if(!ty->setValue(other)) {
+                valid = false; 
+            }
+        }
+
+        return valid; 
+    }
+
 protected:
     bool isSupertypeFor(const Type *other) const override
     {
-        if(valueType) return valueType.value()->isSubtype(other);
+        if(valueType->has_value()) return valueType->value()->isSubtype(other);
 
         TypeInfer * mthis =  const_cast<TypeInfer*> (this);
 
         if(const TypeInfer * oinf = dynamic_cast<const TypeInfer*>(other))
         {
-            if(oinf->valueType)
+            if(oinf->valueType->has_value())
             {
-                mthis->valueType = oinf->valueType; //other; 
-                return true; 
+                // *mthis->valueType = oinf->valueType->value(); 
+                return setValue(oinf->valueType->value());
+                // return true; 
             }
 
+            mthis->infTypes.push_back(oinf);
+            // return true; 
+
+
+
+            TypeInfer *moth = const_cast<TypeInfer*>(oinf); 
+            moth->infTypes.push_back(this);
+            return true;
+            // if(oinf->valueType->has_value())
+            // {
+                // mthis->valueType = oinf->valueType; //other; 
+                // return true; 
+            // }
+
             //Cannot assign undefined
-            return false;
+            // return false;
         }
 
-        mthis->valueType = other; 
+        
+        // std::optional<const Type *> * next = new std::optional<const Type*>(other);
 
-        return true;
+
+        // *mthis->valueType = other;//next;///other; 
+
+        // return true;
+
+        return setValue(other);
     }
 };
 
