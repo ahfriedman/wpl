@@ -280,14 +280,11 @@ public:
 
     //NOTE: SHOULD NEVER PASS INF TO THIS!
     bool setValue(const Type * other) const
-    {
-        bool givenWrong = dynamic_cast<const TypeInfer*>(other); 
-        std::cout << "Given inf? " << (givenWrong ? " YES" : " NO") << " GIVEN: " << other->toString() << std::endl; 
+    {   
         if(dynamic_cast<const TypeInfer*>(other)) return false; 
 
         if(valueType->has_value())
         {
-            std::cout << valueType->value()->toString() << " <: " << other->toString() << std::endl; 
             return valueType->value()->isSubtype(other);
         }
         
@@ -308,7 +305,6 @@ public:
 protected:
     bool isSupertypeFor(const Type *other) const override
     {
-        std::cout << "COMP VAR ( " << toString() << " )TO " << other->toString() << std::endl; 
         if(valueType->has_value()) return valueType->value()->isSubtype(other);
 
         TypeInfer * mthis =  const_cast<TypeInfer*> (this);
