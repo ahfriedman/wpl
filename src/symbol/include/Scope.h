@@ -47,7 +47,7 @@ class Scope {
             for(auto item : symbols) {
                 if(const TypeInfer * inf = dynamic_cast<const TypeInfer *>(item.second->type))
                 {
-                    if(!inf->getValueType())
+                    if(!inf->hasBeenInferred())
                         ans.push_back(item.second); 
                 }
             }
