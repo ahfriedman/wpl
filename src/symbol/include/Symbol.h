@@ -23,7 +23,11 @@
 #include <optional> // Optionals
 
 
-// Object slicing is NOT fun
+/*******************************************
+ * 
+ * Top Type Definition
+ * 
+ *******************************************/
 class Type
 {
 public:
@@ -42,6 +46,11 @@ protected:
     virtual bool isSupertypeFor(const Type *other) const { return true; }
 };
 
+/*******************************************
+ * 
+ * Integer (32 bit, signed) Type Definition
+ * 
+ *******************************************/
 class TypeInt : public Type
 {
 public:
@@ -51,6 +60,13 @@ public:
 protected:
     bool isSupertypeFor(const Type *other) const override;
 };
+
+
+/*******************************************
+ * 
+ *     Boolean (1 bit) Type Definition
+ * 
+ *******************************************/
 
 class TypeBool : public Type
 {
@@ -62,6 +78,13 @@ protected:
     bool isSupertypeFor(const Type *other) const override;
 };
 
+
+/*********************************************
+ * 
+ * String (dynamic allocation) Type Definition
+ * 
+ *********************************************/
+
 class TypeStr : public Type
 {
 public:
@@ -71,6 +94,13 @@ public:
 protected:
     bool isSupertypeFor(const Type *other) const override;
 };
+
+
+/*******************************************
+ * 
+ * Bottom/Unit Type
+ * 
+ *******************************************/
 
 class TypeBot : public Type
 {
@@ -82,6 +112,11 @@ protected:
 };
 
 
+/*******************************************
+ * 
+ * Basic Types
+ * 
+ *******************************************/
 
 namespace Types
 {
@@ -91,7 +126,11 @@ namespace Types
     inline const Type *UNDEFINED = new TypeBot();
 };
 
-
+/*******************************************
+ * 
+ * Fixed-Length Array Type Definition
+ * 
+ *******************************************/
 class TypeArray : public Type
 {
 private:
@@ -138,6 +177,13 @@ protected:
         return false;
     }
 };
+
+
+/*******************************************
+ * 
+ * Invokable (FUNC/PROC) Type Definition
+ * 
+ *******************************************/
 
 class TypeInvoke : public Type
 {
@@ -241,7 +287,11 @@ protected:
     }
 };
 
-
+/*******************************************
+ * 
+ * Type used for Type Inference
+ * 
+ *******************************************/
 class TypeInfer : public Type
 {
 private:
@@ -348,6 +398,12 @@ protected:
     }
 };
 
+
+/*******************************************
+ * 
+ * Symbol Definition
+ * 
+ *******************************************/
 struct Symbol
 {
     std::string identifier; // Mostly needed for our tostring function
