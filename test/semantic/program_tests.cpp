@@ -363,6 +363,25 @@ TEST_CASE("Comment EOF", "[semantic]")
   CHECK_FALSE(sv->hasErrors(0));
 }
 
+TEST_CASE("programs/test16 - overwrite lhs var", "[semantic]")
+{
+    std::fstream *inStream = new std::fstream("/home/shared/programs/test16.wpl");
+    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+
+    WPLLexer lexer(input);
+    antlr4::CommonTokenStream tokens(&lexer);
+    WPLParser parser(&tokens);
+    parser.removeErrorListeners();
+    WPLParser::CompilationUnitContext *tree = NULL;
+    REQUIRE_NOTHROW(tree = parser.compilationUnit());
+    REQUIRE(tree != NULL);
+    STManager *stm = new STManager();
+    PropertyManager *pm = new PropertyManager();
+    SemanticVisitor *sv = new SemanticVisitor(stm, pm);
+    sv->visitCompilationUnit(tree);
+    REQUIRE(sv->hasErrors(0));
+}
+
 /*********************************
  * C-Level Example tests
  *********************************/
