@@ -20,6 +20,8 @@ public:
         flags = f;
     }
 
+    tabulate::Table getPrettyErrorList() { return errorHandler.getPrettyErrorList(); }
+
     std::string getErrors() { return errorHandler.errorList(); }
     STManager *getSTManager() { return stmgr; }
     PropertyManager *getBindings() { return bindings; }

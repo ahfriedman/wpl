@@ -23,4 +23,5 @@ include_directories(semantic_lib
   ${UTILITY_INCLUDE}
   ${LLVM_BINARY_DIR}/include
   ${LLVM_INCLUDE_DIR}
+  ${tabulate_SOURCE_DIR}/include
 )

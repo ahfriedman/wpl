@@ -14,6 +14,9 @@
 #include <vector>
 #include <sstream>
 
+#include "tabulate/table.hpp"
+using namespace tabulate;
+
 enum ErrType
 {
   SYNTAX,
@@ -21,10 +24,10 @@ enum ErrType
   CODEGEN
 };
 
-enum ErrSev 
+enum ErrSev
 {
-  ERROR = 1, 
-  CRITICAL_WARNING = 2, //Not an error persay, but need to stop compiling. 
+  ERROR = 1,
+  CRITICAL_WARNING = 2, // Not an error persay, but need to stop compiling.
   WARNING = 4,
   INFO = 8,
 };
@@ -35,7 +38,7 @@ struct WPLError
   antlr4::Token *token;
   std::string message;
 
-  ErrSev severity; 
+  ErrSev severity;
 
   WPLError(antlr4::Token *tok, std::string msg, ErrType et, ErrSev es)
   {
@@ -43,7 +46,7 @@ struct WPLError
     message = msg;
 
     type = et;
-    severity = es; 
+    severity = es;
   }
 
   std::string toString()
@@ -52,6 +55,24 @@ struct WPLError
     e << getStringForSeverity(severity) << ": " << getStringForErrorType(type) << ": [" << token->getLine() << ',' << token->getCharPositionInLine()
       << "]: " << message;
     return e.str();
+  }
+
+  tabulate::Table asTable()
+  {
+    tabulate::Table tab;
+
+    std::ostringstream e;
+    e << "[" << token->getLine() << ',' << token->getCharPositionInLine()<< "]: " << message;
+
+    tab.add_row({
+        getStringForSeverity(severity),
+        getStringForErrorType(type),
+        e.str()
+    });
+
+    tab[0][0].format().font_background_color(Color::red).font_style({FontStyle::bold});
+    
+    return tab; 
   }
 
   static std::string getStringForErrorType(ErrType e)
@@ -69,16 +90,16 @@ struct WPLError
 
   static std::string getStringForSeverity(ErrSev e)
   {
-    switch(e)
+    switch (e)
     {
-      case ERROR: 
-        return "Error";
-      case CRITICAL_WARNING: 
-        return "Critical Warning";
-      case WARNING:
-        return "Warning";
-      case INFO: 
-        return "Informational";
+    case ERROR:
+      return "Error";
+    case CRITICAL_WARNING:
+      return "Critical Warning";
+    case WARNING:
+      return "Warning";
+    case INFO:
+      return "Informational";
     }
   }
 };
@@ -108,7 +129,7 @@ public:
 
   std::string errorList()
   {
-    // int i = WARNING | CRITICAL_WARNING; 
+    // int i = WARNING | CRITICAL_WARNING;
     std::ostringstream errList;
     for (WPLError *e : errors)
     {
@@ -117,17 +138,39 @@ public:
     return errList.str();
   }
 
-  bool hasErrors(int errorFlags) { 
-    //If no flags provided, then return if we have any 
-    if(!errorFlags) return !errors.empty(); 
+  tabulate::Table getPrettyErrorList()
+  {
+    Table table; 
 
-    for(WPLError * err : errors)
-    {
-      std::cerr << err->severity << " & " << errorFlags << std::endl; 
-      if(err->severity & errorFlags) return true; 
+    for(WPLError * e : errors) {
+      table.add_row({e->asTable()});
     }
 
-    return false; //!errors.empty(); 
+    table.format()
+    // 
+    .border_top(" ")
+    .border_bottom(" ")
+    .border_left(" ")
+    .border_right(" ")
+    .corner(" ");
+
+    return table; 
+  }
+
+  bool hasErrors(int errorFlags)
+  {
+    // If no flags provided, then return if we have any
+    if (!errorFlags)
+      return !errors.empty();
+
+    for (WPLError *err : errors)
+    {
+      std::cerr << err->severity << " & " << errorFlags << std::endl;
+      if (err->severity & errorFlags)
+        return true;
+    }
+
+    return false; //! errors.empty();
   }
 
 protected:

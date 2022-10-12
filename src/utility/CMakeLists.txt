@@ -10,4 +10,5 @@ add_library(utility_lib OBJECT
 include_directories(utility_lib
   ${UTILITY_INCLUDE}
   ${ANTLR_INCLUDE}
+  ${tabulate_SOURCE_DIR}/include
 )

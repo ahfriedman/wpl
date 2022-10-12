@@ -46,6 +46,7 @@ target_include_directories(tests PUBLIC
   ${CODEGEN_INCLUDE}
   ${LLVM_BINARY_DIR}/include
   ${LLVM_INCLUDE_DIR}
+  ${tabulate_SOURCE_DIR}/include
   )
 
 target_link_libraries(tests 

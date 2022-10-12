@@ -37,4 +37,5 @@ include_directories(codegen_lib
   ${CODEGEN_INCLUDE}
   ${LLVM_BINARY_DIR}/include
   ${LLVM_INCLUDE_DIR}
+  ${tabulate_SOURCE_DIR}/include
 )

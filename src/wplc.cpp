@@ -23,6 +23,10 @@
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/InitLLVM.h"
 
+#include "tabulate/table.hpp"
+
+using namespace tabulate;
+
 llvm::cl::OptionCategory WPLCOptions("wplc Options");
 static llvm::cl::list<std::string>
     inputFileName(llvm::cl::Positional,
@@ -83,6 +87,17 @@ int main(int argc, const char *argv[])
     std::cerr << "You can only have an input file or and input string, but not both" << std::endl;
     std::exit(-1);
   }
+
+  tabulate::Table tab;
+  tab.add_row({"Welcome to WPL!"});
+  tab.format()
+    .font_style({FontStyle::bold})
+    .border_top(" ")
+    .border_bottom(" ")
+    .border_left(" ")
+    .border_right(" ")
+    .corner(" ");
+  std::cout << tab << std::endl; 
 
   /******************************************************************
    * Now that we have the input, we can perform the first stage:
@@ -172,6 +187,8 @@ int main(int argc, const char *argv[])
     {
       std::cout << "Semantic analysis completed for " << input.second << " with errors: " << std::endl;
       std::cerr << sv->getErrors() << std::endl;
+
+      std::cerr << sv->getPrettyErrorList() << std::endl; 
       // return -1;
       continue;
     }
