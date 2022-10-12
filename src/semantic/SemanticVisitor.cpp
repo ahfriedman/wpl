@@ -667,10 +667,11 @@ const Type *SemanticVisitor::visitCtx(WPLParser::AssignStatementContext *ctx)
 
 const Type *SemanticVisitor::visitCtx(WPLParser::VarDeclStatementContext *ctx)
 {
-    const Type *assignType = this->visitCtx(ctx->typeOrVar());
 
     for (auto e : ctx->assignments)
     {
+        //Needs to happen in case we have vars
+        const Type *assignType = this->visitCtx(ctx->typeOrVar());
         auto exprType = (e->ex) ? std::any_cast<const Type *>(e->ex->accept(this)) : assignType;
 
         if (e->ex && stmgr->isGlobalScope())
