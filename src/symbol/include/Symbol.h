@@ -246,12 +246,15 @@ class TypeInfer : public Type
 {
 private:
     std::optional<const Type *> * valueType; //Actual type acting as 
+    std::vector<const TypeInfer *> infTypes; 
 
 public:
     TypeInfer()
     {
         valueType = new std::optional<const Type*>;
     }
+
+    bool hasBeenInferred() const {return valueType->has_value(); }
 
     std::string toString() const override
     {
@@ -263,7 +266,7 @@ public:
     }
 
     // std::optional<const Type *> getValueType() const { return valueType; }
-    bool hasBeenInferred() const {return valueType->has_value(); }
+
     
     llvm::Type *getLLVMType(llvm::LLVMContext &C) const override
     {
@@ -273,21 +276,64 @@ public:
         return nullptr; 
     }
 
+    //FIXME: VERIFY NO PARODY IN CODEGEN!
+
+    //NOTE: SHOULD NEVER PASS INF TO THIS!
+    bool setValue(const Type * other) const
+    {
+        bool givenWrong = dynamic_cast<const TypeInfer*>(other); 
+        std::cout << "Given inf? " << (givenWrong ? " YES" : " NO") << " GIVEN: " << other->toString() << std::endl; 
+        if(dynamic_cast<const TypeInfer*>(other)) return false; 
+
+        if(valueType->has_value())
+        {
+            std::cout << valueType->value()->toString() << " <: " << other->toString() << std::endl; 
+            return valueType->value()->isSubtype(other);
+        }
+        
+        
+        TypeInfer * mthis =  const_cast<TypeInfer*> (this);
+        *mthis->valueType = other;
+
+        bool valid = true; 
+        for(const TypeInfer* ty : infTypes) {
+            if(!ty->setValue(other)) {
+                valid = false; 
+            }
+        }
+
+        return valid; 
+    }
+
 protected:
     bool isSupertypeFor(const Type *other) const override
     {
+        std::cout << "COMP VAR ( " << toString() << " )TO " << other->toString() << std::endl; 
         if(valueType->has_value()) return valueType->value()->isSubtype(other);
 
         TypeInfer * mthis =  const_cast<TypeInfer*> (this);
 
         if(const TypeInfer * oinf = dynamic_cast<const TypeInfer*>(other))
         {
-            // TypeInfer *moth = const_cast<TypeInfer*>(oinf); 
+            if(oinf->valueType->has_value())
+            {
+                // *mthis->valueType = oinf->valueType->value(); 
+                return setValue(oinf->valueType->value());
+                // return true; 
+            }
+
+            mthis->infTypes.push_back(oinf);
+            // return true; 
+
+
+
+            TypeInfer *moth = const_cast<TypeInfer*>(oinf); 
+            moth->infTypes.push_back(this);
+            return true;
             // if(oinf->valueType->has_value())
             // {
-                // moth->valueType = mthis->valueType;
-                mthis->valueType = oinf->valueType; //other; 
-                return true; 
+                // mthis->valueType = oinf->valueType; //other; 
+                // return true; 
             // }
 
             //Cannot assign undefined
@@ -296,9 +342,13 @@ protected:
 
         
         // std::optional<const Type *> * next = new std::optional<const Type*>(other);
-        *mthis->valueType = other;//next;///other; 
 
-        return true;
+
+        // *mthis->valueType = other;//next;///other; 
+
+        // return true;
+
+        return setValue(other);
     }
 };
 
