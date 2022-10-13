@@ -5,8 +5,12 @@
 class PropertyManager {
   public:
     // Get the Symbol associated with this node
-    Symbol* getBinding(antlr4::tree::ParseTree *ctx) {
-      return bindings.get(ctx);
+    std::optional<Symbol*> getBinding(antlr4::tree::ParseTree *ctx) {
+      Symbol * ans = bindings.get(ctx); 
+
+      if(ans) return ans; 
+
+      return std::nullopt; 
     }
 
     // Bind the symbol to the node
