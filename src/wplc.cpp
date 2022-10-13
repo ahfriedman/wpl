@@ -28,7 +28,7 @@ static llvm::cl::list<std::string>
     inputFileName(llvm::cl::Positional,
                   llvm::cl::desc("<input files>"),
                   // llvm::cl::init("-")
-                  llvm::cl::OneOrMore,
+                  llvm::cl::ZeroOrMore,
                   llvm::cl::cat(WPLCOptions));
 
 static llvm::cl::opt<bool>
