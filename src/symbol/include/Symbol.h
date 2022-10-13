@@ -22,34 +22,66 @@
 #include <vector>   // Vectors
 #include <optional> // Optionals
 
-
 /*******************************************
- * 
+ *
  * Top Type Definition
- * 
+ *
  *******************************************/
 class Type
 {
 public:
     virtual ~Type() = default;
 
+    /**
+     * @brief Returns a human-readable string representation of the type's name.
+     *
+     * @return std::string The string name of the type
+     */
     virtual std::string toString() const { return "TOP"; }
-    virtual bool isSubtype(const Type* other) const; 
+
+    /**
+     * @brief Determines if this type is a subtype of another.
+     *
+     * @param other The type we are testing to see if we are a subtype of
+     * @return true If the current type is a subtype of other
+     * @return false If the current type is not a subtype of other.
+     */
+    virtual bool isSubtype(const Type *other) const;
     virtual bool isNotSubtype(const Type *other) const { return !(isSubtype(other)); }
 
-    virtual bool isSupertype(const Type* other) const { return isSupertypeFor(other); }
-    virtual bool isNotSupertype(const Type* other) const { return !isSupertypeFor(other); }
+    /**
+     * @brief Determines if this type is a supertype of another
+     *
+     * @param other The posposed subtype of this type.
+     * @return true If this is a supertype for other.
+     * @return false If this is not a supertype for other.
+     */
+    virtual bool isSupertype(const Type *other) const { return isSupertypeFor(other); }
+    virtual bool isNotSupertype(const Type *other) const { return !isSupertypeFor(other); }
 
+    /**
+     * @brief Gets the llvm::Type* which corresponds to the current type in LLVM
+     *
+     * @param C The llvm context
+     * @return llvm::Type* The representation of this type in LLVM
+     */
     virtual llvm::Type *getLLVMType(llvm::LLVMContext &C) const { return llvm::Type::getVoidTy(C); }
 
 protected:
-    virtual bool isSupertypeFor(const Type *other) const { return true; }
+    /**
+     * @brief Internal tool used to determine if this type is a supertype for another type. NOTE: THIS SHOULD NEVER BE CALLED DIRECTLY OUTSIDE OF THE TYPE DEFINITIONS. DOING SO MAY LEAD TO UNUSUAL BEHAVIOR!
+     *
+     * @param other The type to test against
+     * @return true if this is a supertype of other
+     * @return false if this is not a supertype of other.
+     */
+    virtual bool isSupertypeFor(const Type *other) const { return true; } // The top type is the universal supertype
 };
 
 /*******************************************
- * 
+ *
  * Integer (32 bit, signed) Type Definition
- * 
+ *
  *******************************************/
 class TypeInt : public Type
 {
@@ -58,14 +90,13 @@ public:
     llvm::Type *getLLVMType(llvm::LLVMContext &C) const override { return llvm::Type::getInt32Ty(C); }
 
 protected:
-    bool isSupertypeFor(const Type *other) const override;
+    bool isSupertypeFor(const Type *other) const override; // Defined in .cpp
 };
 
-
 /*******************************************
- * 
+ *
  *     Boolean (1 bit) Type Definition
- * 
+ *
  *******************************************/
 
 class TypeBool : public Type
@@ -75,14 +106,13 @@ public:
     llvm::Type *getLLVMType(llvm::LLVMContext &C) const override { return llvm::Type::getInt1Ty(C); }
 
 protected:
-    bool isSupertypeFor(const Type *other) const override;
+    bool isSupertypeFor(const Type *other) const override; // Defined in .cpp
 };
 
-
 /*********************************************
- * 
+ *
  * String (dynamic allocation) Type Definition
- * 
+ *
  *********************************************/
 
 class TypeStr : public Type
@@ -92,14 +122,13 @@ public:
     llvm::Type *getLLVMType(llvm::LLVMContext &C) const override { return llvm::Type::getInt8PtrTy(C); }
 
 protected:
-    bool isSupertypeFor(const Type *other) const override;
+    bool isSupertypeFor(const Type *other) const override; // Defined in .cpp
 };
 
-
 /*******************************************
- * 
+ *
  * Bottom/Unit Type
- * 
+ *
  *******************************************/
 
 class TypeBot : public Type
@@ -108,14 +137,13 @@ public:
     std::string toString() const override { return "BOT"; }
 
 protected:
-    bool isSupertypeFor(const Type *other) const override;
+    bool isSupertypeFor(const Type *other) const override; // Defined in .cpp
 };
 
-
 /*******************************************
- * 
+ *
  * Basic Types
- * 
+ *
  *******************************************/
 
 namespace Types
@@ -127,36 +155,71 @@ namespace Types
 };
 
 /*******************************************
- * 
+ *
  * Fixed-Length Array Type Definition
- * 
+ *
  *******************************************/
 class TypeArray : public Type
 {
 private:
+    /**
+     * @brief The type of the array elements
+     *
+     */
     const Type *valueType;
+
+    /**
+     * @brief The length of the array
+     *
+     */
     int length;
 
 public:
+    /**
+     * @brief Construct a new TypeArray
+     *
+     * @param v The type of the array elements
+     * @param l The length of the array. NOTE: THIS SHOULD ALWAYS BE AT LEAST ONE!
+     */
     TypeArray(const Type *v, int l)
     {
         valueType = v;
         length = l;
     }
 
+    /**
+     * @brief Returns the name of the string in form of <valueType name>[<array length>].
+     *
+     * @return std::string String name representation of this type.
+     */
     std::string toString() const override
     {
         std::ostringstream description;
-        description << valueType->toString()  << "[" << length << "]";
+        description << valueType->toString() << "[" << length << "]";
 
-        return description.str(); 
+        return description.str();
     }
 
+    /**
+     * @brief Get the Value Type object
+     *
+     * @return const Type*
+     */
     const Type *getValueType() const { return valueType; }
 
-
+    /**
+     * @brief Get the Length object
+     *
+     * @return int
+     */
     int getLength() const { return length; }
 
+    /**
+     * @brief Gets the LLVM type for an array of the given valueType and length.
+     *
+     * @param C LLVM Context
+     * @return llvm::Type*
+     */
     llvm::Type *getLLVMType(llvm::LLVMContext &C) const override
     {
         uint64_t len = (uint64_t)length;
@@ -169,8 +232,14 @@ public:
 protected:
     bool isSupertypeFor(const Type *other) const override
     {
+        // An array can only be a supertype of another array
         if (const TypeArray *p = dynamic_cast<const TypeArray *>(other))
         {
+            /*
+             * If the other array's value type is a subtype of the current
+             * array's type AND their lengths match, then we can consider
+             * this to be a supertype of the other array.
+             */
             return p->valueType->isSubtype(valueType) && this->length == p->length;
         }
 
@@ -178,33 +247,60 @@ protected:
     }
 };
 
-
 /*******************************************
- * 
+ *
  * Invokable (FUNC/PROC) Type Definition
- * 
+ *
  *******************************************/
 
 class TypeInvoke : public Type
 {
 private:
+    /**
+     * @brief Represents the types of the function's arguments
+     *
+     */
     std::vector<const Type *> paramTypes;
-    const Type * retType;
 
+    /**
+     * @brief Represents the function's return type.
+     *
+     */
+    const Type *retType;
+
+    /**
+     * @brief Determines if the function should be variadic.
+     *
+     */
     bool variadic = false;
 
 public:
+    /**
+     * @brief Construct a new Type Invoke object that has no return and no arguments
+     *
+     */
     TypeInvoke()
     {
         retType = Types::UNDEFINED;
     }
 
+    /**
+     * @brief Construct a new Type Invoke object with the provided arguments and no return type
+     *
+     * @param p The types of the arguments
+     */
     TypeInvoke(std::vector<const Type *> p)
     {
         paramTypes = p;
         retType = Types::UNDEFINED;
     }
 
+    /**
+     * @brief Construct a new Type Invoke object
+     *
+     * @param p List of type parameters
+     * @param v Determines if this should be a variadic
+     */
     TypeInvoke(std::vector<const Type *> p, bool v)
     {
         paramTypes = p;
@@ -213,12 +309,25 @@ public:
         variadic = v;
     }
 
+    /**
+     * @brief Construct a new Type Invoke object
+     *
+     * @param p List of type parameters
+     * @param r Return type
+     */
     TypeInvoke(std::vector<const Type *> p, const Type *r)
     {
         paramTypes = p;
         retType = r;
     }
 
+    /**
+     * @brief Construct a new Type Invoke object
+     *
+     * @param p List of type parameters
+     * @param r Return type
+     * @param v Determines if this should be a variadic
+     */
     TypeInvoke(std::vector<const Type *> p, const Type *r, bool v)
     {
         paramTypes = p;
@@ -226,20 +335,25 @@ public:
 
         variadic = v;
     }
-    
+
+    /**
+     * @brief Returns a string representation of the type in format: <PROC | FUNC> (param_0, param_1, ...) -> return_type.
+     *
+     * @return std::string
+     */
     std::string toString() const override
     {
-        bool isProc = dynamic_cast<const TypeBot*>(retType);
+        bool isProc = dynamic_cast<const TypeBot *>(retType);
 
         std::ostringstream description;
         description << (isProc ? "PROC " : "FUNC ");
-        for(unsigned int i = 0; i < paramTypes.size(); i++)
+        for (unsigned int i = 0; i < paramTypes.size(); i++)
         {
-            description << paramTypes.at(i)->toString(); 
+            description << paramTypes.at(i)->toString();
 
-            if(i + 1 < paramTypes.size())
+            if (i + 1 < paramTypes.size())
             {
-                description << ", "; 
+                description << ", ";
             }
         }
 
@@ -254,61 +368,78 @@ public:
 
     // FIXME: DO THESE NEED LLVM TYPES???
 
+    /**
+     * @brief Get the Param Types object
+     *
+     * @return std::vector<const Type *>
+     */
     std::vector<const Type *> getParamTypes() const { return paramTypes; }
-    const Type * getReturnType() const { return retType; }
 
+    /**
+     * @brief Get the Return Type object
+     *
+     * @return const Type*
+     */
+    const Type *getReturnType() const { return retType; }
+
+    /**
+     * @brief Returns if this is a variadic
+     *
+     * @return true
+     * @return false
+     */
     bool isVariadic() const { return variadic; }
 
 protected:
     bool isSupertypeFor(const Type *other) const override
     {
+        //Checks that the other type is also invokable
         if (const TypeInvoke *p = dynamic_cast<const TypeInvoke *>(other))
         {
+            //Makes sure that both functions have the same number of parameters
             if (p->paramTypes.size() != this->paramTypes.size())
                 return false;
 
-            for (unsigned int i = 0; i < this->paramTypes.size(); i++)  
+            //Makes sure both functions have the same variadic status
+            if (this->variadic != p->variadic)
+                return false;
+
+            //Checks that the parameters of this function are all subtypes of the other
+            for (unsigned int i = 0; i < this->paramTypes.size(); i++)
             {
                 if (this->paramTypes.at(i)->isNotSubtype(p->paramTypes.at(i)))
                     return false;
             }
 
-            // check return types
-            // if ((this->retType.has_value() ^ p->retType.has_value()))
-            //     return false;
-            // if (this->retType.has_value())
-            // {
-                return this->retType->isSubtype(p->retType);
-            // }
-
-            return (this->variadic == p->variadic);
+            //Makes sure that the return type of this function is a subtype of the other
+            return this->retType->isSubtype(p->retType);
         }
         return false;
     }
 };
 
 /*******************************************
- * 
+ *
  * Type used for Type Inference
- * 
+ *
  *******************************************/
 class TypeInfer : public Type
 {
 private:
-    std::optional<const Type *> * valueType; //Actual type acting as 
-    std::vector<const TypeInfer *> infTypes; 
+    std::optional<const Type *> *valueType; // Actual type acting as
+    std::vector<const TypeInfer *> infTypes;
 
 public:
     TypeInfer()
     {
-        valueType = new std::optional<const Type*>;
+        valueType = new std::optional<const Type *>;
     }
 
-    bool hasBeenInferred() const {return valueType->has_value(); }
+    bool hasBeenInferred() const { return valueType->has_value(); }
 
     std::string toString() const override
     {
-        if(valueType->has_value())
+        if (valueType->has_value())
         {
             return "{VAR/" + valueType->value()->toString() + "}";
         }
@@ -317,80 +448,79 @@ public:
 
     // std::optional<const Type *> getValueType() const { return valueType; }
 
-    
     llvm::Type *getLLVMType(llvm::LLVMContext &C) const override
     {
-        if(valueType->has_value()) return valueType->value()->getLLVMType(C); 
+        if (valueType->has_value())
+            return valueType->value()->getLLVMType(C);
 
-        //This should never happen: we should have always detected such cases in our semantic analyis
-        return nullptr; 
+        // This should never happen: we should have always detected such cases in our semantic analyis
+        return nullptr;
     }
 
-    //FIXME: VERIFY NO PARODY IN CODEGEN!
+    // TODO: There shouldn't be any parody in codegen, but something does seem off.
 
-    //NOTE: SHOULD NEVER PASS INF TO THIS!
-    bool setValue(const Type * other) const
-    {   
-        if(dynamic_cast<const TypeInfer*>(other)) return false; 
+    // NOTE: SHOULD NEVER PASS INF TO THIS!
+    bool setValue(const Type *other) const
+    {
+        if (dynamic_cast<const TypeInfer *>(other))
+            return false;
 
-        if(valueType->has_value())
+        if (valueType->has_value())
         {
             return valueType->value()->isSubtype(other);
         }
-        
-        
-        TypeInfer * mthis =  const_cast<TypeInfer*> (this);
+
+        TypeInfer *mthis = const_cast<TypeInfer *>(this);
         *mthis->valueType = other;
 
-        bool valid = true; 
-        for(const TypeInfer* ty : infTypes) {
-            if(!ty->setValue(other)) {
-                valid = false; 
+        bool valid = true;
+        for (const TypeInfer *ty : infTypes)
+        {
+            if (!ty->setValue(other))
+            {
+                valid = false;
             }
         }
 
-        return valid; 
+        return valid;
     }
 
 protected:
     bool isSupertypeFor(const Type *other) const override
     {
-        if(valueType->has_value()) return valueType->value()->isSubtype(other);
+        if (valueType->has_value())
+            return valueType->value()->isSubtype(other);
 
-        TypeInfer * mthis =  const_cast<TypeInfer*> (this);
+        TypeInfer *mthis = const_cast<TypeInfer *>(this);
 
-        if(const TypeInfer * oinf = dynamic_cast<const TypeInfer*>(other))
+        if (const TypeInfer *oinf = dynamic_cast<const TypeInfer *>(other))
         {
-            if(oinf->valueType->has_value())
+            if (oinf->valueType->has_value())
             {
-                // *mthis->valueType = oinf->valueType->value(); 
+                // *mthis->valueType = oinf->valueType->value();
                 return setValue(oinf->valueType->value());
-                // return true; 
+                // return true;
             }
 
             mthis->infTypes.push_back(oinf);
-            // return true; 
+            // return true;
 
-
-
-            TypeInfer *moth = const_cast<TypeInfer*>(oinf); 
+            TypeInfer *moth = const_cast<TypeInfer *>(oinf);
             moth->infTypes.push_back(this);
             return true;
             // if(oinf->valueType->has_value())
             // {
-                // mthis->valueType = oinf->valueType; //other; 
-                // return true; 
+            // mthis->valueType = oinf->valueType; //other;
+            // return true;
             // }
 
-            //Cannot assign undefined
-            // return false;
+            // Cannot assign undefined
+            //  return false;
         }
 
-        
         // std::optional<const Type *> * next = new std::optional<const Type*>(other);
 
-
-        // *mthis->valueType = other;//next;///other; 
+        // *mthis->valueType = other;//next;///other;
 
         // return true;
 
@@ -398,11 +528,10 @@ protected:
     }
 };
 
-
 /*******************************************
- * 
+ *
  * Symbol Definition
- * 
+ *
  *******************************************/
 struct Symbol
 {
@@ -411,17 +540,16 @@ struct Symbol
 
     llvm::AllocaInst *val;
 
-    bool isGlobal; 
+    bool isGlobal;
 
     // Constructs a symbol from an ID and symbol type.
-    Symbol(std::string id, const Type *t, bool glob=false)
+    Symbol(std::string id, const Type *t, bool glob = false)
     {
         identifier = id;
         type = t;
-        isGlobal = glob; 
+        isGlobal = glob;
 
         val = nullptr; // FIXME: replace with optional?
-        
     }
 
     std::string toString() const
