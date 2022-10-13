@@ -156,6 +156,18 @@ public:
 
         Symbol *funcSymbol = new Symbol(funcId, funcType);
 
+        if(funcId == "program") {
+            if(!dynamic_cast<const TypeInt*>(funcType->getReturnType()))
+            {
+                errorHandler.addSemanticCritWarning(ctx->getStart(), "program() should return type INT");
+            }
+
+            if(funcType->getParamTypes().size() != 0)
+            {
+                errorHandler.addSemanticCritWarning(ctx->getStart(), "program() should have no arguments");
+            }
+        }
+
         stmgr->addSymbol(funcSymbol);
         stmgr->enterScope(); // NOTE: We do NOT duplicate scopes here because we use a saveVisitBlock with newScope=false
 
