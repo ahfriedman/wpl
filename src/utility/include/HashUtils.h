@@ -1,6 +1,12 @@
 #pragma once
 #include "ExecUtils.h" //TODO: Warning to prevent circular dependencies?
 
+/**
+ * @brief Determines the SHA256 hash of a program (NOTE: REQUIRES sha256sum TO BE INSTALLED!)
+ * 
+ * @param module The llvm::Module where codegen has occurred
+ * @return std::string the SHA256 hash of the program
+ */
 std::string llvmIrToSHA256(llvm::Module *module)
 {
     //Create a random file name

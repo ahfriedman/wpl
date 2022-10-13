@@ -23,7 +23,7 @@ std::optional<Scope *> STManager::exitScope()
     Scope *last = currentScope.value();
 
     currentScope = last->getParent();
-    // scopes.pop_back(); //TODO: Delete last element in vector?
+    // scopes.pop_back(); //TODO: Delete last element in vector? -> We don't due this because it breaks the scope count
 
     return std::optional<Scope *>{last};
 }

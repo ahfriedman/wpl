@@ -14,28 +14,40 @@
 #include <vector>
 #include <sstream>
 
+/**
+ * @brief Defines various error types the compiler can throw
+ *
+ */
 enum ErrType
 {
-  SYNTAX,
-  SEMANTIC,
-  CODEGEN
+  SYNTAX,   // Syntactic errors         (Lexer/parser)
+  SEMANTIC, // Semantic errors          (Semantic Analysis)
+  CODEGEN   // Code generation errors   (LLVM IR Codegen)
 };
 
-enum ErrSev 
+/**
+ * @brief Defines error severity levels
+ *
+ */
+enum ErrSev
 {
-  ERROR = 1, 
-  CRITICAL_WARNING = 2, //Not an error persay, but need to stop compiling. 
-  WARNING = 4,
-  INFO = 8,
+  ERROR = 1,            // Definitley an error, and the compiler should stop ASAP.
+  CRITICAL_WARNING = 2, // Not an error persay, but need to stop compiling.
+  WARNING = 4,          // Important warning message, but nothing that prevents compiling (Currently unused)
+  INFO = 8,             // Informational message (currently unused)
 };
 
+/**
+ * @brief Defines an error in the language
+ *
+ */
 struct WPLError
 {
-  ErrType type;
-  antlr4::Token *token;
-  std::string message;
+  ErrType type;           // The Type of the error
+  antlr4::Token *token;   // Where the error occurred
+  std::string message;    // Error Message text
 
-  ErrSev severity; 
+  ErrSev severity;        // Error Severity level
 
   WPLError(antlr4::Token *tok, std::string msg, ErrType et, ErrSev es)
   {
@@ -43,7 +55,7 @@ struct WPLError
     message = msg;
 
     type = et;
-    severity = es; 
+    severity = es;
   }
 
   std::string toString()
@@ -53,6 +65,7 @@ struct WPLError
       << "]: " << message;
     return e.str();
   }
+
 
   static std::string getStringForErrorType(ErrType e)
   {
@@ -69,16 +82,16 @@ struct WPLError
 
   static std::string getStringForSeverity(ErrSev e)
   {
-    switch(e)
+    switch (e)
     {
-      case ERROR: 
-        return "Error";
-      case CRITICAL_WARNING: 
-        return "Critical Warning";
-      case WARNING:
-        return "Warning";
-      case INFO: 
-        return "Informational";
+    case ERROR:
+      return "Error";
+    case CRITICAL_WARNING:
+      return "Critical Warning";
+    case WARNING:
+      return "Warning";
+    case INFO:
+      return "Informational";
     }
   }
 };
@@ -108,7 +121,6 @@ public:
 
   std::string errorList()
   {
-    // int i = WARNING | CRITICAL_WARNING; 
     std::ostringstream errList;
     for (WPLError *e : errors)
     {
@@ -117,23 +129,37 @@ public:
     return errList.str();
   }
 
-  bool hasErrors(int errorFlags) { 
-    //If no flags provided, then return if we have any 
-    if(!errorFlags) return !errors.empty(); 
+  /**
+   * @brief Determines if the compiler has errors of a specific severity
+   * 
+   * @param errorFlags INT representation of ErrSev to determine which errors to check. Ie. 0 for all, 1 for ERROR, 2 for CRITICAL_WARNING, 3 = ERROR | CRITICAL_WARNING, etc. 
+   * @return true 
+   * @return false 
+   */
+  bool hasErrors(int errorFlags)
+  {
+    // If no flags provided, then return if we have any
+    if (!errorFlags)
+      return !errors.empty();
 
-    for(WPLError * err : errors)
+    for (WPLError *err : errors)
     {
-      std::cerr << err->severity << " & " << errorFlags << std::endl; 
-      if(err->severity & errorFlags) return true; 
+      std::cerr << err->severity << " & " << errorFlags << std::endl;
+      if (err->severity & errorFlags)
+        return true;
     }
 
-    return false; //!errors.empty(); 
+    return false; //! errors.empty();
   }
 
 protected:
   std::vector<WPLError *> errors;
 };
 
+/**
+ * @brief Wapper around WPLErrorHandler and antlr4::BaseErrorListener so we can report syntax errors just like the other error types
+ * 
+ */
 class WPLSyntaxErrorListener : public antlr4::BaseErrorListener, public WPLErrorHandler
 {
   virtual void syntaxError(

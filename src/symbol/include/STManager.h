@@ -18,25 +18,74 @@
 class STManager {
   public:
     STManager(){};
+
+    /**
+     * @brief Enter a new scope
+     * 
+     * @return Scope& the scope we entered
+     */
     Scope& enterScope();
+    
+    /**
+     * @brief Exit the current scope and move up one level
+     * 
+     * @return std::optional<Scope*> Returns empty if no parent scope to enter; otherwise returns last scope. 
+     */
     std::optional<Scope*> exitScope();
 
-    // Pass through methods
+    /**
+     * @brief Add a symbol to the current scope
+     * 
+     * @param symbol The symbol to add
+     * @return true if successful
+     * @return false if unsuccessful (ie, name already bound to another symbol)
+     */
     bool addSymbol(Symbol* symbol);
-    // Symbol* addSymbol(std::string id, SymType t);
+    
+    /**
+     * @brief Lookup a symbol across all scopes returning the first definition found
+     * 
+     * @param id The symbol name to lookup
+     * @return std::optional<Symbol*>  Empty if symbol not found; present with value if found. 
+     */
     std::optional<Symbol*> lookup(std::string id);
 
+    /**
+     * @brief Lookup a symbol only in the current scope. 
+     * 
+     * @param id The symbol name to lookup
+     * @return std::optional<Symbol*>  Empty if symbol not found; present with value if found. 
+     */
     std::optional<Symbol*> lookupInCurrentScope(std::string id);
 
-    // Miscellaneous (useful for testing)
+    /****************************************
+     * Miscellaneous (useful for testing)
+     ****************************************/
+
+    /**
+     * @brief Get the Current Scope object
+     * 
+     * @return std::optional<Scope*> 
+     */
     std::optional<Scope*> getCurrentScope() { 
       if(currentScope) return std::optional<Scope*> {currentScope.value()};
       return std::optional<Scope*>{}; 
     }
+
+    /**
+     * @brief Gets the number of scopes
+     * 
+     * @return int 
+     */
     int scopeCount() { return scopes.size(); }
     std::string toString() const;
 
-
+    /**
+     * @brief Determines if the current scope is the global scope
+     * 
+     * @return true if current scope is the global scope
+     * @return false if the current scope is not the gobal scope
+     */
     bool isGlobalScope() {
       if(scopes.size() == 0) return false; 
 

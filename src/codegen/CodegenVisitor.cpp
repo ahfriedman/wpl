@@ -135,11 +135,10 @@ std::optional<Value *> CodegenVisitor::TvisitSConstExpr(WPLParser::SConstExprCon
         out = regex_replace(out, e.first, e.second);
     }
 
+    // Create a constant to represent our string (now with the escape characters corrected)
     llvm::Constant *dat = llvm::ConstantDataArray::getString(module->getContext(), out);
 
-    // llvm::Constant * var = module->getOrInsertGlobal("", dat->getType());
-    // var->setLinkage(GlobalValue::PrivateLinkage);
-
+    // Allocate a global variable for the constant, and set flags to make it match what the CreateGlobalStringPtr function would have done
     llvm::GlobalVariable *glob = new llvm::GlobalVariable(
         *module,
         dat->getType(),
@@ -150,6 +149,9 @@ std::optional<Value *> CodegenVisitor::TvisitSConstExpr(WPLParser::SConstExprCon
     glob->setAlignment(llvm::MaybeAlign(1));
     glob->setUnnamedAddr(llvm::GlobalValue::UnnamedAddr::Global);
 
+    // Allocate the string and return that value. 
+    // This prevents the issue of CreateGlobalStringPtr where it creates a string AND a pointer to it. 
+    // Here, we can deal with the pointer later (just as if it were a normal variable)
     llvm::Constant *Indices[] = {Int32Zero, Int32Zero};
 
     Value *val = llvm::ConstantExpr::getInBoundsGetElementPtr(
@@ -225,7 +227,6 @@ std::optional<Value *> CodegenVisitor::TvisitBinaryArithExpr(WPLParser::BinaryAr
 
 std::optional<Value *> CodegenVisitor::TvisitEqExpr(WPLParser::EqExprContext *ctx)
 {
-    // Note: As per C spec, arrays cannot be compared
     std::optional<Value *> lhs = std::any_cast<std::optional<Value *>>(ctx->left->accept(this));
     std::optional<Value *> rhs = std::any_cast<std::optional<Value *>>(ctx->right->accept(this));
 
@@ -275,15 +276,17 @@ std::optional<Value *> CodegenVisitor::TvisitLogAndExpr(WPLParser::LogAndExprCon
         return {};
     }
 
+    // Create the basic block for our conditions
     BasicBlock *current = builder->GetInsertBlock();
     auto parent = current->getParent();
     BasicBlock *trueBlk = BasicBlock::Create(module->getContext(), "lhsTrue", parent);
     BasicBlock *falseBlk = BasicBlock::Create(module->getContext(), "lhsFalse");
 
+    // Branch on the lhs value
     builder->CreateCondBr(lhs.value(), trueBlk, falseBlk);
 
     /*
-     * LHS True
+     * LHS True - Need to check RHS
      */
     builder->SetInsertPoint(trueBlk);
     std::optional<Value *> rhs = std::any_cast<std::optional<Value *>>(ctx->right->accept(this));
@@ -297,9 +300,15 @@ std::optional<Value *> CodegenVisitor::TvisitLogAndExpr(WPLParser::LogAndExprCon
     builder->CreateBr(falseBlk);
     trueBlk = builder->GetInsertBlock();
 
+    /*
+     * LHS False - Can short as statement being false
+     */
     parent->getBasicBlockList().push_back(falseBlk);
     builder->SetInsertPoint(falseBlk);
 
+    /*
+     * Add PHI node to merge things back together
+     */
     PHINode *phi = builder->CreatePHI(Int1Ty, 2, "logAnd");
     phi->addIncoming(builder->getFalse(), current);
     phi->addIncoming(rhs.value(), trueBlk);
@@ -324,15 +333,17 @@ std::optional<Value *> CodegenVisitor::TvisitLogOrExpr(WPLParser::LogOrExprConte
         return {};
     }
 
+    // Create the basic block for our conditions
     BasicBlock *current = builder->GetInsertBlock();
     auto parent = current->getParent();
     BasicBlock *falseBlk = BasicBlock::Create(module->getContext(), "lhsFalse", parent);
     BasicBlock *trueBlk = BasicBlock::Create(module->getContext(), "lhsTrue");
 
+    // Branch on the lhs value
     builder->CreateCondBr(lhs.value(), trueBlk, falseBlk);
 
     /*
-     * LHS False
+     * LHS False - Need to check RHS value
      */
     builder->SetInsertPoint(falseBlk);
 
@@ -347,25 +358,20 @@ std::optional<Value *> CodegenVisitor::TvisitLogOrExpr(WPLParser::LogOrExprConte
     builder->CreateBr(trueBlk);
     falseBlk = builder->GetInsertBlock();
 
+    /*
+     * LHS True - Can skip checking RHS and return true
+     */
     parent->getBasicBlockList().push_back(trueBlk);
     builder->SetInsertPoint(trueBlk);
 
+
+    /*
+     * PHI node to merge both sides back together
+     */
     PHINode *phi = builder->CreatePHI(Int1Ty, 2, "logOr");
     phi->addIncoming(lhs.value(), current);
     phi->addIncoming(rhs.value(), falseBlk);
     return phi;
-
-    // std::optional<Value *> rhs = std::any_cast<std::optional<Value *>>(ctx->right->accept(this));
-
-    // if (!lhs || !rhs)
-    // {
-    //     errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code for: " + ctx->getText());
-    //     return {};
-    // }
-
-    // Value *IR = builder->CreateOr(lhs.value(), rhs.value());
-    // Value *v = builder->CreateZExtOrTrunc(IR, Int1Ty);
-    // return v;
 }
 
 // Passthrough to TvisitInvocation
@@ -373,33 +379,42 @@ std::optional<Value *> CodegenVisitor::TvisitCallExpr(WPLParser::CallExprContext
 
 std::optional<Value *> CodegenVisitor::TvisitVariableExpr(WPLParser::VariableExprContext *ctx)
 {
+    // Get the variable name and look it up
     std::string id = ctx->v->getText();
     Symbol *sym = props->getBinding(ctx);
 
+    // If the symbol could not be found, raise an error 
     if (!sym)
     {
         errorHandler.addCodegenError(ctx->getStart(), "Undefined variable access: " + id);
         return {};
     }
 
+
+    // Try getting the type for the symbol, raising an error if it could not be determined
     llvm::Type *type = sym->type->getLLVMType(module->getContext());
     if (!type)
     {
         errorHandler.addCodegenError(ctx->getStart(), "Unable to find type for variable: " + ctx->getText());
     }
 
+    // Make sure the variable has an allocation (or that we can find it due to it being a global var)
     if (!sym->val)
     {
+        //If the symbol is a global var
         if (sym->isGlobal)
         {
+            //Lookup the global var for the symbol
             llvm::GlobalVariable *glob = module->getNamedGlobal(sym->identifier);
 
+            // Check that we found the variable. If not, throw an error. 
             if (!glob)
             {
                 errorHandler.addCodegenError(ctx->getStart(), "Unable to find global variable: " + id);
                 return {};
             }
 
+            //Create and return a load for the gloobal var
             Value *val = builder->CreateLoad(glob);
             return val;
         }
@@ -407,6 +422,7 @@ std::optional<Value *> CodegenVisitor::TvisitVariableExpr(WPLParser::VariableExp
         errorHandler.addCodegenError(ctx->getStart(), "Unable to find allocation for variable: " + ctx->getText());
     }
 
+    // Otherwise, we are a local variable with an allocation and, thus, can simply load it. 
     Value *v = builder->CreateLoad(type, sym->val, id);
     return v;
 }
@@ -414,6 +430,8 @@ std::optional<Value *> CodegenVisitor::TvisitVariableExpr(WPLParser::VariableExp
 std::optional<Value *> CodegenVisitor::TvisitFieldAccessExpr(WPLParser::FieldAccessExprContext *ctx)
 {
     // This is ONLY array length for now...
+
+    //Make sure we cna find the symbol, and that it has a val and type defined
     Symbol *sym = props->getBinding(ctx->VARIABLE().at(0));
 
     if (!sym || !sym->val || !sym->type)
@@ -422,13 +440,16 @@ std::optional<Value *> CodegenVisitor::TvisitFieldAccessExpr(WPLParser::FieldAcc
         return {};
     }
 
+    // Check that the type is an array type
     if (const TypeArray *ar = dynamic_cast<const TypeArray *>(sym->type))
     {
+        //If it is, correctly, an array type, then we can get the array's length (this is the only operation currently, so we can just do thus)
         Value *v = builder->getInt32(ar->getLength());
 
         return v;
     }
 
+    // Throw an error as we currently only support array length. 
     errorHandler.addCodegenError(ctx->getStart(), "Given non-array type in TvisitFieldAccessExpr!");
     return {};
 }
@@ -440,9 +461,11 @@ std::optional<Value *> CodegenVisitor::TvisitParenExpr(WPLParser::ParenExprConte
 
 std::optional<Value *> CodegenVisitor::TvisitBinaryRelExpr(WPLParser::BinaryRelExprContext *ctx)
 {
+    // Generate code for LHS and RHS
     std::optional<Value *> lhs = std::any_cast<std::optional<Value *>>(ctx->left->accept(this));
     std::optional<Value *> rhs = std::any_cast<std::optional<Value *>>(ctx->right->accept(this));
 
+    // Ensure we successfully generated LHS and RHS
     if (!lhs || !rhs)
     {
         errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code for: " + ctx->getText());
@@ -480,15 +503,19 @@ std::optional<Value *> CodegenVisitor::TvisitBConstExpr(WPLParser::BConstExprCon
 
 std::optional<Value *> CodegenVisitor::TvisitCondition(WPLParser::ConditionContext *ctx)
 {
+    //Passthrough to visiting the conditon
     return std::any_cast<std::optional<Value *>>(ctx->ex->accept(this));
 }
 
 std::optional<Value *> CodegenVisitor::TvisitExternStatement(WPLParser::ExternStatementContext *ctx)
 {
+    // Cretae a vector for our argument types
     std::vector<llvm::Type *> typeVec;
 
+    // If the extern has a paramlist
     if (ctx->paramList)
     {
+        // Go through each parameter, and get it its type. Stop if any errors occur
         for (auto e : ctx->paramList->params)
         {
             std::optional<llvm::Type *> type = CodegenVisitor::llvmTypeFor(e->ty);
@@ -503,11 +530,16 @@ std::optional<Value *> CodegenVisitor::TvisitExternStatement(WPLParser::ExternSt
         }
     }
 
+    // Create an array ref of our parameter types
     ArrayRef<llvm::Type *> paramRef = ArrayRef(typeVec);
+    // Determine if the function is variadic
     bool isVariadic = ctx->variadic || ctx->ELLIPSIS();
 
+
+    // Generate the return type or set it to be Void if PROC
     std::optional<llvm::Type*> retOpt = ctx->ty ? CodegenVisitor::llvmTypeFor(ctx->ty) : VoidTy; 
 
+    // If we fail to generate a return, then throw an error. 
     if(!retOpt)
     {
         errorHandler.addCodegenError(ctx->ty->getStart(), "Could not generate code for type: " + ctx->ty->toString());
@@ -515,6 +547,7 @@ std::optional<Value *> CodegenVisitor::TvisitExternStatement(WPLParser::ExternSt
     }
 
 
+    // Create the function definition
     FunctionType *fnType = FunctionType::get(
         retOpt.value(),
         paramRef,
@@ -614,6 +647,7 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
     {
         std::optional<Value *> exVal = std::nullopt;
 
+        // If the declaration has a value, attempt to generate that value
         if (e->ex)
         {
             std::any anyVal = e->ex->accept(this);
@@ -633,8 +667,12 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
         {
             errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code for: " + e->ex->getText());
         }
+
+        // For each of the variabes being assigned to that value
         for (auto var : e->VARIABLE())
         {
+
+            //Get the Symbol for the var based on its binding
             Symbol *varSymbol = props->getBinding(var);
 
             if (!varSymbol)
@@ -643,16 +681,24 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
                 return {};
             }
 
+            // Get the type of the symbol
             llvm::Type *ty = varSymbol->type->getLLVMType(module->getContext());
+
+            // Branch depending on if the var is global or not
             if (varSymbol->isGlobal)
             {
+                //If it is global, then we need to insert a new gobal variable of this type. 
+                //A lot of these options are done to make it match what a C program would 
+                //generate for global vars
                 module->getOrInsertGlobal(var->getText(), ty);
                 llvm::GlobalVariable *glob = module->getNamedGlobal(var->getText());
                 glob->setLinkage(GlobalValue::ExternalLinkage);
                 glob->setDSOLocal(true);
 
+                //If we had an expression to set the var equal to
                 if (e->ex)
                 {
+                    //Ensure that the value is a constant, then, if so, initialize it. 
                     if (llvm::Constant *constant = static_cast<llvm::Constant *>(exVal.value()))
                     {
                         glob->setInitializer(constant);
@@ -666,15 +712,18 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
                 }
                 else
                 {
+                    //As there was no constant, just set the global var to be initalized to zero as C does with llvm.
                     llvm::ConstantAggregateZero *constant = llvm::ConstantAggregateZero::get(ty);
                     glob->setInitializer(constant);
                 }
             }
             else
             {
+                //As this is a local var we can just create an allocation for it
                 llvm::AllocaInst *v = builder->CreateAlloca(ty, 0, var->getText());
                 varSymbol->val = v;
 
+                // Similarly, if we have an expression for the local var, we can store it. Otherwise, we can leave it undefined. 
                 if (e->ex)
                     builder->CreateStore(exVal.value(), v);
             }
@@ -706,7 +755,9 @@ std::optional<Value *> CodegenVisitor::TvisitLoopStatement(WPLParser::LoopStatem
     // Need to add here otherwise we will overwrite it
     // parent->getBasicBlockList().push_back(loopBlk);
 
-    // In the loop block
+    /* 
+     * In the loop block
+     */
     builder->SetInsertPoint(loopBlk);
     for (auto e : ctx->block()->stmts)
     {
@@ -723,8 +774,10 @@ std::optional<Value *> CodegenVisitor::TvisitLoopStatement(WPLParser::LoopStatem
     // Check if we need to loop back again...
     builder->CreateCondBr(check.value(), loopBlk, restBlk);
     loopBlk = builder->GetInsertBlock();
-    //  Out of Loop
-
+    
+    /* 
+     * Out of loop
+     */
     parent->getBasicBlockList().push_back(restBlk);
     builder->SetInsertPoint(restBlk);
 
