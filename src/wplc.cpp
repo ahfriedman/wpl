@@ -92,21 +92,33 @@ int main(int argc, const char *argv[])
    * 4. TBD: handle errors
    ******************************************************************/
 
-  // 1. Create the lexer
-
+  /*******************************************************************
+   * Prepare Input
+   * ================================================================
+   *
+   * To do this, we  must first check if we were given a string
+   * input or file(s). To make both cases easy to handle later on,
+   * we create a vector of input streams/output file pairs.
+   *******************************************************************/
   std::vector<std::pair<antlr4::ANTLRInputStream *, std::string>> inputs;
 
+  // Case 1: We were given input files
   if (!inputFileName.empty())
   {
 
     bool useOutputFileName = outputFileName != "-.ll";
 
+    // Used to prevent giving file names when compiling multiple files---just as clang does
     if (inputFileName.size() > 1 && useOutputFileName)
     {
       std::cerr << "Cannot specify output file name when generating multiple files." << std::endl;
       std::exit(-1);
     }
 
+    // For each file name, make sure the file exist. If so, create an input stream to it
+    // and set its output filename to be the provided name (if we are compiling just
+    // one file, and a name was provided), or the file's name but with the .wpl
+    // extension replaced with .ll
     for (auto fileName : inputFileName)
     {
       std::fstream *inStream = new std::fstream(fileName);
@@ -117,33 +129,44 @@ int main(int argc, const char *argv[])
         std::exit(-1);
       }
 
-      // inputFileName.substr(0, inputFileName.find_last_of('.')) + ".ll"
+      // TODO: THIS DOESN'T WORK IF NOT GIVEN A PROPER FILE EXTENSION
       inputs.push_back({new antlr4::ANTLRInputStream(*inStream),
                         useOutputFileName ? outputFileName : fileName.substr(0, fileName.find_last_of('.')) + ".ll"});
     }
   }
   else
   {
+    // As we were given a string input, create a new String input with the output file
     inputs.push_back({new antlr4::ANTLRInputStream(inputString),
                       outputFileName});
   }
 
+  // For each input...
   for (auto input : inputs)
   {
+    /*******************************************************************
+     * Create the Lexer from the input.
+     * ================================================================
+     *
+     * Run the lexer on the input
+     *******************************************************************/
     WPLLexer lexer(input.first);
     antlr4::CommonTokenStream tokens(&lexer);
 
-    // 2. Create a parser from the token stream
+    /*******************************************************************
+     * Create + Run the Parser 
+     * ================================================================
+     *
+     * Run the parser on our previously generated tokens
+     *******************************************************************/
     WPLParser parser(&tokens);
-
     parser.removeErrorListeners();
     WPLSyntaxErrorListener *syntaxListener = new WPLSyntaxErrorListener();
     parser.addErrorListener(syntaxListener);
     // delete syntaxListener;
 
+    // Run The parser
     WPLParser::CompilationUnitContext *tree = NULL;
-
-    // 3. Parse the program and get the parse tree
     tree = parser.compilationUnit();
 
     if (syntaxListener->hasErrors(0)) // Want to see all errors.
@@ -158,11 +181,14 @@ int main(int argc, const char *argv[])
 
     int flags = (noRuntime) ? CompilerFlags::NO_RUNTIME : 0;
 
-    /******************************************************************
+    /*******************************************************************
+     * Semantic Analysis
+     * ================================================================
+     *
      * Perform semantic analysis and populate the symbol table
      * and bind nodes to Symbols using the property manager. If
      * there are any errors we print them out and exit.
-     ******************************************************************/
+     *******************************************************************/
     STManager *stm = new STManager();
     PropertyManager *pm = new PropertyManager();
     SemanticVisitor *sv = new SemanticVisitor(stm, pm, flags);
@@ -178,13 +204,18 @@ int main(int argc, const char *argv[])
 
     std::cout << "Semantic analysis completed for " << input.second << " without errors. Starting code generation..." << std::endl;
 
-    // Generate the LLVM IR code
+    /*******************************************************************
+     * Code Generation
+     * ================================================================
+     *
+     * If we have yet to recieve any errors for the file, then 
+     * generate code for it. 
+     *******************************************************************/
     CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll", flags);
     cv->visitCompilationUnit(tree);
     if (cv->hasErrors(0)) // Want to see all errors
     {
       std::cerr << cv->getErrors() << std::endl;
-      // return -1;
       continue;
     }
 
@@ -210,7 +241,7 @@ int main(int argc, const char *argv[])
 
     if (noRuntime)
     {
-      std::cout << "Code generation completed for " << input.second <<  "; program does NOT support runtime." << std::endl;
+      std::cout << "Code generation completed for " << input.second << "; program does NOT support runtime." << std::endl;
     }
     else
     {
