@@ -629,7 +629,7 @@ TEST_CASE("Dead code in program block", "[semantic][program]")
   REQUIRE(sv->hasErrors(ERROR));
 }
 
-TEST_CASE("Dead code in if/else", "[semantic][program]")
+TEST_CASE("Dead code in if/else", "[semantic][program][conditional]")
 {
   antlr4::ANTLRInputStream input(
     R""""(
@@ -667,7 +667,7 @@ TEST_CASE("Dead code in if/else", "[semantic][program]")
   REQUIRE(sv->hasErrors(ERROR));
 }
 
-TEST_CASE("Dead code in select", "[semantic][program]")
+TEST_CASE("Dead code in select", "[semantic][program][select]")
 {
   antlr4::ANTLRInputStream input(
     R""""(
