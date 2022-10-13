@@ -25,44 +25,46 @@ const Type *SemanticVisitor::visitCtx(WPLParser::CompilationUnitContext *ctx)
      * Extra checks depending on compiler flags
      *******************************************/
 
-    if(flags & CompilerFlags::NO_RUNTIME)
+    if (flags & CompilerFlags::NO_RUNTIME)
     {
         /**********************************************************
-         * As there is no runtime, we need to make sure that 
+         * As there is no runtime, we need to make sure that
          * there is NO main block and that we have a program block
          **********************************************************/
 
-        if(stmgr->lookup("main"))
+        if (stmgr->lookup("main"))
         {
             errorHandler.addSemanticError(ctx->getStart(), "When compiling with no-runtime, main is reserved!");
         }
-        
-        //Check that program is invokeable and correctly defined. 
+
+        // Check that program is invokeable and correctly defined.
         {
             std::optional<Symbol *> opt = stmgr->lookup("program");
-            if(!opt) {
+            if (!opt)
+            {
                 errorHandler.addSemanticError(ctx->getStart(), "When compiling with no-runtime, program() must be defined!");
             }
-            else 
+            else
             {
-                Symbol * sym = opt.value(); 
+                Symbol *sym = opt.value();
 
-                if(const TypeInvoke * inv = dynamic_cast<const TypeInvoke*>(sym->type))
+                if (const TypeInvoke *inv = dynamic_cast<const TypeInvoke *>(sym->type))
                 {
-                    if(inv->getParamTypes().size() != 0)
+                    if (inv->getParamTypes().size() != 0)
                     {
                         errorHandler.addSemanticError(ctx->getStart(), "When compiling with no-runtime, program must not require arguments!");
                     }
 
                     {
-                        std::optional<const Type*> retOpt = inv->getReturnType(); 
+                        std::optional<const Type *> retOpt = inv->getReturnType();
 
-                        if(!retOpt || !dynamic_cast<const TypeInt*>(retOpt.value())) {
+                        if (!retOpt || !dynamic_cast<const TypeInt *>(retOpt.value()))
+                        {
                             errorHandler.addSemanticError(ctx->getStart(), "When compiling with no-runtime, program() must return INT");
                         }
                     }
                 }
-                else 
+                else
                 {
                     errorHandler.addSemanticError(ctx->getStart(), "When compiling with no-runtime, program() must be an invokable!");
                 }
@@ -70,7 +72,21 @@ const Type *SemanticVisitor::visitCtx(WPLParser::CompilationUnitContext *ctx)
         }
     }
 
+    std::vector<const Symbol *> uninf = stmgr->getCurrentScope().value()->getUninferred(); //TODO: shouldn't ever be an issue, but still. 
 
+    // If there are any uninferred symbols, then add it as a compiler error as we won't be able to resolve them
+    // due to the var leaving the scope
+    if (uninf.size() > 0)
+    {
+        std::ostringstream details;
+
+        for (auto e : uninf)
+        {
+            details << e->toString() << "; ";
+        }
+
+        errorHandler.addSemanticError(ctx->getStart(), "Uninferred types in context: " + details.str());
+    }
     // Return UNDEFINED as this should be viewed as a statement and not something assignable
     return Types::UNDEFINED;
 }
@@ -133,7 +149,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::InvocationContext *ctx)
 
             // If the invokable is variadic and has no specified type parameters, then we can
             // skip over subsequent checks--we just needed to run type checking on each parameter.
-            if (invokeable->isVariadic() && i >= fnParams.size())//&& fnParams.size() == 0)
+            if (invokeable->isVariadic() && i >= fnParams.size()) //&& fnParams.size() == 0)
             {
                 if (dynamic_cast<const TypeBot *>(providedType))
                 {
@@ -160,7 +176,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::InvocationContext *ctx)
         }
 
         // Return the type of the invokable or BOT if it has none.
-        return invokeable->getReturnType();//.has_value() ? invokeable->getReturnType().value() : Types::UNDEFINED;
+        return invokeable->getReturnType(); //.has_value() ? invokeable->getReturnType().value() : Types::UNDEFINED;
     }
 
     // Symbol was not an invokeable type, so report an error & return UNDEFINED.
@@ -335,7 +351,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::EqExprContext *ctx)
     }
 
     // Note: As per C spec, arrays cannot be compared
-    if(dynamic_cast<const TypeArray*>(left) || dynamic_cast<const TypeArray*>(right))
+    if (dynamic_cast<const TypeArray *>(left) || dynamic_cast<const TypeArray *>(right))
     {
         errorHandler.addSemanticError(ctx->getStart(), "Cannot perform equality operation on arrays; they are always seen as unequal!");
     }
@@ -431,16 +447,16 @@ const Type *SemanticVisitor::visitCtx(WPLParser::FieldAccessExprContext *ctx)
 {
     // Determine the type of the expression we are visiting
     std::optional<Symbol *> opt = stmgr->lookup(ctx->VARIABLE().at(0)->getText());
-    if(!opt)
+    if (!opt)
     {
         errorHandler.addSemanticError(ctx->getStart(), "Undefined variable reference: " + ctx->ex->getText());
         return Types::UNDEFINED;
     }
 
-    Symbol * sym = opt.value(); 
+    Symbol *sym = opt.value();
     bindings->bind(ctx->VARIABLE().at(0), sym);
 
-    const Type* ty = sym->type;
+    const Type *ty = sym->type;
 
     // Currently we only support arrays, so if its not an array, report an error.
     if (const TypeArray *a = dynamic_cast<const TypeArray *>(ty))
@@ -521,24 +537,24 @@ const Type *SemanticVisitor::visitCtx(WPLParser::ConditionContext *ctx)
 
 const Type *SemanticVisitor::visitCtx(WPLParser::SelectAlternativeContext *ctx)
 {
-    //Enter the scope (needed as we may define variables or do other stuff)
-    stmgr->enterScope(); 
-    //Accept the evaluation context
+    // Enter the scope (needed as we may define variables or do other stuff)
+    stmgr->enterScope();
+    // Accept the evaluation context
     ctx->eval->accept(this);
-    //Safe exit the scope 
+    // Safe exit the scope
     this->safeExitScope(ctx);
 
     /*
      *  Just make sure that we don't try to define functions and stuff in a select as that doesn't make sense (and would cause codegen issues as it stands).
-     */ 
+     */
     if (dynamic_cast<WPLParser::FuncDefContext *>(ctx->eval) ||
         dynamic_cast<WPLParser::ProcDefContext *>(ctx->eval) ||
         dynamic_cast<WPLParser::VarDeclStatementContext *>(ctx->eval))
     {
         errorHandler.addSemanticError(ctx->getStart(), "Dead code: definition as select alternative.");
     }
-    
-    //Confirm that the check type is a boolean 
+
+    // Confirm that the check type is a boolean
     const Type *checkType = std::any_cast<const Type *>(ctx->check->accept(this));
 
     if (const TypeBool *b = dynamic_cast<const TypeBool *>(checkType))
@@ -549,7 +565,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::SelectAlternativeContext *ctx)
         errorHandler.addSemanticError(ctx->getStart(), "Select alternative expected BOOL but got " + checkType->toString());
     }
 
-    //Return UNDEFINED as its a statement.
+    // Return UNDEFINED as its a statement.
     return Types::UNDEFINED;
 }
 
@@ -562,18 +578,18 @@ const Type *SemanticVisitor::visitCtx(WPLParser::SelectAlternativeContext *ctx)
 const Type *SemanticVisitor::visitCtx(WPLParser::ParameterListContext *ctx)
 {
     std::vector<const Type *> params;
-    std::map<std::string, WPLParser::ParameterContext *> map; 
+    std::map<std::string, WPLParser::ParameterContext *> map;
 
     for (auto param : ctx->params)
     {
-        std::string name = param->name->getText(); 
+        std::string name = param->name->getText();
 
         auto prevUse = map.find(name);
-        if(prevUse != map.end())
+        if (prevUse != map.end())
         {
             errorHandler.addSemanticError(param->getStart(), "Re-use of previously defined parameter " + name + ".");
         }
-        else 
+        else
         {
             map.insert({name, param});
         }
@@ -609,7 +625,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::ExternStatementContext *ctx)
         errorHandler.addSemanticError(ctx->getStart(), "Unsupported redeclaration of " + id);
         // return Types::UNDEFINED;
     }
-    
+
     const Type *ty = (ctx->paramList) ? this->visitCtx(ctx->paramList)
                                       : new TypeInvoke();
 
@@ -671,7 +687,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::VarDeclStatementContext *ctx)
 
     for (auto e : ctx->assignments)
     {
-        //Needs to happen in case we have vars
+        // Needs to happen in case we have vars
         const Type *assignType = this->visitCtx(ctx->typeOrVar());
         auto exprType = (e->ex) ? std::any_cast<const Type *>(e->ex->accept(this)) : assignType;
 
@@ -703,9 +719,9 @@ const Type *SemanticVisitor::visitCtx(WPLParser::VarDeclStatementContext *ctx)
             }
             else
             {
-                //Needed to ensure vars get their own inf type
-                const Type * newAssignType = this->visitCtx(ctx->typeOrVar());
-                const Type * newExprType = (e->ex) ? std::any_cast<const Type *>(e->ex->accept(this)) : newAssignType;
+                // Needed to ensure vars get their own inf type
+                const Type *newAssignType = this->visitCtx(ctx->typeOrVar());
+                const Type *newExprType = (e->ex) ? std::any_cast<const Type *>(e->ex->accept(this)) : newAssignType;
 
                 Symbol *symbol = new Symbol(id, newExprType, stmgr->isGlobalScope()); // Done with exprType for later inferencing purposes
                 stmgr->addSymbol(symbol);
@@ -753,10 +769,10 @@ const Type *SemanticVisitor::visitCtx(WPLParser::ConditionalStatementContext *ct
 const Type *SemanticVisitor::visitCtx(WPLParser::SelectStatementContext *ctx)
 {
 
-    if(ctx->cases.size() < 1)
+    if (ctx->cases.size() < 1)
     {
         errorHandler.addSemanticError(ctx->getStart(), "Select statement expected at least one alternative, but was given 0!");
-        return Types::UNDEFINED; //Shouldn't matter as the for loop won't have anything to do 
+        return Types::UNDEFINED; // Shouldn't matter as the for loop won't have anything to do
     }
     // Here we just need to visit each of the individual cases; they each handle their own logic.
     for (auto e : ctx->cases)
