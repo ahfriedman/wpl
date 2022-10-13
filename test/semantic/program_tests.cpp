@@ -535,6 +535,66 @@ TEST_CASE("programs/test17 - var inf in decl", "[semantic]")
     REQUIRE_FALSE(sv->hasErrors(0));
 }
 
+TEST_CASE("Test program() should return int warning", "[semantic][conditional]")
+{
+  antlr4::ANTLRInputStream input(
+    R""""(
+      proc program () {
+
+      }
+    )""""
+  );
+  WPLLexer lexer(&input);
+  // lexer.removeErrorListeners();
+  // lexer.addErrorListener(new TestErrorListener());
+  antlr4::CommonTokenStream tokens(&lexer);
+  WPLParser parser(&tokens);
+  parser.removeErrorListeners();
+  parser.addErrorListener(new TestErrorListener());
+
+  WPLParser::CompilationUnitContext *tree = NULL;
+  REQUIRE_NOTHROW(tree = parser.compilationUnit());
+  REQUIRE(tree != NULL);
+  REQUIRE(tree->getText() != "");
+
+  STManager *stmgr = new STManager();
+  SemanticVisitor *sv = new SemanticVisitor(stmgr, new PropertyManager());
+
+  sv->visitCompilationUnit(tree);
+  CHECK_FALSE(sv->hasErrors(ERROR));
+  CHECK(sv->hasErrors(CRITICAL_WARNING));
+}
+
+TEST_CASE("Test program() should not have parameters warning", "[semantic][conditional]")
+{
+  antlr4::ANTLRInputStream input(
+    R""""(
+      int func program (int a) {
+        return 0; 
+      }
+    )""""
+  );
+  WPLLexer lexer(&input);
+  // lexer.removeErrorListeners();
+  // lexer.addErrorListener(new TestErrorListener());
+  antlr4::CommonTokenStream tokens(&lexer);
+  WPLParser parser(&tokens);
+  parser.removeErrorListeners();
+  parser.addErrorListener(new TestErrorListener());
+
+  WPLParser::CompilationUnitContext *tree = NULL;
+  REQUIRE_NOTHROW(tree = parser.compilationUnit());
+  REQUIRE(tree != NULL);
+  REQUIRE(tree->getText() != "");
+
+  STManager *stmgr = new STManager();
+  SemanticVisitor *sv = new SemanticVisitor(stmgr, new PropertyManager());
+
+  sv->visitCompilationUnit(tree);
+  CHECK_FALSE(sv->hasErrors(ERROR));
+  CHECK(sv->hasErrors(CRITICAL_WARNING));
+}
+
 /*********************************
  * C-Level Example tests
  *********************************/
