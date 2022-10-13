@@ -725,7 +725,7 @@ TEST_CASE("programs/test9ia - Global Integer Array", "[codegen]")
     REQUIRE(llvmIrToSHA256(cv->getModule()) == "0b667384676913d1b0aee9853fd9be42eabea34887e18cd1de6b54c5cf1823ca");
 }
 
-TEST_CASE("programs/test9sa - Global String Array", "[codegen]")
+TEST_CASE("programs/test9sa - Global String Array - FLAWED", "[codegen]")
 {
     std::fstream *inStream = new std::fstream("/home/shared/programs/test9sa.wpl");
     antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
@@ -759,6 +759,42 @@ TEST_CASE("programs/test9sa - Global String Array", "[codegen]")
     CHECK_FALSE(cv->hasErrors(0));
 
     REQUIRE(llvmIrToSHA256(cv->getModule()) == "9e5834e13db9f511e072a26b22de0bee49ae44d914fc08ecb86f9b14f1c4fdc1");
+}
+
+TEST_CASE("programs/test9sa-1 - Global String Array - CORRECT", "[codegen]")
+{
+    std::fstream *inStream = new std::fstream("/home/shared/programs/test9sa-1.wpl");
+    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+
+    WPLLexer lexer(input);
+    antlr4::CommonTokenStream tokens(&lexer);
+    WPLParser parser(&tokens);
+    parser.removeErrorListeners();
+    WPLParser::CompilationUnitContext *tree = NULL;
+    REQUIRE_NOTHROW(tree = parser.compilationUnit());
+    REQUIRE(tree != NULL);
+    STManager *stm = new STManager();
+    PropertyManager *pm = new PropertyManager();
+    SemanticVisitor *sv = new SemanticVisitor(stm, pm, 0);
+    sv->visitCompilationUnit(tree);
+
+
+    // if(sv->hasErrors(0))
+    // {
+    //     CHECK("foo" == sv->getErrors());
+    // }
+    REQUIRE_FALSE(sv->hasErrors(0));
+
+    CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll", 0);
+    cv->visitCompilationUnit(tree);
+
+    if (cv->hasErrors(0))
+    {
+        CHECK("foo" == cv->getErrors());
+    }
+    CHECK_FALSE(cv->hasErrors(0));
+
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "5ee667e609c925ca3dda1d158aeb2e8bf70818e7ef91965f9eadcd5243d6e76c");
 }
 
 

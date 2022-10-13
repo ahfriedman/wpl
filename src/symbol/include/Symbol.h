@@ -576,7 +576,7 @@ struct Symbol
     std::string identifier; // Mostly needed for our tostring function
     const Type *type;       // Keeps track of the symbol's type
 
-    llvm::AllocaInst *val;
+    std::optional<llvm::AllocaInst *> val;
 
     bool isGlobal;
 
@@ -587,7 +587,7 @@ struct Symbol
         type = t;
         isGlobal = glob;
 
-        val = nullptr; // FIXME: replace with optional?
+        val = {};
     }
 
     std::string toString() const
