@@ -334,6 +334,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::EqExprContext *ctx)
         return Types::UNDEFINED;
     }
 
+    // Note: As per C spec, arrays cannot be compared
     if(dynamic_cast<const TypeArray*>(left) || dynamic_cast<const TypeArray*>(right))
     {
         errorHandler.addSemanticError(ctx->getStart(), "Cannot perform equality operation on arrays; they are always seen as unequal!");

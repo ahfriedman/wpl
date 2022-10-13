@@ -45,18 +45,25 @@ using llvm::IRBuilder;
 using llvm::LLVMContext;
 using llvm::Module;
 using llvm::NoFolder;
+using llvm::PHINode;
 using llvm::StringRef;
 using llvm::Value;
-using llvm::PHINode; 
 
 class CodegenVisitor : WPLBaseVisitor
 {
 
 public:
-    CodegenVisitor(PropertyManager *p, std::string moduleName, int f=0)
+    /**
+     * @brief Construct a new Codegen Visitor object
+     *
+     * @param p Property manager to use
+     * @param moduleName LLVM Module name to use
+     * @param f Compiler flags
+     */
+    CodegenVisitor(PropertyManager *p, std::string moduleName, int f = 0)
     {
         props = p;
-        flags = f; 
+        flags = f;
 
         // LLVM Stuff
         context = new LLVMContext();
@@ -66,7 +73,6 @@ public:
         builder = new IRBuilder<NoFolder>(module->getContext());
 
         // LLVM Types
-
         VoidTy = llvm::Type::getVoidTy(module->getContext());
         Int32Ty = llvm::Type::getInt32Ty(module->getContext());
         Int1Ty = llvm::Type::getInt1Ty(module->getContext());
@@ -76,6 +82,10 @@ public:
         i8p = llvm::Type::getInt8PtrTy(module->getContext());
         Int8PtrPtrTy = i8p->getPointerTo();
     }
+
+    /***************************************
+     * Typed wrappers for the basic visitor
+     ***************************************/
 
     std::optional<Value *> TvisitCompilationUnit(WPLParser::CompilationUnitContext *ctx);
     std::optional<Value *> TvisitInvocation(WPLParser::InvocationContext *ctx);
@@ -116,6 +126,10 @@ public:
     std::optional<Value *> TvisitTypeOrVar(WPLParser::TypeOrVarContext *ctx);
     std::optional<Value *> TvisitType(WPLParser::TypeContext *ctx);
     std::optional<Value *> TvisitBooleanConst(WPLParser::BooleanConstContext *ctx);
+
+    /******************************************************************
+     * Standard visitor methods all defined to use the typed versions
+     ******************************************************************/
 
     std::any visitCompilationUnit(WPLParser::CompilationUnitContext *ctx) override { return TvisitCompilationUnit(ctx); };
     std::any visitInvocation(WPLParser::InvocationContext *ctx) override { return TvisitInvocation(ctx); };
@@ -174,65 +188,86 @@ public:
     template <class... Ts>
     overloaded(Ts...) -> overloaded<Ts...>;
 
+    /**
+     * @brief Generates the code for an InvokeableType (PROC/FUNC)
+     *
+     * @param sum The ProcDefContext or FuncDefContext to build the function from
+     * @return std::optional<Value *> Empty as this shouldn't be seen as a value
+     */
     std::optional<Value *> visitInvokeable(std::variant<WPLParser::ProcDefContext *, WPLParser::FuncDefContext *> sum)
     {
+        // Creates a vector to hold all the argument types
         std::vector<llvm::Type *> typeVec;
 
         // From C++ Documentation for visitors
+        // Gets the general context we can use for error reporting
         antlr4::ParserRuleContext *ctx = std::visit(overloaded{[](WPLParser::ProcDefContext *arg)
                                                                { return (antlr4::ParserRuleContext *)arg; },
                                                                [](WPLParser::FuncDefContext *arg)
                                                                { return (antlr4::ParserRuleContext *)arg; }},
                                                     sum);
 
+        // Lookup the symbol from the context
         Symbol *sym = props->getBinding(ctx);
 
+        // Get the function name. Done separatley from sym in case the symbol isn't found
         std::string funcId = std::visit(overloaded{[](WPLParser::ProcDefContext *arg)
                                                    { return arg->name->getText(); },
                                                    [](WPLParser::FuncDefContext *arg)
                                                    { return arg->name->getText(); }},
                                         sum);
 
+        // If we couldn't find the function, throw an error.
         if (!sym)
         {
             errorHandler.addCodegenError(ctx->getStart(), "Unbound function: " + funcId);
             return {};
         }
 
+        // Get the parameter list context for the invokable
         WPLParser::ParameterListContext *paramList = std::visit(overloaded{[](WPLParser::ProcDefContext *arg)
                                                                            { return arg->paramList; },
                                                                            [](WPLParser::FuncDefContext *arg)
                                                                            { return arg->paramList; }},
                                                                 sum);
 
+        // If we have a parameter list, then generate the code for it
         if (paramList)
         {
+            // For each parameter
             for (auto e : paramList->params)
             {
+                // Lookup the parameter's type
                 std::optional<llvm::Type *> type = CodegenVisitor::llvmTypeFor(e->ty);
 
-                if(!type)
+                // If the type couldn't be found, throw an error
+                if (!type)
                 {
                     errorHandler.addCodegenError(ctx->getStart(), "Could not generate code for type: " + e->ty->toString());
                     return {};
                 }
 
+                // Otherwise, add it to the tpevec
                 typeVec.push_back(type.value());
             }
         }
 
+        // Create an ArrayRef of our typeVec
         ArrayRef<llvm::Type *> paramRef = ArrayRef(typeVec);
 
         // Can't use visitor because visitor can't see `this'
-        std::optional<llvm::Type *>retType = std::holds_alternative<WPLParser::FuncDefContext *>(sum) ? CodegenVisitor::llvmTypeFor(std::get<WPLParser::FuncDefContext *>(sum)->ty)
-                                                                                       : VoidTy;
+        // Thi sbasically gets the return type of the function.
+        std::optional<llvm::Type *> retType = std::holds_alternative<WPLParser::FuncDefContext *>(sum) ? CodegenVisitor::llvmTypeFor(std::get<WPLParser::FuncDefContext *>(sum)->ty)
+                                                                                                       : VoidTy;
 
-        if(!retType)
+        // if we couldn't determine the return type, throw an error and abort
+        if (!retType)
         {
             errorHandler.addCodegenError(ctx->getStart(), "Could not generate code for return type of " + funcId);
             return {};
         }
 
+        // Create an llvm function type //TODO: MOVE TO function symbol??
         FunctionType *fnType = FunctionType::get(
             retType.value(),
             paramRef,
@@ -244,15 +279,22 @@ public:
         BasicBlock *bBlk = BasicBlock::Create(module->getContext(), "entry", fn);
         builder->SetInsertPoint(bBlk);
 
+        // Bind all of the arguments
         for (auto &arg : fn->args())
         {
+            // Get the argumengt number (just seems easier than making my own counter)
             int argNumber = arg.getArgNo();
+
+            // Get the argument's type
             llvm::Type *type = typeVec.at(argNumber);
 
-            //This even works for arrays!
+            // Get the argument name (This even works for arrays!)
             std::string argName = paramList->params.at(argNumber)->getText();
 
+            // Create an allocation for the argumentr
             llvm::AllocaInst *v = builder->CreateAlloca(type, 0, argName);
+
+            // Try to find the parameter's bnding to determine what value to bind to it.
             Symbol *sym = props->getBinding(paramList->params.at(argNumber));
 
             if (!sym)
@@ -267,19 +309,22 @@ public:
             }
         }
 
-        WPLParser::BlockContext* block = std::visit(overloaded{[](WPLParser::ProcDefContext *arg)
-                                                   { return arg->block(); },
-                                                   [](WPLParser::FuncDefContext *arg)
-                                                   { return arg->block(); }},
-                                        sum);
+        // Get the codeblock for the PROC/FUNC
+        WPLParser::BlockContext *block = std::visit(overloaded{[](WPLParser::ProcDefContext *arg)
+                                                               { return arg->block(); },
+                                                               [](WPLParser::FuncDefContext *arg)
+                                                               { return arg->block(); }},
+                                                    sum);
 
-
-        for(auto e : block->stmts)
+        // Generate code for the block
+        for (auto e : block->stmts)
         {
             e->accept(this);
         }
 
-        if(std::holds_alternative<WPLParser::ProcDefContext *>(sum) && !CodegenVisitor::blockEndsInReturn(block)) {
+        // If we are a PROC, make sure to add a return type (if we don't already have one)
+        if (std::holds_alternative<WPLParser::ProcDefContext *>(sum) && !CodegenVisitor::blockEndsInReturn(block))
+        {
             builder->CreateRetVoid();
         }
 
@@ -287,12 +332,19 @@ public:
     }
 
 protected:
+    /**
+     * @brief Helper function to determine if a Block ends in a return or not
+     *
+     * @param ctx The BlockContext to check
+     * @return true If it ends in a return
+     * @return false If it does not end in a return
+     */
     static bool blockEndsInReturn(WPLParser::BlockContext *ctx)
     {
         return ctx->stmts.size() > 0 && dynamic_cast<WPLParser::ReturnStatementContext *>(ctx->stmts.at(ctx->stmts.size() - 1));
     }
 
-    std::optional<llvm::Type *>llvmTypeFor(WPLParser::TypeContext *ctx)
+    std::optional<llvm::Type *> llvmTypeFor(WPLParser::TypeContext *ctx)
     {
         llvm::Type *ty;
         bool valid = false;
@@ -333,7 +385,7 @@ protected:
 
 private:
     PropertyManager *props;
-    int flags; 
+    int flags;
 
     WPLErrorHandler errorHandler;
 
