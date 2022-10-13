@@ -393,25 +393,25 @@ public:
 protected:
     bool isSupertypeFor(const Type *other) const override
     {
-        //Checks that the other type is also invokable
+        // Checks that the other type is also invokable
         if (const TypeInvoke *p = dynamic_cast<const TypeInvoke *>(other))
         {
-            //Makes sure that both functions have the same number of parameters
+            // Makes sure that both functions have the same number of parameters
             if (p->paramTypes.size() != this->paramTypes.size())
                 return false;
 
-            //Makes sure both functions have the same variadic status
+            // Makes sure both functions have the same variadic status
             if (this->variadic != p->variadic)
                 return false;
 
-            //Checks that the parameters of this function are all subtypes of the other
+            // Checks that the parameters of this function are all subtypes of the other
             for (unsigned int i = 0; i < this->paramTypes.size(); i++)
             {
                 if (this->paramTypes.at(i)->isNotSubtype(p->paramTypes.at(i)))
                     return false;
             }
 
-            //Makes sure that the return type of this function is a subtype of the other
+            // Makes sure that the return type of this function is a subtype of the other
             return this->retType->isSubtype(p->retType);
         }
         return false;
@@ -428,13 +428,13 @@ class TypeInfer : public Type
 private:
     /**
      * @brief Optional type that represents the inferred type (type this is acting as). Empty if inference was unable to determine the type or is not complete
-     * 
+     *
      */
-    std::optional<const Type *> *valueType; 
+    std::optional<const Type *> *valueType;
 
     /**
      * @brief Keeps track of all the other inferred types that this shares a dependency with.
-     * 
+     *
      */
     std::vector<const TypeInfer *> infTypes;
 
@@ -446,16 +446,16 @@ public:
 
     /**
      * @brief Returns if type inference has detemined the type of this var yet
-     * 
-     * @return true 
-     * @return false 
+     *
+     * @return true
+     * @return false
      */
     bool hasBeenInferred() const { return valueType->has_value(); }
 
     /**
      * @brief Returns VAR if type inference has not been completed or {VAR/<INFERRED TYPE>} if type inference has completed.
-     * 
-     * @return std::string 
+     *
+     * @return std::string
      */
     std::string toString() const override
     {
@@ -466,12 +466,11 @@ public:
         return "VAR";
     }
 
-
     /**
-     * @brief Gets the LLVM representation of the inferred type. 
-     * 
+     * @brief Gets the LLVM representation of the inferred type.
+     *
      * @param C LLVM Context
-     * @return llvm::Type* the llvm type for the inferred type. 
+     * @return llvm::Type* the llvm type for the inferred type.
      */
     llvm::Type *getLLVMType(llvm::LLVMContext &C) const override
     {
@@ -484,20 +483,36 @@ public:
 
     // TODO: There shouldn't be any parody in codegen, but something does seem off.
 
-    // NOTE: SHOULD NEVER PASS INF TO THIS!
+protected:
+    /**
+     * @brief Internal helper function used to try updating the type that this inference represents
+     *
+     * @param other The type we are trying to update to
+     * @return true If this type is already a subtype other, or this type can be updated to have the type of other
+     * @return false If this type cannot be of type other.
+     */
     bool setValue(const Type *other) const
     {
+        // Prevent us from being sent another TypeInfer. There's no reason for this to happen
+        // as it should have been added as a dependency (and doing this would break things)
         if (dynamic_cast<const TypeInfer *>(other))
             return false;
 
+        // If we have already inferred a type, we just need to check
+        // that that type is a subtype of other.
         if (valueType->has_value())
         {
             return valueType->value()->isSubtype(other);
         }
 
+
+        // Set our valueType to be the provided type to see if anything breaks...
         TypeInfer *mthis = const_cast<TypeInfer *>(this);
         *mthis->valueType = other;
 
+
+        // Run through our dependencies making sure they can all also
+        // be compatible with having a type of other. 
         bool valid = true;
         for (const TypeInfer *ty : infTypes)
         {
@@ -507,48 +522,46 @@ public:
             }
         }
 
+        // Return true/false depending on if the afformentoned process was successful.
         return valid;
     }
 
-protected:
+    /**
+     * @brief Determines if this is a supertype of another type (and thus, also performs type inferencing).
+     * 
+     * @param other 
+     * @return true 
+     * @return false 
+     */
     bool isSupertypeFor(const Type *other) const override
     {
+        // If we already have an inferred type, we can simply 
+        // check if that type is a subtype of other. 
         if (valueType->has_value())
-            return valueType->value()->isSubtype(other);
+            return other->isSubtype(valueType->value());
 
-        TypeInfer *mthis = const_cast<TypeInfer *>(this);
-
+    
+        /*
+         * If the other type is also an inference type...
+         */
         if (const TypeInfer *oinf = dynamic_cast<const TypeInfer *>(other))
         {
+            // If the other inference type has a value determined, try using that
             if (oinf->valueType->has_value())
             {
-                // *mthis->valueType = oinf->valueType->value();
                 return setValue(oinf->valueType->value());
-                // return true;
             }
 
+            //Otherwise, add the types to be dependencies of eachother, and return true. 
+            TypeInfer *mthis = const_cast<TypeInfer *>(this);
             mthis->infTypes.push_back(oinf);
-            // return true;
 
             TypeInfer *moth = const_cast<TypeInfer *>(oinf);
             moth->infTypes.push_back(this);
             return true;
-            // if(oinf->valueType->has_value())
-            // {
-            // mthis->valueType = oinf->valueType; //other;
-            // return true;
-            // }
-
-            // Cannot assign undefined
-            //  return false;
         }
 
-        // std::optional<const Type *> * next = new std::optional<const Type*>(other);
-
-        // *mthis->valueType = other;//next;///other;
-
-        // return true;
-
+        // Try to update this type's inferred value with the other type
         return setValue(other);
     }
 };
