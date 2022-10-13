@@ -76,9 +76,45 @@ std::optional<Value *> CodegenVisitor::TvisitArrayAccess(WPLParser::ArrayAccessC
         return {};
     }
 
+    Symbol *sym = props->getBinding(ctx);
+
+    // If the symbol could not be found, raise an error
+    if (!sym)
+    {
+        errorHandler.addCodegenError(ctx->getStart(), "Undefined symbol in array access");
+        return {};
+    }
+
     // Create the expression pointer
-    llvm::AllocaInst *arrayPtr = props->getBinding(ctx)->val;
-    auto ptr = builder->CreateGEP(arrayPtr, {Int32Zero, index.value()});
+    std::optional<llvm::Value *> arrayPtr = sym->val;
+
+    if (!arrayPtr)
+    {
+        if (sym->isGlobal)
+        {
+            // Lookup the global var for the symbol
+            llvm::GlobalVariable *glob = module->getNamedGlobal(sym->identifier);
+
+            // Check that we found the variable. If not, throw an error.
+            if (!glob)
+            {
+                errorHandler.addCodegenError(ctx->getStart(), "Unable to find global variable: " + sym->identifier);
+            }
+
+            arrayPtr = builder->CreateLoad(glob)->getPointerOperand();
+
+            // auto ptr = builder->CreateGEP(v, {Int32Zero, index.value()});
+            // Value *val = builder->CreateLoad(ptr->getType()->getPointerElementType(), ptr);
+            // return val;
+        }
+        else
+        {
+            errorHandler.addCodegenError(ctx->getStart(), "Failed to locate array in access");
+            return {};
+        }
+    }
+
+    auto ptr = builder->CreateGEP(arrayPtr.value(), {Int32Zero, index.value()});
     Value *val = builder->CreateLoad(ptr->getType()->getPointerElementType(), ptr);
     return val;
 }
@@ -149,8 +185,8 @@ std::optional<Value *> CodegenVisitor::TvisitSConstExpr(WPLParser::SConstExprCon
     glob->setAlignment(llvm::MaybeAlign(1));
     glob->setUnnamedAddr(llvm::GlobalValue::UnnamedAddr::Global);
 
-    // Allocate the string and return that value. 
-    // This prevents the issue of CreateGlobalStringPtr where it creates a string AND a pointer to it. 
+    // Allocate the string and return that value.
+    // This prevents the issue of CreateGlobalStringPtr where it creates a string AND a pointer to it.
     // Here, we can deal with the pointer later (just as if it were a normal variable)
     llvm::Constant *Indices[] = {Int32Zero, Int32Zero};
 
@@ -364,7 +400,6 @@ std::optional<Value *> CodegenVisitor::TvisitLogOrExpr(WPLParser::LogOrExprConte
     parent->getBasicBlockList().push_back(trueBlk);
     builder->SetInsertPoint(trueBlk);
 
-
     /*
      * PHI node to merge both sides back together
      */
@@ -383,13 +418,12 @@ std::optional<Value *> CodegenVisitor::TvisitVariableExpr(WPLParser::VariableExp
     std::string id = ctx->v->getText();
     Symbol *sym = props->getBinding(ctx);
 
-    // If the symbol could not be found, raise an error 
+    // If the symbol could not be found, raise an error
     if (!sym)
     {
         errorHandler.addCodegenError(ctx->getStart(), "Undefined variable access: " + id);
         return {};
     }
-
 
     // Try getting the type for the symbol, raising an error if it could not be determined
     llvm::Type *type = sym->type->getLLVMType(module->getContext());
@@ -401,20 +435,20 @@ std::optional<Value *> CodegenVisitor::TvisitVariableExpr(WPLParser::VariableExp
     // Make sure the variable has an allocation (or that we can find it due to it being a global var)
     if (!sym->val)
     {
-        //If the symbol is a global var
+        // If the symbol is a global var
         if (sym->isGlobal)
         {
-            //Lookup the global var for the symbol
+            // Lookup the global var for the symbol
             llvm::GlobalVariable *glob = module->getNamedGlobal(sym->identifier);
 
-            // Check that we found the variable. If not, throw an error. 
+            // Check that we found the variable. If not, throw an error.
             if (!glob)
             {
                 errorHandler.addCodegenError(ctx->getStart(), "Unable to find global variable: " + id);
                 return {};
             }
 
-            //Create and return a load for the gloobal var
+            // Create and return a load for the global var
             Value *val = builder->CreateLoad(glob);
             return val;
         }
@@ -422,8 +456,8 @@ std::optional<Value *> CodegenVisitor::TvisitVariableExpr(WPLParser::VariableExp
         errorHandler.addCodegenError(ctx->getStart(), "Unable to find allocation for variable: " + ctx->getText());
     }
 
-    // Otherwise, we are a local variable with an allocation and, thus, can simply load it. 
-    Value *v = builder->CreateLoad(type, sym->val, id);
+    // Otherwise, we are a local variable with an allocation and, thus, can simply load it.
+    Value *v = builder->CreateLoad(type, sym->val.value(), id);
     return v;
 }
 
@@ -431,7 +465,7 @@ std::optional<Value *> CodegenVisitor::TvisitFieldAccessExpr(WPLParser::FieldAcc
 {
     // This is ONLY array length for now...
 
-    //Make sure we cna find the symbol, and that it has a val and type defined
+    // Make sure we cna find the symbol, and that it has a val and type defined
     Symbol *sym = props->getBinding(ctx->VARIABLE().at(0));
 
     if (!sym || !sym->val || !sym->type)
@@ -443,13 +477,13 @@ std::optional<Value *> CodegenVisitor::TvisitFieldAccessExpr(WPLParser::FieldAcc
     // Check that the type is an array type
     if (const TypeArray *ar = dynamic_cast<const TypeArray *>(sym->type))
     {
-        //If it is, correctly, an array type, then we can get the array's length (this is the only operation currently, so we can just do thus)
+        // If it is, correctly, an array type, then we can get the array's length (this is the only operation currently, so we can just do thus)
         Value *v = builder->getInt32(ar->getLength());
 
         return v;
     }
 
-    // Throw an error as we currently only support array length. 
+    // Throw an error as we currently only support array length.
     errorHandler.addCodegenError(ctx->getStart(), "Given non-array type in TvisitFieldAccessExpr!");
     return {};
 }
@@ -503,7 +537,7 @@ std::optional<Value *> CodegenVisitor::TvisitBConstExpr(WPLParser::BConstExprCon
 
 std::optional<Value *> CodegenVisitor::TvisitCondition(WPLParser::ConditionContext *ctx)
 {
-    //Passthrough to visiting the conditon
+    // Passthrough to visiting the conditon
     return std::any_cast<std::optional<Value *>>(ctx->ex->accept(this));
 }
 
@@ -519,8 +553,8 @@ std::optional<Value *> CodegenVisitor::TvisitExternStatement(WPLParser::ExternSt
         for (auto e : ctx->paramList->params)
         {
             std::optional<llvm::Type *> type = CodegenVisitor::llvmTypeFor(e->ty);
-            
-            if(!type)
+
+            if (!type)
             {
                 errorHandler.addCodegenError(e->getStart(), "Could not generate code to represent type: " + e->ty->toString());
                 return {};
@@ -535,17 +569,15 @@ std::optional<Value *> CodegenVisitor::TvisitExternStatement(WPLParser::ExternSt
     // Determine if the function is variadic
     bool isVariadic = ctx->variadic || ctx->ELLIPSIS();
 
-
     // Generate the return type or set it to be Void if PROC
-    std::optional<llvm::Type*> retOpt = ctx->ty ? CodegenVisitor::llvmTypeFor(ctx->ty) : VoidTy; 
+    std::optional<llvm::Type *> retOpt = ctx->ty ? CodegenVisitor::llvmTypeFor(ctx->ty) : VoidTy;
 
-    // If we fail to generate a return, then throw an error. 
-    if(!retOpt)
+    // If we fail to generate a return, then throw an error.
+    if (!retOpt)
     {
         errorHandler.addCodegenError(ctx->ty->getStart(), "Could not generate code for type: " + ctx->ty->toString());
-        return {}; 
+        return {};
     }
-
 
     // Create the function definition
     FunctionType *fnType = FunctionType::get(
@@ -588,7 +620,7 @@ std::optional<Value *> CodegenVisitor::TvisitAssignStatement(WPLParser::AssignSt
     }
 
     // Get the allocation instruction for the symbol
-    Value *val = varSym->val;
+    std::optional<Value *> val = varSym->val;
 
     // If the symbol is global
     if (varSym->isGlobal)
@@ -608,7 +640,7 @@ std::optional<Value *> CodegenVisitor::TvisitAssignStatement(WPLParser::AssignSt
     }
 
     // Sanity check to ensure that we now have a value for the variable
-    if (val == nullptr)
+    if (!val)
     {
         errorHandler.addCodegenError(ctx->getStart(), "Improperly initialized variable in assignment: " + ctx->to->getText() + "@" + varSym->identifier);
         return {};
@@ -628,12 +660,12 @@ std::optional<Value *> CodegenVisitor::TvisitAssignStatement(WPLParser::AssignSt
         }
 
         // Create a GEP to the index based on our previously calculated value and index
-        Value *built = builder->CreateGEP(val, {Int32Zero, index.value()});
+        Value *built = builder->CreateGEP(val.value(), {Int32Zero, index.value()});
         val = built;
     }
 
     // Store the expression's value
-    builder->CreateStore(exprVal.value(), val);
+    builder->CreateStore(exprVal.value(), val.value());
 
     return {};
 }
@@ -672,7 +704,7 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
         for (auto var : e->VARIABLE())
         {
 
-            //Get the Symbol for the var based on its binding
+            // Get the Symbol for the var based on its binding
             Symbol *varSymbol = props->getBinding(var);
 
             if (!varSymbol)
@@ -687,18 +719,18 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
             // Branch depending on if the var is global or not
             if (varSymbol->isGlobal)
             {
-                //If it is global, then we need to insert a new gobal variable of this type. 
-                //A lot of these options are done to make it match what a C program would 
-                //generate for global vars
+                // If it is global, then we need to insert a new gobal variable of this type.
+                // A lot of these options are done to make it match what a C program would
+                // generate for global vars
                 module->getOrInsertGlobal(var->getText(), ty);
                 llvm::GlobalVariable *glob = module->getNamedGlobal(var->getText());
                 glob->setLinkage(GlobalValue::ExternalLinkage);
                 glob->setDSOLocal(true);
 
-                //If we had an expression to set the var equal to
+                // If we had an expression to set the var equal to
                 if (e->ex)
                 {
-                    //Ensure that the value is a constant, then, if so, initialize it. 
+                    // Ensure that the value is a constant, then, if so, initialize it.
                     if (llvm::Constant *constant = static_cast<llvm::Constant *>(exVal.value()))
                     {
                         glob->setInitializer(constant);
@@ -712,18 +744,18 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
                 }
                 else
                 {
-                    //As there was no constant, just set the global var to be initalized to zero as C does with llvm.
+                    // As there was no constant, just set the global var to be initalized to zero as C does with llvm.
                     llvm::ConstantAggregateZero *constant = llvm::ConstantAggregateZero::get(ty);
                     glob->setInitializer(constant);
                 }
             }
             else
             {
-                //As this is a local var we can just create an allocation for it
+                // As this is a local var we can just create an allocation for it
                 llvm::AllocaInst *v = builder->CreateAlloca(ty, 0, var->getText());
                 varSymbol->val = v;
 
-                // Similarly, if we have an expression for the local var, we can store it. Otherwise, we can leave it undefined. 
+                // Similarly, if we have an expression for the local var, we can store it. Otherwise, we can leave it undefined.
                 if (e->ex)
                     builder->CreateStore(exVal.value(), v);
             }
@@ -755,7 +787,7 @@ std::optional<Value *> CodegenVisitor::TvisitLoopStatement(WPLParser::LoopStatem
     // Need to add here otherwise we will overwrite it
     // parent->getBasicBlockList().push_back(loopBlk);
 
-    /* 
+    /*
      * In the loop block
      */
     builder->SetInsertPoint(loopBlk);
@@ -774,8 +806,8 @@ std::optional<Value *> CodegenVisitor::TvisitLoopStatement(WPLParser::LoopStatem
     // Check if we need to loop back again...
     builder->CreateCondBr(check.value(), loopBlk, restBlk);
     loopBlk = builder->GetInsertBlock();
-    
-    /* 
+
+    /*
      * Out of loop
      */
     parent->getBasicBlockList().push_back(restBlk);
