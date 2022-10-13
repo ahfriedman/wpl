@@ -426,7 +426,16 @@ protected:
 class TypeInfer : public Type
 {
 private:
-    std::optional<const Type *> *valueType; // Actual type acting as
+    /**
+     * @brief Optional type that represents the inferred type (type this is acting as). Empty if inference was unable to determine the type or is not complete
+     * 
+     */
+    std::optional<const Type *> *valueType; 
+
+    /**
+     * @brief Keeps track of all the other inferred types that this shares a dependency with.
+     * 
+     */
     std::vector<const TypeInfer *> infTypes;
 
 public:
@@ -435,19 +444,35 @@ public:
         valueType = new std::optional<const Type *>;
     }
 
+    /**
+     * @brief Returns if type inference has detemined the type of this var yet
+     * 
+     * @return true 
+     * @return false 
+     */
     bool hasBeenInferred() const { return valueType->has_value(); }
 
+    /**
+     * @brief Returns VAR if type inference has not been completed or {VAR/<INFERRED TYPE>} if type inference has completed.
+     * 
+     * @return std::string 
+     */
     std::string toString() const override
     {
-        if (valueType->has_value())
+        if (hasBeenInferred())
         {
             return "{VAR/" + valueType->value()->toString() + "}";
         }
         return "VAR";
     }
 
-    // std::optional<const Type *> getValueType() const { return valueType; }
 
+    /**
+     * @brief Gets the LLVM representation of the inferred type. 
+     * 
+     * @param C LLVM Context
+     * @return llvm::Type* the llvm type for the inferred type. 
+     */
     llvm::Type *getLLVMType(llvm::LLVMContext &C) const override
     {
         if (valueType->has_value())
