@@ -12,6 +12,13 @@ class SemanticVisitor : WPLBaseVisitor
 {
 
 public:
+    /**
+     * @brief Construct a new Semantic Visitor object
+     * 
+     * @param s Symbol table manager to use
+     * @param p Property manager to use 
+     * @param f Compiler flags
+     */
     SemanticVisitor(STManager *s, PropertyManager *p, int f = 0)
     {
         stmgr = s;

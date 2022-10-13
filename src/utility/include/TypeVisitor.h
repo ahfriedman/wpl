@@ -1,3 +1,14 @@
+/**
+ * @file TypeVisitor.h
+ * @author Alex Friedman (ahfriedman.com)
+ * @brief This file was an attempt to make a typed-wrapper around the base visitor. It did not appear to work, so this is UNUSED; may return later to try this again
+ * @version 0.1
+ * 
+ * 
+ * 
+ * @copyright Copyright (c) 2022
+ * 
+ */
 #pragma once
 #include "antlr4-runtime.h"
 #include "WPLBaseVisitor.h"
