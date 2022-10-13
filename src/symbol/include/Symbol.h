@@ -502,7 +502,7 @@ protected:
         // that that type is a subtype of other.
         if (valueType->has_value())
         {
-            return valueType->value()->isSubtype(other);
+            return other->isSubtype(valueType->value()); //NOTE: CONDITION INVERSED BECAUSE WE CALL IT INVERSED IN SYMBOL.CPP!
         }
 
 
