@@ -366,7 +366,7 @@ public:
         return description.str();
     }
 
-    // FIXME: DO THESE NEED LLVM TYPES???
+    // TODO: Build LLVM Type here instead of in codegen!
 
     /**
      * @brief Get the Param Types object
