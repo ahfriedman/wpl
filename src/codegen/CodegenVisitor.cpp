@@ -76,14 +76,16 @@ std::optional<Value *> CodegenVisitor::TvisitArrayAccess(WPLParser::ArrayAccessC
         return {};
     }
 
-    Symbol *sym = props->getBinding(ctx);
+    std::optional<Symbol *> symOpt = props->getBinding(ctx);
 
     // If the symbol could not be found, raise an error
-    if (!sym)
+    if (!symOpt)
     {
         errorHandler.addCodegenError(ctx->getStart(), "Undefined symbol in array access");
         return {};
     }
+
+    Symbol * sym = symOpt.value(); 
 
     // Create the expression pointer
     std::optional<llvm::Value *> arrayPtr = sym->val;
@@ -416,14 +418,16 @@ std::optional<Value *> CodegenVisitor::TvisitVariableExpr(WPLParser::VariableExp
 {
     // Get the variable name and look it up
     std::string id = ctx->v->getText();
-    Symbol *sym = props->getBinding(ctx);
+    std::optional<Symbol *> symOpt = props->getBinding(ctx);
 
     // If the symbol could not be found, raise an error
-    if (!sym)
+    if (!symOpt)
     {
         errorHandler.addCodegenError(ctx->getStart(), "Undefined variable access: " + id);
         return {};
     }
+
+    Symbol * sym = symOpt.value(); 
 
     // Try getting the type for the symbol, raising an error if it could not be determined
     llvm::Type *type = sym->type->getLLVMType(module->getContext());
@@ -466,9 +470,17 @@ std::optional<Value *> CodegenVisitor::TvisitFieldAccessExpr(WPLParser::FieldAcc
     // This is ONLY array length for now...
 
     // Make sure we cna find the symbol, and that it has a val and type defined
-    Symbol *sym = props->getBinding(ctx->VARIABLE().at(0));
+    std::optional<Symbol *> symOpt = props->getBinding(ctx->VARIABLE().at(0));
 
-    if (!sym || !sym->val || !sym->type)
+    if (!symOpt)
+    {
+        errorHandler.addCodegenError(ctx->getStart(), "Improperly initialized array access symbol.");
+        return {};
+    }
+
+    Symbol * sym = symOpt.value(); 
+
+    if (!symOpt || !sym->val || !sym->type)
     {
         errorHandler.addCodegenError(ctx->getStart(), "Improperly initialized array access symbol.");
         return {};
@@ -612,12 +624,14 @@ std::optional<Value *> CodegenVisitor::TvisitAssignStatement(WPLParser::AssignSt
     }
 
     // Lookup the binding for the variable we are assigning to and and ensure that we find it
-    Symbol *varSym = props->getBinding(ctx->to);
-    if (varSym == nullptr)
+    std::optional<Symbol *> varSymOpt = props->getBinding(ctx->to);
+    if (!varSymOpt)
     {
         errorHandler.addCodegenError(ctx->getStart(), "Incorrectly processed variable in assignment: " + ctx->to->getText());
         return {};
     }
+
+    Symbol * varSym = varSymOpt.value();
 
     // Get the allocation instruction for the symbol
     std::optional<Value *> val = varSym->val;
@@ -705,13 +719,15 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
         {
 
             // Get the Symbol for the var based on its binding
-            Symbol *varSymbol = props->getBinding(var);
+            std::optional<Symbol *> varSymbolOpt = props->getBinding(var);
 
-            if (!varSymbol)
+            if (!varSymbolOpt)
             {
                 errorHandler.addCodegenError(ctx->getStart(), "Issue creating variable: " + var->getText());
                 return {};
             }
+
+            Symbol * varSymbol = varSymbolOpt.value(); 
 
             // Get the type of the symbol
             llvm::Type *ty = varSymbol->type->getLLVMType(module->getContext());

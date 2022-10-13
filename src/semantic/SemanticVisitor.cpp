@@ -243,7 +243,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::ArrayOrVarContext *ctx)
     const Type *arrType = this->visitCtx(ctx->array);
 
     // Lookup the binding of the array
-    Symbol *binding = bindings->getBinding(ctx->array);
+    std::optional<Symbol *> binding = bindings->getBinding(ctx->array);
 
     // If we didn't get a binding, report an error.
     if (!binding)
@@ -253,7 +253,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::ArrayOrVarContext *ctx)
     }
 
     // Otherwise, bind this context to the same binding as the array access, and return its type.
-    bindings->bind(ctx, binding);
+    bindings->bind(ctx, binding.value());
     return arrType;
 }
 

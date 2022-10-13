@@ -208,7 +208,7 @@ public:
                                                     sum);
 
         // Lookup the symbol from the context
-        Symbol *sym = props->getBinding(ctx);
+        std::optional<Symbol *> symOpt = props->getBinding(ctx);
 
         // Get the function name. Done separatley from sym in case the symbol isn't found
         std::string funcId = std::visit(overloaded{[](WPLParser::ProcDefContext *arg)
@@ -218,11 +218,14 @@ public:
                                         sum);
 
         // If we couldn't find the function, throw an error.
-        if (!sym)
+        if (!symOpt)
         {
             errorHandler.addCodegenError(ctx->getStart(), "Unbound function: " + funcId);
             return {};
         }
+
+
+        // Symbol * sym = symOpt.value(); 
 
         // Get the parameter list context for the invokable
         WPLParser::ParameterListContext *paramList = std::visit(overloaded{[](WPLParser::ProcDefContext *arg)
@@ -295,15 +298,15 @@ public:
             llvm::AllocaInst *v = builder->CreateAlloca(type, 0, argName);
 
             // Try to find the parameter's bnding to determine what value to bind to it.
-            Symbol *sym = props->getBinding(paramList->params.at(argNumber));
+            std::optional<Symbol *> symOpt = props->getBinding(paramList->params.at(argNumber));
 
-            if (!sym)
+            if (!symOpt)
             {
                 errorHandler.addCodegenError(ctx->getStart(), "Unable to generate parameter for function: " + argName);
             }
             else
             {
-                sym->val = v;
+                symOpt.value()->val = v;
 
                 builder->CreateStore(&arg, v);
             }
