@@ -14,9 +14,9 @@ class SemanticVisitor : WPLBaseVisitor
 public:
     /**
      * @brief Construct a new Semantic Visitor object
-     * 
+     *
      * @param s Symbol table manager to use
-     * @param p Property manager to use 
+     * @param p Property manager to use
      * @param f Compiler flags
      */
     SemanticVisitor(STManager *s, PropertyManager *p, int f = 0)
@@ -32,6 +32,9 @@ public:
     PropertyManager *getBindings() { return bindings; }
     bool hasErrors(int flags) { return errorHandler.hasErrors(flags); }
 
+    /*
+     * The following are simply typed versions of the traditional visitor methods
+     */
     const Type *visitCtx(WPLParser::CompilationUnitContext *ctx);
     const Type *visitCtx(WPLParser::InvocationContext *ctx);
     const Type *visitCtx(WPLParser::ArrayAccessContext *ctx);
@@ -71,6 +74,9 @@ public:
     const Type *visitCtx(WPLParser::TypeContext *ctx);
     const Type *visitCtx(WPLParser::BooleanConstContext *ctx);
 
+    /*
+     * Traditional visitor methods all overridden with our typed versions
+     */
     std::any visitCompilationUnit(WPLParser::CompilationUnitContext *ctx) override { return visitCtx(ctx); }
     std::any visitInvocation(WPLParser::InvocationContext *ctx) override { return visitCtx(ctx); }
     std::any visitArrayAccess(WPLParser::ArrayAccessContext *ctx) override { return visitCtx(ctx); }
@@ -110,76 +116,110 @@ public:
     std::any visitType(WPLParser::TypeContext *ctx) override { return visitCtx(ctx); }
     std::any visitBooleanConst(WPLParser::BooleanConstContext *ctx) override { return visitCtx(ctx); }
 
+    /**
+     * @brief Used to safely enter a block. This is used to ensure there aren't FUNC/PROC definitions / code following returns in it.
+     *
+     * @param ctx The BlockContext to visit
+     * @param newScope  true if we should enter a new scope, false otherwise
+     * @return const Type* Types::UNDEFINED as this is a statement and not a value
+     */
     const Type *safeVisitBlock(WPLParser::BlockContext *ctx, bool newScope)
     {
+        // Enter a new scope if desired
         if (newScope)
             stmgr->enterScope();
 
+        // Tracks if we have found a return statement or not
         bool foundReturn = false;
         for (auto e : ctx->stmts)
         {
-
+            // Visit all the statements in the block
             e->accept(this);
 
+            // If we found a return, then this is dead code, and we can break out of the loop.
             if (foundReturn)
             {
                 errorHandler.addSemanticError(ctx->getStart(), "Dead code.");
                 break;
             }
+
+            // If the current statement is a return, set foundReturn = true
             if (dynamic_cast<WPLParser::ReturnStatementContext *>(e))
                 foundReturn = true;
 
+            // Prevent defining a Func or PROC in the block as this is not yet supported.
             if (dynamic_cast<WPLParser::FuncDefContext *>(e) || dynamic_cast<WPLParser::ProcDefContext *>(e))
             {
                 errorHandler.addSemanticError(ctx->getStart(), "Currenly, nested PROC/FUNCs are not supported by codegen.");
             }
         }
 
+        // If we entered a new scope, then we can now safely exit a scope
         if (newScope)
             this->safeExitScope(ctx);
 
         return Types::UNDEFINED;
     }
 
+    /**
+     * @brief Visits an invokable definition (PROC or FUNC)
+     *
+     * @param ctx The parser rule context
+     * @param funcId The name of the PROC/FUNC
+     * @param paramList The parameter list for the PROC/FUNC
+     * @param ty The return type (Type::UNDEFINED for PROC)
+     * @param block The PROC/FUNC block
+     * @return const Type* TypeInvoke if successful, TypeBot if error
+     */
     const Type *visitInvokeable(antlr4::ParserRuleContext *ctx, std::string funcId, WPLParser::ParameterListContext *paramList, WPLParser::TypeContext *ty, WPLParser::BlockContext *block)
     {
+        // Lookup the function in the current scope and prevent redeclaratons
         std::optional<Symbol *> opt = stmgr->lookupInCurrentScope(funcId);
-
-        // FIXME: DO BETTER, NEED ORDERING TO CATCH ALL ERRORS
         if (opt)
         {
             errorHandler.addSemanticError(ctx->getStart(), "Unsupported redeclaration of " + funcId);
-            return Types::UNDEFINED;
+            return Types::UNDEFINED; // FIXME: DO BETTER, NEED ORDERING TO CATCH ALL ERRORS
         }
 
+        // Visit the parameter list context to get a TypeInvoke that represents just the parameters to this PROC/FUNC
         const Type *tmpTy = (paramList) ? visitCtx(paramList) : new TypeInvoke();
-
         const TypeInvoke *procType = dynamic_cast<const TypeInvoke *>(tmpTy); // Always true, but needs separate statement to make C happy.
+
+        // If we have a return type, then visit that contex to determine what it is. Otherwise, set it as Types::UNDEFINED.
         const Type *retType = ty ? this->visitCtx(ty)
                                  : Types::UNDEFINED;
 
+        // Create a new func with the return type (or reuse the procType) NOTE: We do NOT need to worry about discarding the variadic here as variadic FUNC/PROC is not supported
         const TypeInvoke *funcType = ty ? new TypeInvoke(procType->getParamTypes(), retType)
                                         : procType;
 
+        // Create a new symbol for the PROC/FUNC
         Symbol *funcSymbol = new Symbol(funcId, funcType);
 
-        if(funcId == "program") {
-            if(!dynamic_cast<const TypeInt*>(funcType->getReturnType()))
+        // If the symbol name is program, do some extra checks to make sure it has no arguments and returns an INT. Otherwise, we will get a link error.
+        if (funcId == "program")
+        {
+            if (!dynamic_cast<const TypeInt *>(funcType->getReturnType()))
             {
                 errorHandler.addSemanticCritWarning(ctx->getStart(), "program() should return type INT");
             }
 
-            if(funcType->getParamTypes().size() != 0)
+            if (funcType->getParamTypes().size() != 0)
             {
                 errorHandler.addSemanticCritWarning(ctx->getStart(), "program() should have no arguments");
             }
         }
 
+        // Add the symbol to the stmgr and enter the scope.
         stmgr->addSymbol(funcSymbol);
         stmgr->enterScope(); // NOTE: We do NOT duplicate scopes here because we use a saveVisitBlock with newScope=false
 
+        // In the new scope. set our return type. We use @RETURN as it is not a valid symbol the programmer could write in the language
         stmgr->addSymbol(new Symbol("@RETURN", retType));
 
+        // If we have a parameter list, bind each of the parameters.
+        // NOTE: if there were a duplicate name, then the initial visit to the paramList wuld have already
+        // raised this error
         if (paramList)
         {
             for (unsigned int i = 0; i < paramList->params.size(); i++)
@@ -197,8 +237,10 @@ public:
             }
         }
 
+        // Safe visit the program block without creating a new scope (as we are managing the scope)
         this->safeVisitBlock(block, false);
 
+        // If we have a return type, make sure that we return as the last statement in the FUNC. The type of the return is managed when we visited it.
         if (ty && (block->stmts.size() == 0 || !dynamic_cast<WPLParser::ReturnStatementContext *>(block->stmts.at(block->stmts.size() - 1))))
         {
             errorHandler.addSemanticError(ctx->getStart(), "Function must end in return statement");
@@ -207,6 +249,7 @@ public:
         // Safe exit the scope.
         safeExitScope(ctx);
 
+        // Add a binding in the property manager
         bindings->bind(ctx, funcSymbol);
 
         return funcType;
@@ -217,18 +260,23 @@ private:
     PropertyManager *bindings;
     WPLErrorHandler errorHandler;
 
-    int flags;
+    int flags; // Compiler flags
 
     // INFO: TEST UNERLYING FNS!!!
     std::optional<Scope *> safeExitScope(antlr4::ParserRuleContext *ctx)
     {
+        // First, try exiting the scope
         std::optional<Scope *> res = stmgr->exitScope();
 
+        // If we did so and got a value back, then we can do type inferencing.
         if (res)
         {
+            // Get the Scope* and check for any uninferred symbols
             Scope *scope = res.value();
             std::vector<const Symbol *> uninf = scope->getUninferred();
 
+            // If there are any uninferred symbols, then add it as a compiler error as we won't be able to resolve them
+            // due to the var leaving the scope
             if (uninf.size() > 0)
             {
                 std::ostringstream details;
