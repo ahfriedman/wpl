@@ -1,0 +1,23 @@
+extern int func printf(...);
+
+int func program() {
+    var a, b <- "Hello world!", c, d <- 10 * 2; 
+
+    printf("a = %s, b = %s, c = %d, d = %d\n", a, b, c, d);
+
+    b <- "Goodbye!";
+
+    d <- d + 10; 
+
+    printf("a = %s, b = %s, c = %d, d = %d\n", a, b, c, d);
+
+
+    int [5] e, f; 
+
+    e[0] <- 3; 
+    f[0] <- 1; 
+
+    printf("e[0] = %d, f[0] = %d\n", e[0], f[0]);
+    
+    return -1; 
+}
