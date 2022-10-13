@@ -595,6 +595,122 @@ TEST_CASE("Test program() should not have parameters warning", "[semantic][condi
   CHECK(sv->hasErrors(CRITICAL_WARNING));
 }
 
+TEST_CASE("Dead code in program block", "[semantic][program]")
+{
+  antlr4::ANTLRInputStream input(
+    R""""(
+    int func program() {
+
+        return 1; 
+
+        int a; 
+
+        return 0;
+    }
+    )""""
+  );
+  WPLLexer lexer(&input);
+  // lexer.removeErrorListeners();
+  // lexer.addErrorListener(new TestErrorListener());
+  antlr4::CommonTokenStream tokens(&lexer);
+  WPLParser parser(&tokens);
+  parser.removeErrorListeners();
+  parser.addErrorListener(new TestErrorListener());
+
+  WPLParser::CompilationUnitContext *tree = NULL;
+  REQUIRE_NOTHROW(tree = parser.compilationUnit());
+  REQUIRE(tree != NULL);
+  REQUIRE(tree->getText() != "");
+
+  STManager *stmgr = new STManager();
+  SemanticVisitor *sv = new SemanticVisitor(stmgr, new PropertyManager());
+
+  sv->visitCompilationUnit(tree);
+  REQUIRE(sv->hasErrors(ERROR));
+}
+
+TEST_CASE("Dead code in if/else", "[semantic][program][conditional]")
+{
+  antlr4::ANTLRInputStream input(
+    R""""(
+    int func program() {
+
+    if true then {
+        return 0; 
+
+        int a; 
+    } else {
+        return 1;
+
+        int b; 
+    }
+}
+    )""""
+  );
+  WPLLexer lexer(&input);
+  // lexer.removeErrorListeners();
+  // lexer.addErrorListener(new TestErrorListener());
+  antlr4::CommonTokenStream tokens(&lexer);
+  WPLParser parser(&tokens);
+  parser.removeErrorListeners();
+  parser.addErrorListener(new TestErrorListener());
+
+  WPLParser::CompilationUnitContext *tree = NULL;
+  REQUIRE_NOTHROW(tree = parser.compilationUnit());
+  REQUIRE(tree != NULL);
+  REQUIRE(tree->getText() != "");
+
+  STManager *stmgr = new STManager();
+  SemanticVisitor *sv = new SemanticVisitor(stmgr, new PropertyManager());
+
+  sv->visitCompilationUnit(tree);
+  REQUIRE(sv->hasErrors(ERROR));
+}
+
+TEST_CASE("Dead code in select", "[semantic][program][select]")
+{
+  antlr4::ANTLRInputStream input(
+    R""""(
+int func program () {
+
+    select {
+        true : {
+            return 0;
+
+            int a;
+        }
+
+        false : {
+            return 1; 
+
+            int b; 
+        }
+    }
+
+    return 0; 
+}
+    )""""
+  );
+  WPLLexer lexer(&input);
+  // lexer.removeErrorListeners();
+  // lexer.addErrorListener(new TestErrorListener());
+  antlr4::CommonTokenStream tokens(&lexer);
+  WPLParser parser(&tokens);
+  parser.removeErrorListeners();
+  parser.addErrorListener(new TestErrorListener());
+
+  WPLParser::CompilationUnitContext *tree = NULL;
+  REQUIRE_NOTHROW(tree = parser.compilationUnit());
+  REQUIRE(tree != NULL);
+  REQUIRE(tree->getText() != "");
+
+  STManager *stmgr = new STManager();
+  SemanticVisitor *sv = new SemanticVisitor(stmgr, new PropertyManager());
+
+  sv->visitCompilationUnit(tree);
+  REQUIRE(sv->hasErrors(ERROR));
+}
+
 /*********************************
  * C-Level Example tests
  *********************************/
