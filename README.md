@@ -1,20 +1,46 @@
 # README
 
-This is the starting project structure for your WPL compiler project. It is based upon the Calculator project that we used in the notebooks. I have tried to make this as easy as possible for you te get going.
-The first thing you should do is change the name of the project from **wplstarter** to **wpl-yourname** 
+This Alex Friedman's implementation of the Worcester Polytechnic Instutite, WPI, Programming Language (WPL). 
+
 
 ## Prerequisites
 
-You should have successfully gotten the calculator example to build and run. I have not included the test target so you don't have to worry about the problems that arose there. You can certainly add a test target using whatever test framework you choose.
+* The project's [docker image](https://github.com/ahfriedman/cs544-cs4533-docker) 
+* OR an equivalent llvm-12 environment
+
 
 ## Setting up
 
-You need to copy some files from the working calculator example that on your platform into this project. First copy the working antlr4-runtime.a library into the antlr/lib directory. As an alternative, you can rebuild the library. The zipped archive for it is in the antlr directory. Remember to build the library outside of the project.
+### With Docker
+
+With docker, most of the project setup should be automatic. Please see the the [common issues](https://github.com/ahfriedman/cs544-cs4533-docker#common-issues)
+section of that repository for any debugging steps. 
+
+
+### Without Docker
+
+***NOTE: without docker, test cases may fail to run as they expect the `/programs` directory to be located in `/home/shared/`!***
+
+Assuming that you have all of the required programs at the correct versions, the only thing 
+that you should have to do after cloning this repository is to build and copy and `antlr4-runtime.a` library for your system, and then 
+copy it into the `/antlr/lib` directory. 
 
 If you made changes for your platform to any of the .cmake files or CMakeLists.txt files, you will probably need to make them in this project as well.
 
 ## Structure
 
-The structure of this project is the same as the final Calculator project. I have removed some directories that were not relevant to the WPL compiler. I have also commented out several things in the CMakeLists.txt files. The idea is that you will build one phase (library or target) at a time. If you read these files and the .cmake files you can uncomment and add as necessary for your design.
-
-The main target here is the wplc compiler. The source for this is wplc.cpp in the src directory. I have changed the names and commented out things, but it is the driver for the Calculator compiler. You can change it as long as it accepts the same command line arguments.
+- `/antlr` - Contains the relevant ANTLR library.
+- `/build` - Automatically generated output files of the project.
+- `/cmake` - Contains the cmake files required to setup the project's depedencies. Each file corresponds to a separate part of the project.
+- `/programs` - Contains sample WPL programs used for testing the compiler. ***Many test cases rely on calculating the sha256 hash of these programs. Editing them may cause test cases to break!***
+- `/src` - Contains the main project files--including wplc.cpp which is the main entry point for the compiler
+- `/src/codegen` - Code generation phase of the compiler
+- `/src/generated` - Automatically generated ANTLR files based on the language's grammmar
+- `/src/lexparse` - The language's grammar 
+- `/src/runtime` - The language's runtime library
+- `/src/semantic` - The language's semantic analysis phase (type checking, type inference, etc).
+- `/src/symbol` - Files related to the symbol table and type definitions
+- `/src/utility` - Misc. files required for the compiler--primarily relating to test cases and error handling
+- `/test` - Compiler test cases primarily broken down based on corresponding file in `/src`.
+- `./makeBuild.sh` - Makes a build of the project
+- `./runTests.sh` - Runs the project's test cases
