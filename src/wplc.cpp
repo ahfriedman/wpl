@@ -60,6 +60,11 @@ static llvm::cl::opt<bool>
               llvm::cl::desc("Program will not use the WPL runtime; Compiler will automatically treat program() as the entry point."),
               llvm::cl::cat(WPLCOptions));
 
+static llvm::cl::opt<bool>
+    isVerbose("verbose",
+              llvm::cl::desc("If true, compiler will print out status messages; if false (default), compiler will only print errors."),
+              llvm::cl::init(false),
+              llvm::cl::cat(WPLCOptions));
 /**
  * @brief Main compiler driver.
  */
@@ -154,7 +159,7 @@ int main(int argc, const char *argv[])
     antlr4::CommonTokenStream tokens(&lexer);
 
     /*******************************************************************
-     * Create + Run the Parser 
+     * Create + Run the Parser
      * ================================================================
      *
      * Run the parser on our previously generated tokens
@@ -202,14 +207,16 @@ int main(int argc, const char *argv[])
       continue;
     }
 
-    std::cout << "Semantic analysis completed for " << input.second << " without errors. Starting code generation..." << std::endl;
-
+    if (isVerbose)
+    {
+      std::cout << "Semantic analysis completed for " << input.second << " without errors. Starting code generation..." << std::endl;
+    }
     /*******************************************************************
      * Code Generation
      * ================================================================
      *
-     * If we have yet to recieve any errors for the file, then 
-     * generate code for it. 
+     * If we have yet to recieve any errors for the file, then
+     * generate code for it.
      *******************************************************************/
     CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll", flags);
     cv->visitCompilationUnit(tree);
@@ -239,13 +246,16 @@ int main(int argc, const char *argv[])
       irFileStream.flush();
     }
 
-    if (noRuntime)
+    if (isVerbose)
     {
-      std::cout << "Code generation completed for " << input.second << "; program does NOT support runtime." << std::endl;
-    }
-    else
-    {
-      std::cout << "Code generation completed for " << input.second << "; program may require runtime." << std::endl;
+      if (noRuntime)
+      {
+        std::cout << "Code generation completed for " << input.second << "; program does NOT support runtime." << std::endl;
+      }
+      else
+      {
+        std::cout << "Code generation completed for " << input.second << "; program may require runtime." << std::endl;
+      }
     }
   }
 
