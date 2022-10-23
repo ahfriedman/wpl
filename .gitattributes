@@ -1,0 +1,4 @@
+makeArchive.sh export-ignore
+runArchiveTests.sh export-ignore
+runTests.sh export-ignore
+ahfriedman-wpl/antlr/ export-ignore
