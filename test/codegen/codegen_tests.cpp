@@ -1164,6 +1164,42 @@ TEST_CASE("programs/test18 - Parody", "[codegen]")
     REQUIRE(llvmIrToSHA256(cv->getModule()) == "9c4c64be2b335ecf58d9bbe4b267adc12a5b74518f587f30ba37591be79b09c1");
 }
 
+TEST_CASE("programs/test19 - Editing Global String and Using Across Inv", "[codegen]")
+{
+    std::fstream *inStream = new std::fstream("/home/shared/programs/test19.wpl");
+    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+
+    WPLLexer lexer(input);
+    antlr4::CommonTokenStream tokens(&lexer);
+    WPLParser parser(&tokens);
+    parser.removeErrorListeners();
+    WPLParser::CompilationUnitContext *tree = NULL;
+    REQUIRE_NOTHROW(tree = parser.compilationUnit());
+    REQUIRE(tree != NULL);
+    STManager *stm = new STManager();
+    PropertyManager *pm = new PropertyManager();
+    SemanticVisitor *sv = new SemanticVisitor(stm, pm, 0);
+    sv->visitCompilationUnit(tree);
+
+
+    if(sv->hasErrors(0))
+    {
+        CHECK("foo" == sv->getErrors());
+    }
+    REQUIRE_FALSE(sv->hasErrors(0));
+
+    CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll", 0);
+    cv->visitCompilationUnit(tree);
+
+    if (cv->hasErrors(0))
+    {
+        CHECK("foo" == cv->getErrors());
+    }
+    REQUIRE_FALSE(cv->hasErrors(0));
+
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "bd911e955a6da1d18d92cf4ca430456daa8ea8c4c8601f778e0f8bb83178222e");
+}
+
 TEST_CASE("programs/testGlobalAndLocal - Parody", "[codegen]")
 {
     std::fstream *inStream = new std::fstream("/home/shared/programs/testGlobalAndLocal.wpl");
