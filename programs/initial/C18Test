@@ -1,0 +1,10 @@
+#! /usr/bin/env sh
+cat > $fd/Output/C18.wpl << EOF
+# C18: Double negative
+int func program() {
+  int a;
+  a <- --42;
+  return a;
+}
+EOF
+$fd/dorun C18 42 "C18: Double negative"

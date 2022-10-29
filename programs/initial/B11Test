@@ -1,0 +1,11 @@
+#! /usr/bin/env sh
+cat > $fd/Output/B11.wpl << EOF
+# B11: Extern function
+extern int func getArgCount();
+int func program() {
+  int i;
+  i <- getArgCount(5);  # error
+  return i;
+}
+EOF
+$fd/docompile B11 fail "B11: Extern function"

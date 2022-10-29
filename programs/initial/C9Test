@@ -1,0 +1,12 @@
+#! /usr/bin/env sh
+cat > $fd/Output/C9.wpl << EOF
+# C9: Multiplication
+int func program() {
+  int a;
+  a <- -2;
+  int b;
+  b <- a * -21;
+  return b;
+}
+EOF
+$fd/dorun C9 42 "C9: Multiplication"

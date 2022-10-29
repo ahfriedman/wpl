@@ -1,0 +1,10 @@
+#! /usr/bin/env sh
+cat > $fd/Output/A19.wpl << EOF
+# A19: Type inference 4
+
+int func program() {
+  var i;
+  return i;
+}
+EOF
+$fd/docompile A19 pass "A19: Type inference 4" 

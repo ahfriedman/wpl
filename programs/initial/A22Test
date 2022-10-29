@@ -1,0 +1,11 @@
+#! /usr/bin/env sh
+cat > $fd/Output/A22.wpl << EOF
+# A22: Arrays 3
+int func program() {
+  int [5] iarray;
+  int lgh;
+  lgh <- iarray.length;
+  return lgh;
+}
+EOF
+$fd/dorun A22 5 "A22: Arrays 3" 

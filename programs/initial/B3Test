@@ -1,0 +1,16 @@
+#! /usr/bin/env sh
+cat > $fd/Output/B3.wpl << EOF
+# B3: Condition greater
+int func program() {
+  int a;
+  int b;
+  a <- 1;
+  if (a > 2) {
+    b <- 1;
+  } else {
+    b <- 2;
+  }
+  return b;
+}
+EOF
+$fd/dorun B3 2 "B3: Condition greater"

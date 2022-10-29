@@ -1,0 +1,16 @@
+#! /usr/bin/env sh
+cat > $fd/Output/B2.wpl << EOF
+# B2: Condition less
+int func program() {
+  int a;
+  int b;
+  a <- 1;
+  if (a < 2) then {
+    b <- 1;
+  } else {
+    b <- 2;
+  }
+  return b;
+}
+EOF
+$fd/dorun B2 1 "B2: Condition less"

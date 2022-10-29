@@ -1,0 +1,10 @@
+#! /usr/bin/env sh
+cat > $fd/Output/C5.wpl << EOF
+# C5: Global assignment run
+int a;
+int func program() {
+  a <- 1;
+  return a;
+}
+EOF
+$fd/dorun C5 1 "C5: Global assignment run"

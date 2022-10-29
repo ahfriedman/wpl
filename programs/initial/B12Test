@@ -1,0 +1,14 @@
+#! /usr/bin/env sh
+cat > $fd/Output/B12.wpl << EOF
+# B12: Equality
+int func program() {
+  int a;
+  a <- 2;
+  int b;
+  b <- -2;
+  boolean r <- a = b; 
+  boolean r1 <- a ~= b;
+  return 0;
+}
+EOF
+$fd/doCompile B12 pass "B12: Equality"

@@ -1,0 +1,5 @@
+# A2: Local string variable
+int func program() {
+  str s;
+  return 0;
+}

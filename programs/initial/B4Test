@@ -1,0 +1,9 @@
+#! /usr/bin/env sh
+cat > $fd/Output/B4.wpl << EOF
+# B4: Global initializer
+int a <- 2;
+int func program() {
+  return a;
+}
+EOF
+$fd/dorun B4 2 "B4: Global initializer"

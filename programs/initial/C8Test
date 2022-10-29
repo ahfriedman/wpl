@@ -1,0 +1,12 @@
+#! /usr/bin/env sh
+cat > $fd/Output/C8.wpl << EOF
+# C8: Subtraction
+int func program() {
+  int a;
+  a <- 1;
+  int b;
+  b <- a - 43;
+  return b;
+}
+EOF
+$fd/dorun C8 -42 "C8: Subtraction"

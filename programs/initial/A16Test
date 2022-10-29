@@ -1,0 +1,15 @@
+#! /usr/bin/env sh
+cat > $fd/Output/A16.wpl << EOF
+# A16: Type inference 1
+
+int func program() {
+  var i <- 0;
+  i <- 1;
+  var b;
+  b <- 2 + i;
+  var c;
+  c <- i = 2;
+  return b;
+}
+EOF
+$fd/dorun A16 3 "A16: Type inference 1"

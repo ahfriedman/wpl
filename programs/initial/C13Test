@@ -1,0 +1,12 @@
+#! /usr/bin/env sh
+cat > $fd/Output/C13.wpl << EOF
+# C13: Arithmetic precedence 3
+int func program() {
+  int a;
+  a <- 2;
+  int b;
+  b <- a + 20 * (a + 3);
+  return b;
+}
+EOF
+$fd/dorun C13 102 "C13: Arithmetic precedence 3"

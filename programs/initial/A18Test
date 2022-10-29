@@ -1,0 +1,16 @@
+#! /usr/bin/env sh
+cat > $fd/Output/A18.wpl << EOF
+# A18: Type inference 3
+
+int func program() {
+  var i;
+  var b;
+  b <- 2 + i;
+  var c;
+  i <- b - 1;
+  c <- i = 2;
+  i <- c;
+  return b;
+}
+EOF
+$fd/docompile A18 fail "A18: Type inference 3" 

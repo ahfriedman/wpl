@@ -1,0 +1,5 @@
+# A4: Local string variable initializer
+int func program() {
+  str s <- "world";
+  return 0;
+}

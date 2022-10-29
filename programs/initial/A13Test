@@ -1,0 +1,11 @@
+#! /usr/bin/env sh
+cat > $fd/Output/A13.wpl << EOF
+# A13: Logical OR run
+
+int func program() {
+  int i <- 0;
+  if (false | true) then {i <- 1;}
+  return i;
+}
+EOF
+$fd/dorun A13 1 "A13: Logical OR run"

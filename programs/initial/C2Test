@@ -1,0 +1,8 @@
+#! /usr/bin/env sh
+cat > $fd/Output/C2.wpl << EOF
+(* C2: program *)
+int func program() {
+  return 0;
+}
+EOF
+$fd/docompile C2 pass "C2: program()"

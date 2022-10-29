@@ -1,0 +1,7 @@
+# A6: Print a string variable
+extern int func printf(str s, ...);
+int func program() {
+  str s <- "hello world";
+  printf("%s\n", s);
+  return 0;
+}

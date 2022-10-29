@@ -1,0 +1,16 @@
+#! /usr/bin/env sh
+cat > $fd/Output/B1.wpl << EOF
+# B1: Condition
+int func program() {
+  int a;
+  boolean b;
+  b <- true;
+  if b {
+    a <- 1;
+  } else {
+    a <- 2;
+  }
+  return a;
+}
+EOF
+$fd/dorun B1 1 "B1: Condition"

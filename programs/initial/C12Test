@@ -1,0 +1,12 @@
+#! /usr/bin/env sh
+cat > $fd/Output/C12.wpl << EOF
+# C12: Arithmetic precedence 2
+int func program() {
+  int a;
+  a <- 2;
+  int b;
+  b <- a + 20 * a + 3;
+  return b;
+}
+EOF
+$fd/dorun C12 45 "C12: Arithmetic precedence 2"

@@ -1,0 +1,9 @@
+#! /usr/bin/env sh
+cat > $fd/Output/B7.wpl << EOF
+# B7: Local multiple initializers
+int func program() {
+  int a <- 42, b <- 17;
+  return a-b;
+}
+EOF
+$fd/dorun B7 25 "B7: Local multiple initializers"

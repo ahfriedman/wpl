@@ -1,0 +1,11 @@
+#! /usr/bin/env sh
+cat > $fd/Output/B6.wpl << EOF
+# B6: Multiple globals
+int a, b;
+int func program() {
+  a <- 1;
+  b <- 2;
+  return a + b;
+}
+EOF
+$fd/dorun B6 3 "B6: Multiple globals"

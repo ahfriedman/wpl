@@ -1,0 +1,9 @@
+#! /usr/bin/env sh
+cat > $fd/Output/C3.wpl << EOF
+# C3: Local variable
+int func program() {
+  int a;
+  return 0;
+}
+EOF
+$fd/docompile C3 pass "C3: Local variable"

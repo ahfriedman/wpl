@@ -1,0 +1,10 @@
+#! /usr/bin/env sh
+cat > $fd/Output/A21.wpl << EOF
+# A21: Arrays 2
+int func program() {
+  int [5] iarray;
+  iarray[3] <- 3;
+  return iarray[3];
+}
+EOF
+$fd/dorun A21 3 "A21: Arrays 2" 

@@ -1,0 +1,6 @@
+#! /usr/bin/env sh
+cat > $fd/Output/C1.wpl << EOF
+# C1: global variable uninitialized
+int a;
+EOF
+$fd/docompile C1 pass "C1: global variable uninitialized"

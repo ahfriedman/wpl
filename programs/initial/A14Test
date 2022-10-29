@@ -1,0 +1,11 @@
+#! /usr/bin/env sh
+cat > $fd/Output/A14.wpl << EOF
+# A14: Logical AND compile
+
+int func program() {
+  int i <- 0;
+  if (true & false) then {i <- 1;}
+  return i;
+}
+EOF
+$fd/docompile A14 pass "A14: Logical AND compile"

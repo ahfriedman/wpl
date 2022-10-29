@@ -1,0 +1,11 @@
+#! /usr/bin/env sh
+cat > $fd/Output/B10.wpl << EOF
+# B10: Extern function
+extern int func getArgCount();
+int func program() {
+  int i;
+  i <- getArgCount();
+  return i;
+}
+EOF
+$fd/dorun B10 1 "B10: Extern function"

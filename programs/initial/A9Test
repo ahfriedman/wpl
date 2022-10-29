@@ -1,0 +1,14 @@
+#! /usr/bin/env sh
+cat > $fd/Output/A9.wpl << EOF
+# A9: Procedure
+extern int func getArgCount();
+proc p() {
+  int i;
+  i <- getArgCount();
+}
+int func program() {
+  p();
+  return 0;
+}
+EOF
+$fd/dorun A9 "getArgCount" "A9: Procedure"

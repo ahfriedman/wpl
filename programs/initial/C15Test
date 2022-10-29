@@ -1,0 +1,8 @@
+#! /usr/bin/env sh
+cat > $fd/Output/C15.wpl << EOF
+# C15: Missing func
+int program() {
+  return 0;
+}
+EOF
+$fd/docompile C15 fail "C15: Missing func"

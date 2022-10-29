@@ -1,0 +1,5 @@
+# A3: Global string variable initializer
+str s <- "hello";
+int func program() {
+  return 0;
+}

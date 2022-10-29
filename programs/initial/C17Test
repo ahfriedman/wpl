@@ -1,0 +1,10 @@
+#! /usr/bin/env sh
+cat > $fd/Output/C17.wpl << EOF
+# C17: Unary -
+int func program() {
+  int a;
+  a <- -42;
+  return a;
+}
+EOF
+$fd/dorun C17 -42 "C17: Unary -"

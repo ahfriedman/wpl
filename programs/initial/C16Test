@@ -1,0 +1,9 @@
+#! /usr/bin/env sh
+cat > $fd/Output/C16.wpl << EOF
+# C16: Missing return
+int func program() {
+  int a;
+  a <- 1;
+}
+EOF
+$fd/docompile C16 fail "C16: Missing return"

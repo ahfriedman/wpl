@@ -1,0 +1,15 @@
+#! /usr/bin/env sh
+cat > $fd/Output/A8.wpl << EOF
+# A8: Define and use a single argument function
+int func plusTwo(int a) {
+  int x;
+  x <- a + 2;
+  return x;
+}
+int func program() {
+  int i;
+  i <- plusTwo(12);
+  return i;
+}
+EOF
+$fd/dorun A8 14 "A8: Define and use a single argument function"

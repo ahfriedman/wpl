@@ -1,0 +1,5 @@
+# A1: Global string variable
+str s;
+int func program() {
+  return 0;
+}

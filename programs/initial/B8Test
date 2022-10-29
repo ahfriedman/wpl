@@ -1,0 +1,9 @@
+#! /usr/bin/env sh
+cat > $fd/Output/B8.wpl << EOF
+(* B8: Nested comments
+(* Just compile *)*)
+int func program() {
+  return 0;
+}
+EOF
+$fd/docompile B8 pass "B8: Nested comments"

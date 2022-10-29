@@ -1,0 +1,11 @@
+#! /usr/bin/env sh
+cat > $fd/Output/A15.wpl << EOF
+# A15: Logical AND run
+
+int func program() {
+  int i <- 0;
+  if (true & false) then {i <- 1;}
+  return i;
+}
+EOF
+$fd/dorun A15 0 "A15: Logical AND run"

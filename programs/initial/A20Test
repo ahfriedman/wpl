@@ -1,0 +1,11 @@
+#! /usr/bin/env sh
+cat > $fd/Output/A20.wpl << EOF
+# A20: Arrays 1
+int func program() {
+  int [5] iarray;
+  boolean [2] barray;
+  str [6] sarray; 
+  return 0;
+}
+EOF
+$fd/dorun A20 0 "A20: Arrays 1" 

@@ -1,0 +1,11 @@
+#! /usr/bin/env sh
+cat > $fd/Output/A12.wpl << EOF
+# A12: Logical OR compile
+
+int func program() {
+  int i <- 0;
+  if (false | true) then {i <- 1;}
+  return i;
+}
+EOF
+$fd/docompile A12 pass "A12: Logical OR compile"

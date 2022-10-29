@@ -1,0 +1,16 @@
+#! /usr/bin/env sh
+cat > $fd/Output/B9.wpl << EOF
+# B9: Loop
+int func program() {
+  int i;
+  int j;
+  i <- 5;
+  j <- 0;
+  while (i > 0) do {
+    j <- j + 2;
+    i <- i - 1;
+  }
+  return j;
+}
+EOF
+$fd/dorun B9 10 "B9: Loop"

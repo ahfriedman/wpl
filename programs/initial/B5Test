@@ -1,0 +1,9 @@
+#! /usr/bin/env sh
+cat > $fd/Output/B5.wpl << EOF
+# B5: Local initializer
+int func program() {
+  int a <- 42;
+  return a;
+}
+EOF
+$fd/dorun B5 42 "B5: Local initializer"

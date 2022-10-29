@@ -1,0 +1,7 @@
+# A5: Move a string to a variable
+int func program() {
+  str s <- "world";
+  str s1;
+  s1 <- s;
+  return 0;
+}
