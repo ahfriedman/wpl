@@ -63,3 +63,10 @@ target_link_libraries(tests
 
 # Get the tests registered with CTest
 catch_discover_tests(tests)
+
+
+# target_code_coverage(EXECUTABLE tests) 
+setup_target_for_coverage_lcov(NAME coverage 
+                              EXECUTABLE tests
+                              EXCLUDE "/home/shared/cov/_deps/catch2-build/*")
+                              # BASE_DIRECTORY "${PROJECT_SOURCE_DIR}/src")
