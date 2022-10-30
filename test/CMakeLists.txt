@@ -68,5 +68,5 @@ catch_discover_tests(tests)
 # target_code_coverage(EXECUTABLE tests) 
 setup_target_for_coverage_lcov(NAME coverage 
                               EXECUTABLE tests
-                              EXCLUDE "/home/shared/cov/_deps/catch2-build/*")
+                              EXCLUDE "/home/shared/cov/_deps/*" "/home/shared/antlr/*" "/usr/*" "11/*")
                               # BASE_DIRECTORY "${PROJECT_SOURCE_DIR}/src")
