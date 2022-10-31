@@ -510,6 +510,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::BinaryRelExprContext *ctx)
     return valid ? Types::BOOL : Types::UNDEFINED;
 }
 
+// This here basically means that we don't need to do anything for booleanConst, but I'll leave it just in case
 const Type *SemanticVisitor::visitCtx(WPLParser::BConstExprContext *ctx) { return Types::BOOL; }
 
 const Type *SemanticVisitor::visitCtx(WPLParser::BlockContext *ctx)
@@ -902,4 +903,5 @@ const Type *SemanticVisitor::visitCtx(WPLParser::TypeContext *ctx)
     return ty;
 }
 
+// Should never be needed due to how BConstExpr works, but leaving here just in case. 
 const Type *SemanticVisitor::visitCtx(WPLParser::BooleanConstContext *ctx) { return Types::BOOL; }
