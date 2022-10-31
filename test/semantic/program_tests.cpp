@@ -805,6 +805,68 @@ TEST_CASE("Nested programs (TEMPORARY)", "[semantic][program]")
   REQUIRE(sv->hasErrors(ERROR));
 }
 
+TEST_CASE("Incorrect Argument Pass", "[semantic][program]")
+{
+  antlr4::ANTLRInputStream input(
+    R""""(
+    proc foo (int a) {
+
+    }
+    int func program() {
+      foo("hello");  
+    }
+    )""""
+  );
+  WPLLexer lexer(&input);
+  // lexer.removeErrorListeners();
+  // lexer.addErrorListener(new TestErrorListener());
+  antlr4::CommonTokenStream tokens(&lexer);
+  WPLParser parser(&tokens);
+  parser.removeErrorListeners();
+  parser.addErrorListener(new TestErrorListener());
+
+  WPLParser::CompilationUnitContext *tree = NULL;
+  REQUIRE_NOTHROW(tree = parser.compilationUnit());
+  REQUIRE(tree != NULL);
+  REQUIRE(tree->getText() != "");
+
+  STManager *stmgr = new STManager();
+  SemanticVisitor *sv = new SemanticVisitor(stmgr, new PropertyManager());
+
+  sv->visitCompilationUnit(tree);
+  REQUIRE(sv->hasErrors(ERROR));
+}
+
+TEST_CASE("Invoke on Non-Invokable", "[semantic][program]")
+{
+  antlr4::ANTLRInputStream input(
+    R""""(
+    int func program() {
+      var x <- "hey there!"; 
+      x();
+    }
+    )""""
+  );
+  WPLLexer lexer(&input);
+  // lexer.removeErrorListeners();
+  // lexer.addErrorListener(new TestErrorListener());
+  antlr4::CommonTokenStream tokens(&lexer);
+  WPLParser parser(&tokens);
+  parser.removeErrorListeners();
+  parser.addErrorListener(new TestErrorListener());
+
+  WPLParser::CompilationUnitContext *tree = NULL;
+  REQUIRE_NOTHROW(tree = parser.compilationUnit());
+  REQUIRE(tree != NULL);
+  REQUIRE(tree->getText() != "");
+
+  STManager *stmgr = new STManager();
+  SemanticVisitor *sv = new SemanticVisitor(stmgr, new PropertyManager());
+
+  sv->visitCompilationUnit(tree);
+  REQUIRE(sv->hasErrors(ERROR));
+}
+
 /*********************************
  * C-Level Example tests
  *********************************/
