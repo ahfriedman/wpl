@@ -93,7 +93,9 @@
     "*.cp": "cpp",
     "forward_list": "cpp",
     "complex": "cpp",
-    "*.inc": "cpp"
+    "*.inc": "cpp",
+    "hash_map": "cpp",
+    "hash_set": "cpp"
   },
   "cmake.configureOnOpen": true
 }
