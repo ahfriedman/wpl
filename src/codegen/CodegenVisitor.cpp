@@ -960,8 +960,9 @@ std::optional<Value *> CodegenVisitor::TvisitSelectStatement(WPLParser::SelectSt
              * Must be done as it determines if we create
              * a merge into the merge block or not.
              */
-            if (WPLParser::BlockContext *blkCtx = dynamic_cast<WPLParser::BlockContext *>(evalCase->eval))
+            if (WPLParser::BlockStatementContext *blkStmtCtx = dynamic_cast<WPLParser::BlockStatementContext *>(evalCase->eval))
             {
+                WPLParser::BlockContext * blkCtx = blkStmtCtx->block(); 
                 if (!CodegenVisitor::blockEndsInReturn(blkCtx))
                 {
                     builder->CreateBr(mergeBlk);
