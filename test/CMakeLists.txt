@@ -63,3 +63,10 @@ target_link_libraries(tests
 
 # Get the tests registered with CTest
 catch_discover_tests(tests)
+
+
+if(BUILD_COVERAGE)
+  setup_target_for_coverage_lcov(NAME coverage 
+                              EXECUTABLE tests
+                              EXCLUDE "/home/shared/cov/_deps/*" "/home/shared/antlr/*" "/usr/*" "11/*")
+endif(BUILD_COVERAGE)

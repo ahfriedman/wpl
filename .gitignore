@@ -47,6 +47,7 @@ Thumbs.db
 ## expression-compiler specific
 
 build/
+cov/
 antlr4-cpp-runtime/
 generated/
 install/
