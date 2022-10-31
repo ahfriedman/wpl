@@ -7,11 +7,15 @@ project(WPL_COMPILER
   DESCRIPTION "Compiler to compile the WPL source to LLVM IR"
 )
 
+option(BUILD_COVERAGE "Build coverage for test programs" OFF)
+
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 include(NoInSourceBuilds)
 
-include(CodeCoverage)
-append_coverage_compiler_flags()
+if(BUILD_COVERAGE)
+  include(CodeCoverage)
+  append_coverage_compiler_flags()
+endif(BUILD_COVERAGE)
 
 include(ProjectGlobals)         # Platform independent variables
 include(platform_settings)      # Platform specific variables
