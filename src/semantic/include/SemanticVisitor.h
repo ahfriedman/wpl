@@ -173,14 +173,6 @@ public:
      */
     const Type *visitInvokeable(antlr4::ParserRuleContext *ctx, std::string funcId, WPLParser::ParameterListContext *paramList, WPLParser::TypeContext *ty, WPLParser::BlockContext *block)
     {
-        // Lookup the function in the current scope and prevent redeclaratons
-        std::optional<Symbol *> opt = stmgr->lookupInCurrentScope(funcId);
-        if (opt)
-        {
-            errorHandler.addSemanticError(ctx->getStart(), "Unsupported redeclaration of " + funcId);
-            return Types::UNDEFINED; // FIXME: DO BETTER, NEED ORDERING TO CATCH ALL ERRORS
-        }
-
         // Visit the parameter list context to get a TypeInvoke that represents just the parameters to this PROC/FUNC
         const Type *tmpTy = (paramList) ? visitCtx(paramList) : new TypeInvoke();
         const TypeInvoke *procType = dynamic_cast<const TypeInvoke *>(tmpTy); // Always true, but needs separate statement to make C happy.
@@ -210,6 +202,28 @@ public:
             }
         }
 
+        // Lookup the function in the current scope and prevent redeclaratons
+        std::optional<Symbol *> opt = stmgr->lookupInCurrentScope(funcId);
+        if (opt)
+        {
+            Symbol *defSym = opt.value();
+            if (defSym->type)
+            {
+                if (const TypeInvoke *other = dynamic_cast<const TypeInvoke *>(defSym->type))
+                {
+                    if (other->isSubtype(funcType) && !(other->isDefined()))
+                    {
+                        other->define();
+                        std::cout << "PAST DEFINE" << std::endl; 
+                        goto cont; 
+                    }
+                }
+            }
+            errorHandler.addSemanticError(ctx->getStart(), "Unsupported redeclaration of " + funcId);
+            return Types::UNDEFINED; // FIXME: DO BETTER, NEED ORDERING TO CATCH ALL ERRORS
+        }
+
+    cont:
         // Add the symbol to the stmgr and enter the scope.
         stmgr->addSymbol(funcSymbol);
         stmgr->enterScope(); // NOTE: We do NOT duplicate scopes here because we use a saveVisitBlock with newScope=false

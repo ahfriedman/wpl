@@ -110,6 +110,9 @@ const Type *SemanticVisitor::visitCtx(WPLParser::InvocationContext *ctx)
      */
     Symbol *sym = opt.value();
 
+    // Bind the symbol
+    bindings->bind(ctx, sym);
+
     if (const TypeInvoke *invokeable = dynamic_cast<const TypeInvoke *>(sym->type))
     {
         /*
@@ -635,12 +638,13 @@ const Type *SemanticVisitor::visitCtx(WPLParser::ExternStatementContext *ctx)
     const Type *retType = ctx->ty ? this->visitCtx(ctx->ty)
                                   : Types::UNDEFINED;
 
-    const TypeInvoke *funcType = (ctx->ty) ? new TypeInvoke(procType->getParamTypes(), retType, variadic)
-                                           : new TypeInvoke(procType->getParamTypes(), variadic);
+    const TypeInvoke *funcType = (ctx->ty) ? new TypeInvoke(procType->getParamTypes(), retType, variadic, false)
+                                           : new TypeInvoke(procType->getParamTypes(), variadic, false);
 
     Symbol *funcSymbol = new Symbol(id, funcType);
 
     stmgr->addSymbol(funcSymbol);
+    bindings->bind(ctx, funcSymbol);
 
     return Types::UNDEFINED;
 };

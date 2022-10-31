@@ -7,6 +7,7 @@ std::optional<Value *> CodegenVisitor::TvisitCompilationUnit(WPLParser::Compilat
         e->accept(this);
     }
 
+    std::cout << "10" << std::endl; 
     for (auto e : ctx->stmts)
     {
         // Generate code for statement
@@ -51,7 +52,7 @@ std::optional<Value *> CodegenVisitor::TvisitInvocation(WPLParser::InvocationCon
         std::optional<Value *> valOpt = std::any_cast<std::optional<Value *>>(e->accept(this));
         if (!valOpt)
         {
-            errorHandler.addCodegenError(e->getStart(), "Failed to generate code");
+            errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code");
             return {};
         }
         args.push_back(valOpt.value());
@@ -59,11 +60,40 @@ std::optional<Value *> CodegenVisitor::TvisitInvocation(WPLParser::InvocationCon
 
     // Convert to an array ref, then find and execute the call.
     ArrayRef<Value *> ref = ArrayRef(args);
-    llvm::Function *call = module->getFunction(ctx->VARIABLE()->getText());
+    std::cout << "CALL " << ctx->VARIABLE()->getText() << std::endl;
 
-    Value *val = builder->CreateCall(call, ref); // Needs to be separate line because, C++
-    return val;
+    std::optional<Symbol *> symOpt = props->getBinding(ctx);
+    if(!symOpt) {
+        errorHandler.addCodegenError(ctx->getStart(), "Unbound symbol in invocation. Probably compiler error.");
+        return {}; 
+    }
+
+    Symbol * sym = symOpt.value(); 
+    if(!sym->type) {
+        errorHandler.addCodegenError(ctx->getStart(), "Symbol in invocation missing type. Probably compiler error.");
+        return {};
+    }
+
+    const Type * type = sym->type; 
+
+    llvm::Type * genericType = type->getLLVMType(module->getContext()); 
+
+    if(llvm::FunctionType * call = static_cast<llvm::Type*>(genericType)) {
+        Value * val = builder->CreateCall(call, ref);
+        return val; 
+    }
+
+    errorHandler.addCodegenError(ctx->getStart(), "Invocation type could not be cast to function!");
+    return {};
 }
+
+//     llvm::Function *call = module->getFunction(ctx->VARIABLE()->getText());
+
+//     std::cout << call << std::endl; 
+
+//     Value *val = builder->CreateCall(call, ref); // Needs to be separate line because, C++
+//     return val;
+// }
 
 std::optional<Value *> CodegenVisitor::TvisitArrayAccess(WPLParser::ArrayAccessContext *ctx)
 {
@@ -85,7 +115,7 @@ std::optional<Value *> CodegenVisitor::TvisitArrayAccess(WPLParser::ArrayAccessC
         return {};
     }
 
-    Symbol * sym = symOpt.value(); 
+    Symbol *sym = symOpt.value();
 
     // Create the expression pointer
     std::optional<llvm::Value *> arrayPtr = sym->val;
@@ -427,7 +457,7 @@ std::optional<Value *> CodegenVisitor::TvisitVariableExpr(WPLParser::VariableExp
         return {};
     }
 
-    Symbol * sym = symOpt.value(); 
+    Symbol *sym = symOpt.value();
 
     // Try getting the type for the symbol, raising an error if it could not be determined
     llvm::Type *type = sym->type->getLLVMType(module->getContext());
@@ -478,7 +508,7 @@ std::optional<Value *> CodegenVisitor::TvisitFieldAccessExpr(WPLParser::FieldAcc
         return {};
     }
 
-    Symbol * sym = symOpt.value(); 
+    Symbol *sym = symOpt.value();
 
     if (!symOpt || !sym->val || !sym->type)
     {
@@ -555,49 +585,84 @@ std::optional<Value *> CodegenVisitor::TvisitCondition(WPLParser::ConditionConte
 
 std::optional<Value *> CodegenVisitor::TvisitExternStatement(WPLParser::ExternStatementContext *ctx)
 {
-    // Cretae a vector for our argument types
-    std::vector<llvm::Type *> typeVec;
+    std::optional<Symbol *> optSym = props->getBinding(ctx);
 
-    // If the extern has a paramlist
-    if (ctx->paramList)
+    if (!optSym)
     {
-        // Go through each parameter, and get it its type. Stop if any errors occur
-        for (auto e : ctx->paramList->params)
-        {
-            std::optional<llvm::Type *> type = CodegenVisitor::llvmTypeFor(e->ty);
-
-            if (!type)
-            {
-                errorHandler.addCodegenError(e->getStart(), "Could not generate code to represent type: " + e->ty->toString());
-                return {};
-            }
-
-            typeVec.push_back(type.value());
-        }
-    }
-
-    // Create an array ref of our parameter types
-    ArrayRef<llvm::Type *> paramRef = ArrayRef(typeVec);
-    // Determine if the function is variadic
-    bool isVariadic = ctx->variadic || ctx->ELLIPSIS();
-
-    // Generate the return type or set it to be Void if PROC
-    std::optional<llvm::Type *> retOpt = ctx->ty ? CodegenVisitor::llvmTypeFor(ctx->ty) : VoidTy;
-
-    // If we fail to generate a return, then throw an error.
-    if (!retOpt)
-    {
-        errorHandler.addCodegenError(ctx->ty->getStart(), "Could not generate code for type: " + ctx->ty->toString());
+        errorHandler.addCodegenError(ctx->getStart(), "Incorrectly bound symbol in extern statement. Probably a compiler error.");
         return {};
     }
 
-    // Create the function definition
-    FunctionType *fnType = FunctionType::get(
-        retOpt.value(),
-        paramRef,
-        isVariadic);
+    Symbol *symbol = optSym.value();
 
-    Function::Create(fnType, GlobalValue::ExternalLinkage, ctx->name->getText(), module);
+    if (!symbol->type)
+    {
+        errorHandler.addCodegenError(ctx->getStart(), "Type for extern statement not correctly bound! Probably a compiler errror.");
+        return {};
+    }
+
+    const Type *generalType = symbol->type;
+
+    std::cout << "576" << std::endl;
+
+    if (const TypeInvoke *type = dynamic_cast<const TypeInvoke *>(generalType))
+    {
+        std::cout << "580" << std::endl;
+        if(type->isDefined()) 
+        {
+            std::cout << "DEFINED" << std::endl; 
+            return {}; 
+        }
+
+        // Cretae a vector for our argument types
+        std::vector<llvm::Type *> typeVec;
+
+        // If the extern has a paramlist
+        if (ctx->paramList)
+        {
+            // Go through each parameter, and get it its type. Stop if any errors occur
+            for (auto e : ctx->paramList->params)
+            {
+                std::optional<llvm::Type *> type = CodegenVisitor::llvmTypeFor(e->ty);
+
+                if (!type)
+                {
+                    errorHandler.addCodegenError(e->getStart(), "Could not generate code to represent type: " + e->ty->toString());
+                    return {};
+                }
+
+                typeVec.push_back(type.value());
+            }
+        }
+
+        // Create an array ref of our parameter types
+        ArrayRef<llvm::Type *> paramRef = ArrayRef(typeVec);
+        // Determine if the function is variadic
+        bool isVariadic = ctx->variadic || ctx->ELLIPSIS();
+
+        // Generate the return type or set it to be Void if PROC
+        std::optional<llvm::Type *> retOpt = ctx->ty ? CodegenVisitor::llvmTypeFor(ctx->ty) : VoidTy;
+
+        // If we fail to generate a return, then throw an error.
+        if (!retOpt)
+        {
+            errorHandler.addCodegenError(ctx->ty->getStart(), "Could not generate code for type: " + ctx->ty->toString());
+            return {};
+        }
+
+        // Create the function definition
+        FunctionType *fnType = FunctionType::get(
+            retOpt.value(),
+            paramRef,
+            isVariadic);
+
+        Function::Create(fnType, GlobalValue::ExternalLinkage, ctx->name->getText(), module);
+    }
+    else 
+    {
+        errorHandler.addCodegenError(ctx->getStart(), "Extern statement bound to: " + generalType->toString() + ". Requires Invokable!");
+    }
+
     return {};
 }
 
@@ -631,7 +696,7 @@ std::optional<Value *> CodegenVisitor::TvisitAssignStatement(WPLParser::AssignSt
         return {};
     }
 
-    Symbol * varSym = varSymOpt.value();
+    Symbol *varSym = varSymOpt.value();
 
     // Get the allocation instruction for the symbol
     std::optional<Value *> val = varSym->val;
@@ -727,7 +792,7 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
                 return {};
             }
 
-            Symbol * varSymbol = varSymbolOpt.value(); 
+            Symbol *varSymbol = varSymbolOpt.value();
 
             // Get the type of the symbol
             llvm::Type *ty = varSymbol->type->getLLVMType(module->getContext());
@@ -962,7 +1027,7 @@ std::optional<Value *> CodegenVisitor::TvisitSelectStatement(WPLParser::SelectSt
              */
             if (WPLParser::BlockStatementContext *blkStmtCtx = dynamic_cast<WPLParser::BlockStatementContext *>(evalCase->eval))
             {
-                WPLParser::BlockContext * blkCtx = blkStmtCtx->block(); 
+                WPLParser::BlockContext *blkCtx = blkStmtCtx->block();
                 if (!CodegenVisitor::blockEndsInReturn(blkCtx))
                 {
                     builder->CreateBr(mergeBlk);
