@@ -60,9 +60,13 @@ std::optional<Value *> CodegenVisitor::TvisitInvocation(WPLParser::InvocationCon
     // Convert to an array ref, then find and execute the call.
     ArrayRef<Value *> ref = ArrayRef(args);
 
-    // FIXME: ERROR CHECK!!
-
     llvm::Function *call = module->getFunction(ctx->VARIABLE()->getText());
+
+    if (!call)
+    {
+        errorHandler.addCodegenError(ctx->getStart(), "Could not locate function for invocation: " + ctx->VARIABLE()->getText() + ". Has it been defined in IR yet?");
+        return {};
+    }
 
     Value *val = builder->CreateCall(call, ref); // Needs to be separate line because, C++
     return val;
@@ -104,6 +108,7 @@ std::optional<Value *> CodegenVisitor::TvisitArrayAccess(WPLParser::ArrayAccessC
             if (!glob)
             {
                 errorHandler.addCodegenError(ctx->getStart(), "Unable to find global variable: " + sym->identifier);
+                return {};
             }
 
             arrayPtr = builder->CreateLoad(glob)->getPointerOperand();
@@ -214,6 +219,7 @@ std::optional<Value *> CodegenVisitor::TvisitUnaryExpr(WPLParser::UnaryExprConte
         if (!innerVal)
         {
             errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code for: " + ctx->getText());
+            return {};
         }
 
         Value *v = builder->CreateNSWSub(builder->getInt32(0), innerVal.value());
@@ -236,7 +242,6 @@ std::optional<Value *> CodegenVisitor::TvisitUnaryExpr(WPLParser::UnaryExprConte
     }
 
     errorHandler.addCodegenError(ctx->getStart(), "Unknown unary operator: " + ctx->op->getText());
-
     return {};
 }
 
@@ -248,6 +253,7 @@ std::optional<Value *> CodegenVisitor::TvisitBinaryArithExpr(WPLParser::BinaryAr
     if (!lhs || !rhs)
     {
         errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code for: " + ctx->getText());
+        return {}; 
     }
 
     switch (ctx->op->getType())
@@ -437,6 +443,7 @@ std::optional<Value *> CodegenVisitor::TvisitVariableExpr(WPLParser::VariableExp
     if (!type)
     {
         errorHandler.addCodegenError(ctx->getStart(), "Unable to find type for variable: " + ctx->getText());
+        return {}; //FIXME: IS THIS USED? SOMETIMES MAYBE?
     }
 
     // Make sure the variable has an allocation (or that we can find it due to it being a global var)
@@ -461,6 +468,7 @@ std::optional<Value *> CodegenVisitor::TvisitVariableExpr(WPLParser::VariableExp
         }
 
         errorHandler.addCodegenError(ctx->getStart(), "Unable to find allocation for variable: " + ctx->getText());
+        return {};
     }
 
     // Otherwise, we are a local variable with an allocation and, thus, can simply load it.
@@ -709,6 +717,7 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
         if ((e->ex) && !exVal)
         {
             errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code for: " + e->ex->getText());
+            return {}; //FIXME: THIS RIGHT?
         }
 
         // For each of the variabes being assigned to that value
