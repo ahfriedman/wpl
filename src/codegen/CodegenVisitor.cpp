@@ -7,7 +7,7 @@ std::optional<Value *> CodegenVisitor::TvisitCompilationUnit(WPLParser::Compilat
         e->accept(this);
     }
 
-    std::cout << "10" << std::endl; 
+    std::cout << "10" << std::endl;
     for (auto e : ctx->stmts)
     {
         // Generate code for statement
@@ -62,11 +62,11 @@ std::optional<Value *> CodegenVisitor::TvisitInvocation(WPLParser::InvocationCon
     ArrayRef<Value *> ref = ArrayRef(args);
     std::cout << "CALL " << ctx->VARIABLE()->getText() << std::endl;
 
-    //FIXME: ERROR CHECK!!
+    // FIXME: ERROR CHECK!!
 
     llvm::Function *call = module->getFunction(ctx->VARIABLE()->getText());
 
-    std::cout << call << std::endl; 
+    std::cout << call << std::endl;
 
     Value *val = builder->CreateCall(call, ref); // Needs to be separate line because, C++
     return val;
@@ -580,62 +580,21 @@ std::optional<Value *> CodegenVisitor::TvisitExternStatement(WPLParser::ExternSt
 
     const Type *generalType = symbol->type;
 
-    std::cout << "576" << std::endl;
-
     if (const TypeInvoke *type = dynamic_cast<const TypeInvoke *>(generalType))
     {
-        std::cout << "580" << std::endl;
-        if(type->isDefined()) 
+        llvm::Type *genericType = type->getLLVMType(module->getContext());
+
+        if (llvm::FunctionType *fnType = static_cast<llvm::FunctionType *>(genericType))
         {
-            std::cout << "DEFINED" << std::endl; 
-            return {}; 
+            Function::Create(fnType, GlobalValue::ExternalLinkage, ctx->name->getText(), module);
         }
-
-        // Cretae a vector for our argument types
-        std::vector<llvm::Type *> typeVec;
-
-        // If the extern has a paramlist
-        if (ctx->paramList)
+        else
         {
-            // Go through each parameter, and get it its type. Stop if any errors occur
-            for (auto e : ctx->paramList->params)
-            {
-                std::optional<llvm::Type *> type = CodegenVisitor::llvmTypeFor(e->ty);
-
-                if (!type)
-                {
-                    errorHandler.addCodegenError(e->getStart(), "Could not generate code to represent type: " + e->ty->toString());
-                    return {};
-                }
-
-                typeVec.push_back(type.value());
-            }
-        }
-
-        // Create an array ref of our parameter types
-        ArrayRef<llvm::Type *> paramRef = ArrayRef(typeVec);
-        // Determine if the function is variadic
-        bool isVariadic = ctx->variadic || ctx->ELLIPSIS();
-
-        // Generate the return type or set it to be Void if PROC
-        std::optional<llvm::Type *> retOpt = ctx->ty ? CodegenVisitor::llvmTypeFor(ctx->ty) : VoidTy;
-
-        // If we fail to generate a return, then throw an error.
-        if (!retOpt)
-        {
-            errorHandler.addCodegenError(ctx->ty->getStart(), "Could not generate code for type: " + ctx->ty->toString());
+            errorHandler.addCodegenError(ctx->getStart(), "Could not treat extern type as function.");
             return {};
         }
-
-        // Create the function definition
-        FunctionType *fnType = FunctionType::get(
-            retOpt.value(),
-            paramRef,
-            isVariadic);
-
-        Function::Create(fnType, GlobalValue::ExternalLinkage, ctx->name->getText(), module);
     }
-    else 
+    else
     {
         errorHandler.addCodegenError(ctx->getStart(), "Extern statement bound to: " + generalType->toString() + ". Requires Invokable!");
     }
