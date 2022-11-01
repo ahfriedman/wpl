@@ -62,38 +62,15 @@ std::optional<Value *> CodegenVisitor::TvisitInvocation(WPLParser::InvocationCon
     ArrayRef<Value *> ref = ArrayRef(args);
     std::cout << "CALL " << ctx->VARIABLE()->getText() << std::endl;
 
-    std::optional<Symbol *> symOpt = props->getBinding(ctx);
-    if(!symOpt) {
-        errorHandler.addCodegenError(ctx->getStart(), "Unbound symbol in invocation. Probably compiler error.");
-        return {}; 
-    }
+    //FIXME: ERROR CHECK!!
 
-    Symbol * sym = symOpt.value(); 
-    if(!sym->type) {
-        errorHandler.addCodegenError(ctx->getStart(), "Symbol in invocation missing type. Probably compiler error.");
-        return {};
-    }
+    llvm::Function *call = module->getFunction(ctx->VARIABLE()->getText());
 
-    const Type * type = sym->type; 
+    std::cout << call << std::endl; 
 
-    llvm::Type * genericType = type->getLLVMType(module->getContext()); 
-
-    if(llvm::FunctionType * call = static_cast<llvm::Type*>(genericType)) {
-        Value * val = builder->CreateCall(call, ref);
-        return val; 
-    }
-
-    errorHandler.addCodegenError(ctx->getStart(), "Invocation type could not be cast to function!");
-    return {};
+    Value *val = builder->CreateCall(call, ref); // Needs to be separate line because, C++
+    return val;
 }
-
-//     llvm::Function *call = module->getFunction(ctx->VARIABLE()->getText());
-
-//     std::cout << call << std::endl; 
-
-//     Value *val = builder->CreateCall(call, ref); // Needs to be separate line because, C++
-//     return val;
-// }
 
 std::optional<Value *> CodegenVisitor::TvisitArrayAccess(WPLParser::ArrayAccessContext *ctx)
 {
