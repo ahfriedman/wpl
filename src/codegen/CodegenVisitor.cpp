@@ -6,8 +6,7 @@ std::optional<Value *> CodegenVisitor::TvisitCompilationUnit(WPLParser::Compilat
     {
         e->accept(this);
     }
-
-    std::cout << "10" << std::endl;
+    
     for (auto e : ctx->stmts)
     {
         // Generate code for statement
@@ -60,13 +59,10 @@ std::optional<Value *> CodegenVisitor::TvisitInvocation(WPLParser::InvocationCon
 
     // Convert to an array ref, then find and execute the call.
     ArrayRef<Value *> ref = ArrayRef(args);
-    std::cout << "CALL " << ctx->VARIABLE()->getText() << std::endl;
 
     // FIXME: ERROR CHECK!!
 
     llvm::Function *call = module->getFunction(ctx->VARIABLE()->getText());
-
-    std::cout << call << std::endl;
 
     Value *val = builder->CreateCall(call, ref); // Needs to be separate line because, C++
     return val;

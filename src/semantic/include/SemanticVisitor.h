@@ -214,7 +214,6 @@ public:
                     if (other->isSubtype(funcType) && !(other->isDefined()))
                     {
                         other->define();
-                        std::cout << "PAST DEFINE" << std::endl; 
                         goto cont; 
                     }
                 }
