@@ -274,6 +274,12 @@ private:
      */
     bool variadic = false;
 
+    /**
+     * @brief Determines if the function has been fully defined (true), or if it is a partial signature (ie, a predeclaration waiting to be fulfilled)
+     *
+     */
+    bool defined = true;
+
 public:
     /**
      * @brief Construct a new Type Invoke object that has no return and no arguments
@@ -300,13 +306,15 @@ public:
      *
      * @param p List of type parameters
      * @param v Determines if this should be a variadic
+     * @param d Determines if this has been fully defined
      */
-    TypeInvoke(std::vector<const Type *> p, bool v)
+    TypeInvoke(std::vector<const Type *> p, bool v, bool d)
     {
         paramTypes = p;
         retType = Types::UNDEFINED;
 
         variadic = v;
+        defined = d;
     }
 
     /**
@@ -327,13 +335,15 @@ public:
      * @param p List of type parameters
      * @param r Return type
      * @param v Determines if this should be a variadic
+     * @param d Determines if this has been fully defined
      */
-    TypeInvoke(std::vector<const Type *> p, const Type *r, bool v)
+    TypeInvoke(std::vector<const Type *> p, const Type *r, bool v, bool d)
     {
         paramTypes = p;
         retType = r;
 
         variadic = v;
+        defined = d;
     }
 
     /**
@@ -367,6 +377,27 @@ public:
     }
 
     // TODO: Build LLVM Type here instead of in codegen!
+    llvm::Type *getLLVMType(llvm::LLVMContext &C) const override
+    {
+        // Cretae a vector for our argument types
+        std::vector<llvm::Type *> typeVec;
+
+        for (const Type *ty : paramTypes)
+        {
+            typeVec.push_back(ty->getLLVMType(C)); // paramTypes.typeVec); //FIXME: throw error if can't create?
+        }
+
+        llvm::ArrayRef<llvm::Type *> paramRef = llvm::ArrayRef(typeVec);
+        
+        llvm::Type *ret = retType->getLLVMType(C); //FIXME: WHEN THIS WAS RETTYPE, TRY THAT CASE IN WPL
+
+        llvm::FunctionType *fnType = llvm::FunctionType::get(
+            ret,
+            paramRef,
+            variadic);
+
+        return fnType;
+    }
 
     /**
      * @brief Get the Param Types object
@@ -390,6 +421,24 @@ public:
      */
     bool isVariadic() const { return variadic; }
 
+    /**
+     * @brief Returns if this is defined
+     *
+     * @return true
+     * @return false
+     */
+    bool isDefined() const { return defined; }
+
+    /**
+     * @brief Marks this invokable as defined
+     *
+     */
+    void define() const
+    {
+        TypeInvoke *mthis = const_cast<TypeInvoke *>(this);
+        mthis->defined = true;
+    }
+
 protected:
     bool isSupertypeFor(const Type *other) const override
     {
@@ -410,9 +459,8 @@ protected:
                 if (this->paramTypes.at(i)->isNotSubtype(p->paramTypes.at(i)))
                     return false;
             }
-
             // Makes sure that the return type of this function is a subtype of the other
-            return this->retType->isSubtype(p->retType);
+            return this->retType->isSubtype(p->retType) || (dynamic_cast<const TypeBot *>(this->retType) && dynamic_cast<const TypeBot *>(p->retType));
         }
         return false;
     }
@@ -502,17 +550,15 @@ protected:
         // that that type is a subtype of other.
         if (valueType->has_value())
         {
-            return other->isSubtype(valueType->value()); //NOTE: CONDITION INVERSED BECAUSE WE CALL IT INVERSED IN SYMBOL.CPP!
+            return other->isSubtype(valueType->value()); // NOTE: CONDITION INVERSED BECAUSE WE CALL IT INVERSED IN SYMBOL.CPP!
         }
-
 
         // Set our valueType to be the provided type to see if anything breaks...
         TypeInfer *mthis = const_cast<TypeInfer *>(this);
         *mthis->valueType = other;
 
-
         // Run through our dependencies making sure they can all also
-        // be compatible with having a type of other. 
+        // be compatible with having a type of other.
         bool valid = true;
         for (const TypeInfer *ty : infTypes)
         {
@@ -528,19 +574,18 @@ protected:
 
     /**
      * @brief Determines if this is a supertype of another type (and thus, also performs type inferencing).
-     * 
-     * @param other 
-     * @return true 
-     * @return false 
+     *
+     * @param other
+     * @return true
+     * @return false
      */
     bool isSupertypeFor(const Type *other) const override
     {
-        // If we already have an inferred type, we can simply 
-        // check if that type is a subtype of other. 
+        // If we already have an inferred type, we can simply
+        // check if that type is a subtype of other.
         if (valueType->has_value())
             return other->isSubtype(valueType->value());
 
-    
         /*
          * If the other type is also an inference type...
          */
@@ -552,7 +597,7 @@ protected:
                 return setValue(oinf->valueType->value());
             }
 
-            //Otherwise, add the types to be dependencies of eachother, and return true. 
+            // Otherwise, add the types to be dependencies of eachother, and return true.
             TypeInfer *mthis = const_cast<TypeInfer *>(this);
             mthis->infTypes.push_back(oinf);
 

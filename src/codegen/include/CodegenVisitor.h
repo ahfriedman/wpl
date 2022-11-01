@@ -196,9 +196,6 @@ public:
      */
     std::optional<Value *> visitInvokeable(std::variant<WPLParser::ProcDefContext *, WPLParser::FuncDefContext *> sum)
     {
-        // Creates a vector to hold all the argument types
-        std::vector<llvm::Type *> typeVec;
-
         // From C++ Documentation for visitors
         // Gets the general context we can use for error reporting
         antlr4::ParserRuleContext *ctx = std::visit(overloaded{[](WPLParser::ProcDefContext *arg)
@@ -224,111 +221,91 @@ public:
             return {};
         }
 
-
-        // Symbol * sym = symOpt.value(); 
-
-        // Get the parameter list context for the invokable
-        WPLParser::ParameterListContext *paramList = std::visit(overloaded{[](WPLParser::ProcDefContext *arg)
-                                                                           { return arg->paramList; },
-                                                                           [](WPLParser::FuncDefContext *arg)
-                                                                           { return arg->paramList; }},
-                                                                sum);
-
-        // If we have a parameter list, then generate the code for it
-        if (paramList)
+        Symbol *sym = symOpt.value();
+        if (!sym->type)
         {
-            // For each parameter
-            for (auto e : paramList->params)
-            {
-                // Lookup the parameter's type
-                std::optional<llvm::Type *> type = CodegenVisitor::llvmTypeFor(e->ty);
-
-                // If the type couldn't be found, throw an error
-                if (!type)
-                {
-                    errorHandler.addCodegenError(ctx->getStart(), "Could not generate code for type: " + e->ty->toString());
-                    return {};
-                }
-
-                // Otherwise, add it to the tpevec
-                typeVec.push_back(type.value());
-            }
-        }
-
-        // Create an ArrayRef of our typeVec
-        ArrayRef<llvm::Type *> paramRef = ArrayRef(typeVec);
-
-        // Can't use visitor because visitor can't see `this'
-        // Thi sbasically gets the return type of the function.
-        std::optional<llvm::Type *> retType = std::holds_alternative<WPLParser::FuncDefContext *>(sum) ? CodegenVisitor::llvmTypeFor(std::get<WPLParser::FuncDefContext *>(sum)->ty)
-                                                                                                       : VoidTy;
-
-        // if we couldn't determine the return type, throw an error and abort
-        if (!retType)
-        {
-            errorHandler.addCodegenError(ctx->getStart(), "Could not generate code for return type of " + funcId);
+            errorHandler.addCodegenError(ctx->getStart(), "Symbol in invocation missing type. Probably compiler error.");
             return {};
         }
 
-        // Create an llvm function type //TODO: MOVE TO function symbol??
-        FunctionType *fnType = FunctionType::get(
-            retType.value(),
-            paramRef,
-            false);
+        const Type *type = sym->type;
 
-        Function *fn = Function::Create(fnType, GlobalValue::ExternalLinkage, funcId, module);
+        llvm::Type *genericType = type->getLLVMType(module->getContext());
 
-        // Create basic block
-        BasicBlock *bBlk = BasicBlock::Create(module->getContext(), "entry", fn);
-        builder->SetInsertPoint(bBlk);
-
-        // Bind all of the arguments
-        for (auto &arg : fn->args())
+        if (llvm::FunctionType *fnType = static_cast<llvm::FunctionType *>(genericType))
         {
-            // Get the argumengt number (just seems easier than making my own counter)
-            int argNumber = arg.getArgNo();
-
-            // Get the argument's type
-            llvm::Type *type = typeVec.at(argNumber);
-
-            // Get the argument name (This even works for arrays!)
-            std::string argName = paramList->params.at(argNumber)->getText();
-
-            // Create an allocation for the argumentr
-            llvm::AllocaInst *v = builder->CreateAlloca(type, 0, argName);
-
-            // Try to find the parameter's bnding to determine what value to bind to it.
-            std::optional<Symbol *> symOpt = props->getBinding(paramList->params.at(argNumber));
-
-            if (!symOpt)
+            Function *fn = module->getFunction(funcId); // Lookup the function first
+            // FIXME: TRY FOWARD DECL PROGRAM! WILL IT STILL HAVE SAME WARNINGS?
+            /*
+             * If we couldn't find the function, that means it wasn't pre-declared, and we need to create it here and now.
+             */
+            if (!fn)
             {
-                errorHandler.addCodegenError(ctx->getStart(), "Unable to generate parameter for function: " + argName);
+                fn = Function::Create(fnType, GlobalValue::ExternalLinkage, funcId, module);
             }
-            else
-            {
-                symOpt.value()->val = v;
 
-                builder->CreateStore(&arg, v);
+            // Get the parameter list context for the invokable
+            WPLParser::ParameterListContext *paramList = std::visit(overloaded{[](WPLParser::ProcDefContext *arg)
+                                                                               { return arg->paramList; },
+                                                                               [](WPLParser::FuncDefContext *arg)
+                                                                               { return arg->paramList; }},
+                                                                    sum);
+            // Create basic block
+            BasicBlock *bBlk = BasicBlock::Create(module->getContext(), "entry", fn);
+            builder->SetInsertPoint(bBlk);
+
+            // Bind all of the arguments
+            for (auto &arg : fn->args())
+            {
+                // Get the argumengt number (just seems easier than making my own counter)
+                int argNumber = arg.getArgNo();
+
+                // Get the argument's type
+                llvm::Type *type = fnType->params()[argNumber];
+
+                // Get the argument name (This even works for arrays!)
+                std::string argName = paramList->params.at(argNumber)->getText();
+
+                // Create an allocation for the argumentr
+                llvm::AllocaInst *v = builder->CreateAlloca(type, 0, argName);
+
+                // Try to find the parameter's bnding to determine what value to bind to it.
+                std::optional<Symbol *> symOpt = props->getBinding(paramList->params.at(argNumber));
+
+                if (!symOpt)
+                {
+                    errorHandler.addCodegenError(ctx->getStart(), "Unable to generate parameter for function: " + argName);
+                }
+                else
+                {
+                    symOpt.value()->val = v;
+
+                    builder->CreateStore(&arg, v);
+                }
+            }
+
+            // Get the codeblock for the PROC/FUNC
+            WPLParser::BlockContext *block = std::visit(overloaded{[](WPLParser::ProcDefContext *arg)
+                                                                   { return arg->block(); },
+                                                                   [](WPLParser::FuncDefContext *arg)
+                                                                   { return arg->block(); }},
+                                                        sum);
+
+            // Generate code for the block
+            for (auto e : block->stmts)
+            {
+                e->accept(this);
+            }
+
+            // If we are a PROC, make sure to add a return type (if we don't already have one)
+            if (std::holds_alternative<WPLParser::ProcDefContext *>(sum) && !CodegenVisitor::blockEndsInReturn(block))
+            {
+                builder->CreateRetVoid();
             }
         }
-
-        // Get the codeblock for the PROC/FUNC
-        WPLParser::BlockContext *block = std::visit(overloaded{[](WPLParser::ProcDefContext *arg)
-                                                               { return arg->block(); },
-                                                               [](WPLParser::FuncDefContext *arg)
-                                                               { return arg->block(); }},
-                                                    sum);
-
-        // Generate code for the block
-        for (auto e : block->stmts)
+        else
         {
-            e->accept(this);
-        }
-
-        // If we are a PROC, make sure to add a return type (if we don't already have one)
-        if (std::holds_alternative<WPLParser::ProcDefContext *>(sum) && !CodegenVisitor::blockEndsInReturn(block))
-        {
-            builder->CreateRetVoid();
+            errorHandler.addCodegenError(ctx->getStart(), "Invocation type could not be cast to function!");
         }
 
         return {};
