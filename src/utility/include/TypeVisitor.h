@@ -127,8 +127,8 @@ public:
     T visitCtx(WPLParser::TypeOrVarContext * ctx); 
     std::any visitTypeOrVar(WPLParser::TypeOrVarContext *ctx) override { return visitCtx(ctx); }
 
-    T visitCtx(WPLParser::TypeContext * ctx); 
-    std::any visitType(WPLParser::TypeContext *ctx) override { return visitCtx(ctx); }
+    // T visitCtx(WPLParser::TypeContext * ctx); 
+    // std::any visitType(WPLParser::TypeContext *ctx) override { return visitCtx(ctx); }
 
     T visitCtx(WPLParser::BooleanConstContext * ctx); 
     std::any visitBooleanConst(WPLParser::BooleanConstContext *ctx) override { return visitCtx(ctx); }

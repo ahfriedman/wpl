@@ -71,8 +71,11 @@ public:
     const Type *visitCtx(WPLParser::ReturnStatementContext *ctx);
     const Type *visitCtx(WPLParser::BlockStatementContext *ctx);
     const Type *visitCtx(WPLParser::TypeOrVarContext *ctx);
-    const Type *visitCtx(WPLParser::TypeContext *ctx);
+    // const Type *visitCtx(WPLParser::TypeContext *ctx);
     const Type *visitCtx(WPLParser::BooleanConstContext *ctx);
+
+    const Type *visitCtx(WPLParser::LambdaTypeContext *ctx);
+    const Type *visitCtx(WPLParser::BaseTypeContext *ctx);
 
     /*
      * Traditional visitor methods all overridden with our typed versions
@@ -113,8 +116,11 @@ public:
     std::any visitReturnStatement(WPLParser::ReturnStatementContext *ctx) override { return visitCtx(ctx); }
     std::any visitBlockStatement(WPLParser::BlockStatementContext *ctx) override { return visitCtx(ctx); }
     std::any visitTypeOrVar(WPLParser::TypeOrVarContext *ctx) override { return visitCtx(ctx); }
-    std::any visitType(WPLParser::TypeContext *ctx) override { return visitCtx(ctx); }
+    // std::any visitType(WPLParser::TypeContext *ctx) override { return visitCtx(ctx); }
     std::any visitBooleanConst(WPLParser::BooleanConstContext *ctx) override { return visitCtx(ctx); }
+
+    std::any visitLambdaType(WPLParser::LambdaTypeContext *ctx) override { return visitCtx(ctx); }
+    std::any visitBaseType(WPLParser::BaseTypeContext *ctx) override { return visitCtx(ctx); }
 
     /**
      * @brief Used to safely enter a block. This is used to ensure there aren't FUNC/PROC definitions / code following returns in it.
@@ -178,7 +184,7 @@ public:
         const TypeInvoke *procType = dynamic_cast<const TypeInvoke *>(tmpTy); // Always true, but needs separate statement to make C happy.
 
         // If we have a return type, then visit that contex to determine what it is. Otherwise, set it as Types::UNDEFINED.
-        const Type *retType = ty ? this->visitCtx(ty)
+        const Type *retType = ty ? std::any_cast<const Type *>(ty->accept(this))//this->visitCtx(ty)
                                  : Types::UNDEFINED;
 
         // Create a new func with the return type (or reuse the procType) NOTE: We do NOT need to worry about discarding the variadic here as variadic FUNC/PROC is not supported

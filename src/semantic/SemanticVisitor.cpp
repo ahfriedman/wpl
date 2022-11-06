@@ -72,7 +72,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::CompilationUnitContext *ctx)
         }
     }
 
-    std::vector<const Symbol *> uninf = stmgr->getCurrentScope().value()->getUninferred(); //TODO: shouldn't ever be an issue, but still. 
+    std::vector<const Symbol *> uninf = stmgr->getCurrentScope().value()->getUninferred(); // TODO: shouldn't ever be an issue, but still.
 
     // If there are any uninferred symbols, then add it as a compiler error as we won't be able to resolve them
     // due to the var leaving the scope
@@ -607,7 +607,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::ParameterListContext *ctx)
 }
 
 // Passthrough to visit the inner expression
-const Type *SemanticVisitor::visitCtx(WPLParser::ParameterContext *ctx) { return this->visitCtx(ctx->ty); }
+const Type *SemanticVisitor::visitCtx(WPLParser::ParameterContext *ctx) { return std::any_cast<const Type *>(ctx->ty->accept(this)); }
 
 const Type *SemanticVisitor::visitCtx(WPLParser::AssignmentContext *ctx)
 {
@@ -635,7 +635,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::ExternStatementContext *ctx)
 
     const TypeInvoke *procType = dynamic_cast<const TypeInvoke *>(ty); // Always true, but needs separate statement to make C happy.
 
-    const Type *retType = ctx->ty ? this->visitCtx(ctx->ty)
+    const Type *retType = ctx->ty ? std::any_cast<const Type *>(ctx->ty->accept(this))//this->visitCtx(ctx->ty)
                                   : Types::UNDEFINED;
 
     const TypeInvoke *funcType = (ctx->ty) ? new TypeInvoke(procType->getParamTypes(), retType, variadic, false)
@@ -859,10 +859,19 @@ const Type *SemanticVisitor::visitCtx(WPLParser::TypeOrVarContext *ctx)
     }
 
     // If we do have a type, then visit that context.
-    return this->visitCtx(ctx->type());
+    // std::any temp = this->visit(ctx->type());
+
+    const Type * type = std::any_cast<const Type *>(ctx->type()->accept(this));
+    return type; 
 }
 
-const Type *SemanticVisitor::visitCtx(WPLParser::TypeContext *ctx)
+
+const Type *SemanticVisitor::visitCtx(WPLParser::LambdaTypeContext *ctx) 
+{
+    return Types::UNDEFINED; //FIXME: ENABLE
+}
+
+const Type *SemanticVisitor::visitCtx(WPLParser::BaseTypeContext *ctx)
 {
 
     const Type *ty = Types::UNDEFINED;
@@ -907,5 +916,5 @@ const Type *SemanticVisitor::visitCtx(WPLParser::TypeContext *ctx)
     return ty;
 }
 
-// Should never be needed due to how BConstExpr works, but leaving here just in case. 
+// Should never be needed due to how BConstExpr works, but leaving here just in case.
 const Type *SemanticVisitor::visitCtx(WPLParser::BooleanConstContext *ctx) { return Types::BOOL; }

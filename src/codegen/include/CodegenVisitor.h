@@ -168,8 +168,10 @@ public:
     std::any visitReturnStatement(WPLParser::ReturnStatementContext *ctx) override { return TvisitReturnStatement(ctx); };
     std::any visitBlockStatement(WPLParser::BlockStatementContext *ctx) override { return TvisitBlockStatement(ctx); };
     std::any visitTypeOrVar(WPLParser::TypeOrVarContext *ctx) override { return TvisitTypeOrVar(ctx); };
-    std::any visitType(WPLParser::TypeContext *ctx) override { return TvisitType(ctx); };
+    // std::any visitType(WPLParser::TypeContext *ctx) override { return TvisitType(ctx); };
     std::any visitBooleanConst(WPLParser::BooleanConstContext *ctx) override { return TvisitBooleanConst(ctx); };
+
+    //FIXME: Add Base and LamdaTypes?
 
     bool hasErrors(int flags) { return errorHandler.hasErrors(flags); }
     std::string getErrors() { return errorHandler.errorList(); }
@@ -321,45 +323,6 @@ protected:
     static bool blockEndsInReturn(WPLParser::BlockContext *ctx)
     {
         return ctx->stmts.size() > 0 && dynamic_cast<WPLParser::ReturnStatementContext *>(ctx->stmts.at(ctx->stmts.size() - 1));
-    }
-
-    std::optional<llvm::Type *> llvmTypeFor(WPLParser::TypeContext *ctx)
-    {
-        llvm::Type *ty;
-        bool valid = false;
-
-        if (ctx->TYPE_INT())
-        {
-            ty = Int32Ty;
-            valid = true;
-        }
-        else if (ctx->TYPE_BOOL())
-        {
-            ty = Int1Ty;
-            valid = true;
-        }
-        else if (ctx->TYPE_STR())
-        {
-            ty = i8p;
-            valid = true;
-        }
-
-        if (!valid)
-        {
-            errorHandler.addCodegenError(ctx->getStart(), "Unknown type: " + ctx->getText());
-            return {};
-        }
-
-        if (ctx->len)
-        {
-            // Semantic analysis ensures this is positive.
-            uint64_t len = (uint64_t)std::stoi(ctx->len->getText());
-            llvm::Type *arr = ArrayType::get(ty, len);
-
-            return arr;
-        }
-
-        return ty;
     }
 
 private:

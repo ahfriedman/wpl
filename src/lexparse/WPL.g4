@@ -133,6 +133,7 @@ EQUAL       :       '='     ;
 NOT_EQUAL   :       '~='    ;
 AND         :       '&'     ;
 OR          :       '|'     ;
+MAPS_TO     :       '->'    ;
 
 
 //Separators
@@ -153,7 +154,9 @@ ELLIPSIS  :     '...'   ;
 typeOrVar       : type | 'var'  ;
 
 //Allows us to have a type of ints, bools, or strings with the option for them to become 1d arrays. 
-type            : ty=(TYPE_INT | TYPE_BOOL | TYPE_STR) (LBRC len=INTEGER RBRC)? ;
+type            :    ty=(TYPE_INT | TYPE_BOOL | TYPE_STR) (LBRC len=INTEGER RBRC)?  # BaseType
+                |    paramTypes+=type (',' paramTypes+=type)* '->' returnType=type  # LambdaType
+                ;
 
 TYPE_INT        :   'int' ; 
 TYPE_BOOL       :   'boolean' ;
@@ -163,7 +166,7 @@ TYPE_STR        :   'str' ;
 FUNC            :   'func'  ;
 PROC            :   'proc'  ;
 IF              :   'if'    ;
-IF_THEN            :   'then'  ;
+IF_THEN         :   'then'  ;
 ELSE            :   'else'  ;
 WHILE           :   'while' ;
 RETURN          :   'return';
