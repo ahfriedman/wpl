@@ -1212,6 +1212,192 @@ str a <- "hello";
   REQUIRE(cv->hasErrors(0));
 }
 
+
+TEST_CASE("Forward Decl with Variadic", "[semantic][program][function][forward-decl]")
+{
+  antlr4::ANTLRInputStream input(
+      R""""(
+extern int func printf(...);
+
+extern proc foo(int a, ...); 
+
+
+
+int func program() {
+    foo(); 
+    return 0;
+}
+
+proc foo(int a) {
+    printf("a = %s\n", a);
+}
+
+str a <- "hello";
+    )"""");
+  WPLLexer lexer(&input);
+  // lexer.removeErrorListeners();
+  // lexer.addErrorListener(new TestErrorListener());
+  antlr4::CommonTokenStream tokens(&lexer);
+  WPLParser parser(&tokens);
+  parser.removeErrorListeners();
+  parser.addErrorListener(new TestErrorListener());
+
+  WPLParser::CompilationUnitContext *tree = NULL;
+  REQUIRE_NOTHROW(tree = parser.compilationUnit());
+  REQUIRE(tree != NULL);
+  REQUIRE(tree->getText() != "");
+
+  STManager *stmgr = new STManager();
+  PropertyManager *pm = new PropertyManager();
+  SemanticVisitor *sv = new SemanticVisitor(stmgr, pm);
+
+  sv->visitCompilationUnit(tree);
+  REQUIRE(sv->hasErrors(ERROR));
+  CodegenVisitor *cv = new CodegenVisitor(pm, "test", CompilerFlags::NO_RUNTIME);
+  cv->visitCompilationUnit(tree);
+  REQUIRE(cv->hasErrors(0));
+}
+
+TEST_CASE("Forward Decl with wrong num args", "[semantic][program][function][forward-decl]")
+{
+  antlr4::ANTLRInputStream input(
+      R""""(
+extern int func printf(...);
+
+extern proc foo(int a);
+
+
+
+int func program() {
+    foo(); 
+    return 0;
+}
+
+proc foo(int a, int b) {
+    printf("a = %s\n", a);
+}
+
+str a <- "hello";
+    )"""");
+    
+  WPLLexer lexer(&input);
+  // lexer.removeErrorListeners();
+  // lexer.addErrorListener(new TestErrorListener());
+  antlr4::CommonTokenStream tokens(&lexer);
+  WPLParser parser(&tokens);
+  parser.removeErrorListeners();
+  parser.addErrorListener(new TestErrorListener());
+
+  WPLParser::CompilationUnitContext *tree = NULL;
+  REQUIRE_NOTHROW(tree = parser.compilationUnit());
+  REQUIRE(tree != NULL);
+  REQUIRE(tree->getText() != "");
+
+  STManager *stmgr = new STManager();
+  PropertyManager *pm = new PropertyManager();
+  SemanticVisitor *sv = new SemanticVisitor(stmgr, pm);
+
+  sv->visitCompilationUnit(tree);
+  REQUIRE(sv->hasErrors(ERROR));
+  CodegenVisitor *cv = new CodegenVisitor(pm, "test", CompilerFlags::NO_RUNTIME);
+  cv->visitCompilationUnit(tree);
+  REQUIRE(cv->hasErrors(0));
+}
+
+TEST_CASE("Forward Decl with wrong num args and type", "[semantic][program][function][forward-decl]")
+{
+  antlr4::ANTLRInputStream input(
+      R""""(
+extern int func printf(...);
+
+extern proc foo(int a);
+
+
+
+int func program() {
+    foo(); 
+    return 0;
+}
+
+proc foo(int a, str b) {
+    printf("a = %s\n", a);
+}
+
+str a <- "hello";
+    )"""");
+    
+  WPLLexer lexer(&input);
+  // lexer.removeErrorListeners();
+  // lexer.addErrorListener(new TestErrorListener());
+  antlr4::CommonTokenStream tokens(&lexer);
+  WPLParser parser(&tokens);
+  parser.removeErrorListeners();
+  parser.addErrorListener(new TestErrorListener());
+
+  WPLParser::CompilationUnitContext *tree = NULL;
+  REQUIRE_NOTHROW(tree = parser.compilationUnit());
+  REQUIRE(tree != NULL);
+  REQUIRE(tree->getText() != "");
+
+  STManager *stmgr = new STManager();
+  PropertyManager *pm = new PropertyManager();
+  SemanticVisitor *sv = new SemanticVisitor(stmgr, pm);
+
+  sv->visitCompilationUnit(tree);
+  REQUIRE(sv->hasErrors(ERROR));
+  CodegenVisitor *cv = new CodegenVisitor(pm, "test", CompilerFlags::NO_RUNTIME);
+  cv->visitCompilationUnit(tree);
+  REQUIRE(cv->hasErrors(0));
+}
+
+TEST_CASE("Forward Decl with wrong arg type", "[semantic][program][function][forward-decl]")
+{
+  antlr4::ANTLRInputStream input(
+      R""""(
+extern int func printf(...);
+
+extern proc foo(int a);
+
+
+
+int func program() {
+    foo(); 
+    return 0;
+}
+
+proc foo(str a) {
+    printf("a = %s\n", a);
+}
+
+str a <- "hello";
+    )"""");
+    
+  WPLLexer lexer(&input);
+  // lexer.removeErrorListeners();
+  // lexer.addErrorListener(new TestErrorListener());
+  antlr4::CommonTokenStream tokens(&lexer);
+  WPLParser parser(&tokens);
+  parser.removeErrorListeners();
+  parser.addErrorListener(new TestErrorListener());
+
+  WPLParser::CompilationUnitContext *tree = NULL;
+  REQUIRE_NOTHROW(tree = parser.compilationUnit());
+  REQUIRE(tree != NULL);
+  REQUIRE(tree->getText() != "");
+
+  STManager *stmgr = new STManager();
+  PropertyManager *pm = new PropertyManager();
+  SemanticVisitor *sv = new SemanticVisitor(stmgr, pm);
+
+  sv->visitCompilationUnit(tree);
+  REQUIRE(sv->hasErrors(ERROR));
+  CodegenVisitor *cv = new CodegenVisitor(pm, "test", CompilerFlags::NO_RUNTIME);
+  cv->visitCompilationUnit(tree);
+  REQUIRE(cv->hasErrors(0));
+}
+
+//FIXME: TEST VAR NAME MISMATCH FROM EXTERN TO INVOCATION!
+
 /*********************************
  * C-Level Example tests
  *********************************/
