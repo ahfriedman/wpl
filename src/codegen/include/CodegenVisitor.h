@@ -235,7 +235,6 @@ public:
         if (llvm::FunctionType *fnType = static_cast<llvm::FunctionType *>(genericType))
         {
             Function *fn = module->getFunction(funcId); // Lookup the function first
-            // FIXME: TRY FOWARD DECL PROGRAM! WILL IT STILL HAVE SAME WARNINGS?
             /*
              * If we couldn't find the function, that means it wasn't pre-declared, and we need to create it here and now.
              */

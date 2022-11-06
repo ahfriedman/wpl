@@ -717,7 +717,7 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
         if ((e->ex) && !exVal)
         {
             errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code for: " + e->ex->getText());
-            return {}; //FIXME: THIS RIGHT?
+            return {};
         }
 
         // For each of the variabes being assigned to that value
