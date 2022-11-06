@@ -1396,8 +1396,6 @@ str a <- "hello";
   REQUIRE(cv->hasErrors(0));
 }
 
-//FIXME: TEST VAR NAME MISMATCH FROM EXTERN TO INVOCATION!
-
 /*********************************
  * C-Level Example tests
  *********************************/
