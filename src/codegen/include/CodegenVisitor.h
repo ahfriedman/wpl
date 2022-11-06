@@ -198,6 +198,8 @@ public:
      */
     std::optional<Value *> visitInvokeable(std::variant<WPLParser::ProcDefContext *, WPLParser::FuncDefContext *> sum)
     {
+        BasicBlock * ins = builder->GetInsertBlock();  //FIXME: DO BETTER PROCESS DISCOVERY ALSO //FIXME: HAVE TO FIX SCOPING ISSUES
+
         // From C++ Documentation for visitors
         // Gets the general context we can use for error reporting
         antlr4::ParserRuleContext *ctx = std::visit(overloaded{[](WPLParser::ProcDefContext *arg)
@@ -309,6 +311,8 @@ public:
             errorHandler.addCodegenError(ctx->getStart(), "Invocation type could not be cast to function!");
         }
 
+
+        builder->SetInsertPoint(ins);
         return {};
     }
 

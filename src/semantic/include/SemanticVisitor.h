@@ -153,7 +153,7 @@ public:
             if (dynamic_cast<WPLParser::ReturnStatementContext *>(e))
                 foundReturn = true;
 
-            // Prevent defining a Func or PROC in the block as this is not yet supported.
+            // Prevent defining a Func or PROC in the block as this is not yet supported. //FIXME: NEED TO DEAL WITH SCOPE ISSUES!
             if (dynamic_cast<WPLParser::FuncDefContext *>(e) || dynamic_cast<WPLParser::ProcDefContext *>(e))
             {
                 errorHandler.addSemanticError(ctx->getStart(), "Currenly, nested PROC/FUNCs are not supported by codegen.");
