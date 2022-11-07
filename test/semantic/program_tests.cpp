@@ -818,10 +818,10 @@ TEST_CASE("Uninferred", "[semantic][program]")
   sv->visitCompilationUnit(tree);
   REQUIRE(sv->hasErrors(ERROR));
 
-  //TODO: WHEN USING OPTIONALS FOR getLLVMTYPE?
-  // CodegenVisitor *cv = new CodegenVisitor(pm, "test", CompilerFlags::NO_RUNTIME);
-  // cv->visitCompilationUnit(tree);
-  // REQUIRE(cv->hasErrors(0));
+  // TODO: WHEN USING OPTIONALS FOR getLLVMTYPE?
+  //  CodegenVisitor *cv = new CodegenVisitor(pm, "test", CompilerFlags::NO_RUNTIME);
+  //  cv->visitCompilationUnit(tree);
+  //  REQUIRE(cv->hasErrors(0));
 }
 
 TEST_CASE("Nested programs (TEMPORARY)", "[semantic][program]")
@@ -1248,7 +1248,6 @@ str a <- "hello";
   REQUIRE(cv->hasErrors(0));
 }
 
-
 TEST_CASE("Forward Decl with Variadic", "[semantic][program][function][forward-decl]")
 {
   antlr4::ANTLRInputStream input(
@@ -1315,7 +1314,7 @@ proc foo(int a, int b) {
 
 str a <- "hello";
     )"""");
-    
+
   WPLLexer lexer(&input);
   // lexer.removeErrorListeners();
   // lexer.addErrorListener(new TestErrorListener());
@@ -1361,7 +1360,7 @@ proc foo(int a, str b) {
 
 str a <- "hello";
     )"""");
-    
+
   WPLLexer lexer(&input);
   // lexer.removeErrorListeners();
   // lexer.addErrorListener(new TestErrorListener());
@@ -1407,7 +1406,7 @@ proc foo(str a) {
 
 str a <- "hello";
     )"""");
-    
+
   WPLLexer lexer(&input);
   // lexer.removeErrorListeners();
   // lexer.addErrorListener(new TestErrorListener());
@@ -1441,7 +1440,7 @@ int func program() {
     return 0;
 }
     )"""");
-    
+
   WPLLexer lexer(&input);
   // lexer.removeErrorListeners();
   // lexer.addErrorListener(new TestErrorListener());
@@ -1475,7 +1474,7 @@ int func program() {
     return 0;
 }
     )"""");
-    
+
   WPLLexer lexer(&input);
   // lexer.removeErrorListeners();
   // lexer.addErrorListener(new TestErrorListener());
@@ -1509,7 +1508,7 @@ int func program() {
     return 0;
 }
     )"""");
-    
+
   WPLLexer lexer(&input);
   // lexer.removeErrorListeners();
   // lexer.addErrorListener(new TestErrorListener());
@@ -1543,7 +1542,7 @@ int func program() {
     return 0;
 }
     )"""");
-    
+
   WPLLexer lexer(&input);
   // lexer.removeErrorListeners();
   // lexer.addErrorListener(new TestErrorListener());
@@ -1577,7 +1576,7 @@ int func program() {
     return 0;
 }
     )"""");
-    
+
   WPLLexer lexer(&input);
   // lexer.removeErrorListeners();
   // lexer.addErrorListener(new TestErrorListener());
@@ -1602,8 +1601,6 @@ int func program() {
   // REQUIRE(cv->hasErrors(0));
 }
 
-
-
 TEST_CASE("Wrong LogOr LHS", "[semantic][program]")
 {
   antlr4::ANTLRInputStream input(
@@ -1613,7 +1610,7 @@ int func program() {
     return 0;
 }
     )"""");
-    
+
   WPLLexer lexer(&input);
   // lexer.removeErrorListeners();
   // lexer.addErrorListener(new TestErrorListener());
@@ -1647,7 +1644,7 @@ int func program() {
     return 0;
 }
     )"""");
-    
+
   WPLLexer lexer(&input);
   // lexer.removeErrorListeners();
   // lexer.addErrorListener(new TestErrorListener());
@@ -1682,7 +1679,7 @@ int func program() {
     return 0;
 }
     )"""");
-    
+
   WPLLexer lexer(&input);
   // lexer.removeErrorListeners();
   // lexer.addErrorListener(new TestErrorListener());
@@ -1717,7 +1714,7 @@ int func program() {
     return 0;
 }
     )"""");
-    
+
   WPLLexer lexer(&input);
   // lexer.removeErrorListeners();
   // lexer.addErrorListener(new TestErrorListener());
@@ -1752,7 +1749,7 @@ int func program() {
     return 0;
 }
     )"""");
-    
+
   WPLLexer lexer(&input);
   // lexer.removeErrorListeners();
   // lexer.addErrorListener(new TestErrorListener());
@@ -1787,7 +1784,7 @@ int func program() {
     return 0;
 }
     )"""");
-    
+
   WPLLexer lexer(&input);
   // lexer.removeErrorListeners();
   // lexer.addErrorListener(new TestErrorListener());
@@ -1821,7 +1818,7 @@ int func program() {
     return 0;
 }
     )"""");
-    
+
   WPLLexer lexer(&input);
   // lexer.removeErrorListeners();
   // lexer.addErrorListener(new TestErrorListener());
@@ -1855,7 +1852,7 @@ int func program() {
     return 0;
 }
     )"""");
-    
+
   WPLLexer lexer(&input);
   // lexer.removeErrorListeners();
   // lexer.addErrorListener(new TestErrorListener());
@@ -1879,7 +1876,6 @@ int func program() {
   // cv->visitCompilationUnit(tree);
   // REQUIRE(cv->hasErrors(0));
 }
-
 
 TEST_CASE("Assign to undefined", "[semantic][program]")
 {
@@ -1988,7 +1984,6 @@ TEST_CASE("Function return nothing", "[semantic][program]")
   // REQUIRE(cv->hasErrors(0));
 }
 
-
 TEST_CASE("Function return wrong type", "[semantic][program]")
 {
   antlr4::ANTLRInputStream input(
@@ -2021,6 +2016,256 @@ TEST_CASE("Function return wrong type", "[semantic][program]")
   // cv->visitCompilationUnit(tree);
   // REQUIRE(cv->hasErrors(0));
 }
+
+TEST_CASE("Nested Local Functions - Disallow Local vars 1", "[semantic][program][local-function]")
+{
+  antlr4::ANTLRInputStream input(
+      R""""(
+    int func program() {
+      var a <- 0; 
+
+      proc foo() {
+        a <- 2; 
+      }
+
+      return 0; 
+    }
+    )"""");
+  WPLLexer lexer(&input);
+  // lexer.removeErrorListeners();
+  // lexer.addErrorListener(new TestErrorListener());
+  antlr4::CommonTokenStream tokens(&lexer);
+  WPLParser parser(&tokens);
+  parser.removeErrorListeners();
+  parser.addErrorListener(new TestErrorListener());
+
+  WPLParser::CompilationUnitContext *tree = NULL;
+  REQUIRE_NOTHROW(tree = parser.compilationUnit());
+  REQUIRE(tree != NULL);
+  REQUIRE(tree->getText() != "");
+
+  STManager *stmgr = new STManager();
+  PropertyManager *pm = new PropertyManager();
+
+  SemanticVisitor *sv = new SemanticVisitor(stmgr, pm);
+
+  sv->visitCompilationUnit(tree);
+  REQUIRE(sv->hasErrors(ERROR));
+  // CodegenVisitor *cv = new CodegenVisitor(pm, "test", CompilerFlags::NO_RUNTIME);
+  // cv->visitCompilationUnit(tree);
+  // REQUIRE(cv->hasErrors(0));
+}
+
+TEST_CASE("Nested Local Functions - Disallow Local vars 2", "[semantic][program][local-function]")
+{
+  antlr4::ANTLRInputStream input(
+      R""""(
+    int func program() {
+      var a <- 0; 
+
+      proc foo() {
+        var a;
+        a <- 2; 
+      }
+
+      return 0; 
+    }
+    )"""");
+  WPLLexer lexer(&input);
+  // lexer.removeErrorListeners();
+  // lexer.addErrorListener(new TestErrorListener());
+  antlr4::CommonTokenStream tokens(&lexer);
+  WPLParser parser(&tokens);
+  parser.removeErrorListeners();
+  parser.addErrorListener(new TestErrorListener());
+
+  WPLParser::CompilationUnitContext *tree = NULL;
+  REQUIRE_NOTHROW(tree = parser.compilationUnit());
+  REQUIRE(tree != NULL);
+  REQUIRE(tree->getText() != "");
+
+  STManager *stmgr = new STManager();
+  PropertyManager *pm = new PropertyManager();
+
+  SemanticVisitor *sv = new SemanticVisitor(stmgr, pm);
+
+  sv->visitCompilationUnit(tree);
+  REQUIRE_FALSE(sv->hasErrors(ERROR));
+  // CodegenVisitor *cv = new CodegenVisitor(pm, "test", CompilerFlags::NO_RUNTIME);
+  // cv->visitCompilationUnit(tree);
+  // REQUIRE(cv->hasErrors(0));
+}
+
+TEST_CASE("Nested Local Functions - Disallow Local vars 3", "[semantic][program][local-function]")
+{
+  antlr4::ANTLRInputStream input(
+      R""""(
+    int func program() {
+      proc other () {
+        var c <- 10; 
+      }
+
+      proc foo() {
+          other(); 
+      }
+
+      return 0; 
+    }
+    )"""");
+  WPLLexer lexer(&input);
+  // lexer.removeErrorListeners();
+  // lexer.addErrorListener(new TestErrorListener());
+  antlr4::CommonTokenStream tokens(&lexer);
+  WPLParser parser(&tokens);
+  parser.removeErrorListeners();
+  parser.addErrorListener(new TestErrorListener());
+
+  WPLParser::CompilationUnitContext *tree = NULL;
+  REQUIRE_NOTHROW(tree = parser.compilationUnit());
+  REQUIRE(tree != NULL);
+  REQUIRE(tree->getText() != "");
+
+  STManager *stmgr = new STManager();
+  PropertyManager *pm = new PropertyManager();
+
+  SemanticVisitor *sv = new SemanticVisitor(stmgr, pm);
+
+  sv->visitCompilationUnit(tree);
+  REQUIRE_FALSE(sv->hasErrors(ERROR));
+  // CodegenVisitor *cv = new CodegenVisitor(pm, "test", CompilerFlags::NO_RUNTIME);
+  // cv->visitCompilationUnit(tree);
+  // REQUIRE(cv->hasErrors(0));
+}
+
+TEST_CASE("Nested Local Functions - Disallow Local vars 4", "[semantic][program][local-function]")
+{
+  antlr4::ANTLRInputStream input(
+      R""""(
+    int func program() {
+      proc other () {
+        var c <- 10; 
+      }
+
+      proc foo() {
+        other(); 
+        var a <- c + 2; 
+      }
+
+      return 0; 
+    }
+    )"""");
+  WPLLexer lexer(&input);
+  // lexer.removeErrorListeners();
+  // lexer.addErrorListener(new TestErrorListener());
+  antlr4::CommonTokenStream tokens(&lexer);
+  WPLParser parser(&tokens);
+  parser.removeErrorListeners();
+  parser.addErrorListener(new TestErrorListener());
+
+  WPLParser::CompilationUnitContext *tree = NULL;
+  REQUIRE_NOTHROW(tree = parser.compilationUnit());
+  REQUIRE(tree != NULL);
+  REQUIRE(tree->getText() != "");
+
+  STManager *stmgr = new STManager();
+  PropertyManager *pm = new PropertyManager();
+
+  SemanticVisitor *sv = new SemanticVisitor(stmgr, pm);
+
+  sv->visitCompilationUnit(tree);
+  REQUIRE(sv->hasErrors(ERROR));
+  // CodegenVisitor *cv = new CodegenVisitor(pm, "test", CompilerFlags::NO_RUNTIME);
+  // cv->visitCompilationUnit(tree);
+  // REQUIRE(cv->hasErrors(0));
+}
+
+TEST_CASE("Nested Local Functions - Disallow Local vars 5", "[semantic][program][local-function]")
+{
+  antlr4::ANTLRInputStream input(
+      R""""(
+    proc other () {
+      var c <- 10; 
+    }
+
+    int func program() {
+
+
+      proc foo() {
+          other(); 
+      }
+
+      return 0; 
+    }
+    )"""");
+  WPLLexer lexer(&input);
+  // lexer.removeErrorListeners();
+  // lexer.addErrorListener(new TestErrorListener());
+  antlr4::CommonTokenStream tokens(&lexer);
+  WPLParser parser(&tokens);
+  parser.removeErrorListeners();
+  parser.addErrorListener(new TestErrorListener());
+
+  WPLParser::CompilationUnitContext *tree = NULL;
+  REQUIRE_NOTHROW(tree = parser.compilationUnit());
+  REQUIRE(tree != NULL);
+  REQUIRE(tree->getText() != "");
+
+  STManager *stmgr = new STManager();
+  PropertyManager *pm = new PropertyManager();
+
+  SemanticVisitor *sv = new SemanticVisitor(stmgr, pm);
+
+  sv->visitCompilationUnit(tree);
+  REQUIRE_FALSE(sv->hasErrors(ERROR));
+  // CodegenVisitor *cv = new CodegenVisitor(pm, "test", CompilerFlags::NO_RUNTIME);
+  // cv->visitCompilationUnit(tree);
+  // REQUIRE(cv->hasErrors(0));
+}
+
+TEST_CASE("Nested Local Functions - Disallow Local vars 6", "[semantic][program][local-function]")
+{
+  antlr4::ANTLRInputStream input(
+      R""""(
+    proc other () {
+      var c <- 10; 
+    }
+    
+    int func program() {
+
+
+      proc foo() {
+        other(); 
+        var a <- c + 2; 
+      }
+
+      return 0; 
+    }
+    )"""");
+  WPLLexer lexer(&input);
+  // lexer.removeErrorListeners();
+  // lexer.addErrorListener(new TestErrorListener());
+  antlr4::CommonTokenStream tokens(&lexer);
+  WPLParser parser(&tokens);
+  parser.removeErrorListeners();
+  parser.addErrorListener(new TestErrorListener());
+
+  WPLParser::CompilationUnitContext *tree = NULL;
+  REQUIRE_NOTHROW(tree = parser.compilationUnit());
+  REQUIRE(tree != NULL);
+  REQUIRE(tree->getText() != "");
+
+  STManager *stmgr = new STManager();
+  PropertyManager *pm = new PropertyManager();
+
+  SemanticVisitor *sv = new SemanticVisitor(stmgr, pm);
+
+  sv->visitCompilationUnit(tree);
+  REQUIRE(sv->hasErrors(ERROR));
+  // CodegenVisitor *cv = new CodegenVisitor(pm, "test", CompilerFlags::NO_RUNTIME);
+  // cv->visitCompilationUnit(tree);
+  // REQUIRE(cv->hasErrors(0));
+}
+
 /*********************************
  * C-Level Example tests
  *********************************/
