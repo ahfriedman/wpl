@@ -868,7 +868,20 @@ const Type *SemanticVisitor::visitCtx(WPLParser::TypeOrVarContext *ctx)
 
 const Type *SemanticVisitor::visitCtx(WPLParser::LambdaTypeContext *ctx) 
 {
-    return Types::UNDEFINED; //FIXME: ENABLE
+    std::vector<const Type *> params;
+
+    for (auto param : ctx->paramTypes)
+    {
+        // const Type *type = this->visitCtx(param);
+        const Type * type = std::any_cast<const Type *>(param->accept(this));
+        params.push_back(type);
+    }
+
+    const Type * returnType = std::any_cast<const Type *>(ctx->returnType->accept(this));
+
+    const Type * lamType = new TypeInvoke(params, returnType);
+
+    return lamType;
 }
 
 const Type *SemanticVisitor::visitCtx(WPLParser::BaseTypeContext *ctx)
