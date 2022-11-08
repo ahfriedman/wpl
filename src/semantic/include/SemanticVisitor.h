@@ -192,7 +192,7 @@ public:
                                         : procType;
 
         // Create a new symbol for the PROC/FUNC
-        Symbol *funcSymbol = new Symbol(funcId, funcType);
+        Symbol *funcSymbol = new Symbol(funcId, funcType, false, false); //FIXME: DO BETTER!
 
         // If the symbol name is program, do some extra checks to make sure it has no arguments and returns an INT. Otherwise, we will get a link error.
         if (funcId == "program")
@@ -234,7 +234,7 @@ public:
         stmgr->enterScope(); // NOTE: We do NOT duplicate scopes here because we use a saveVisitBlock with newScope=false
 
         // In the new scope. set our return type. We use @RETURN as it is not a valid symbol the programmer could write in the language
-        stmgr->addSymbol(new Symbol("@RETURN", retType));
+        stmgr->addSymbol(new Symbol("@RETURN", retType, false, false)); //FIXME: VERIFY
 
         // If we have a parameter list, bind each of the parameters.
         // NOTE: if there were a duplicate name, then the initial visit to the paramList wuld have already
