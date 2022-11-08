@@ -15,6 +15,8 @@
 #include <vector>
 #include <optional>
 
+#include <stack>
+
 class STManager {
   public:
     STManager(){};
@@ -24,7 +26,11 @@ class STManager {
      * 
      * @return Scope& the scope we entered
      */
-    Scope& enterScope();
+    Scope& enterScope() {
+      return enterScope(false);
+    };
+
+    Scope& enterScope(bool insertStop);
     
     /**
      * @brief Exit the current scope and move up one level
@@ -94,8 +100,14 @@ class STManager {
       return currentScope.value()->getId() == 0; 
     }
 
+    int getCurrentStop() {
+      return stops.size() == 0 ? 0 : stops.top(); 
+    }
+
   private:
     std::vector<Scope*> scopes;
     std::optional<Scope*> currentScope = {}; 
     int scopeNumber = 0;
+
+    std::stack<int> stops; 
 };

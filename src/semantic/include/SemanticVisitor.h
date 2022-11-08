@@ -192,7 +192,7 @@ public:
                                         : procType;
 
         // Create a new symbol for the PROC/FUNC
-        Symbol *funcSymbol = new Symbol(funcId, funcType, false, false); //FIXME: DO BETTER!
+        Symbol *funcSymbol = new Symbol(funcId, funcType, true, false); //FIXME: DO BETTER!
 
         // If the symbol name is program, do some extra checks to make sure it has no arguments and returns an INT. Otherwise, we will get a link error.
         if (funcId == "program")
@@ -231,7 +231,7 @@ public:
     cont:
         // Add the symbol to the stmgr and enter the scope.
         stmgr->addSymbol(funcSymbol);
-        stmgr->enterScope(); // NOTE: We do NOT duplicate scopes here because we use a saveVisitBlock with newScope=false
+        stmgr->enterScope(true); // NOTE: We do NOT duplicate scopes here because we use a saveVisitBlock with newScope=false
 
         // In the new scope. set our return type. We use @RETURN as it is not a valid symbol the programmer could write in the language
         stmgr->addSymbol(new Symbol("@RETURN", retType, false, false)); //FIXME: VERIFY
