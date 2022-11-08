@@ -9,11 +9,11 @@
  * @return true If the symbol was added
  * @return false If the symbol was already defined
  */
-bool Scope::addSymbol(std::string id, Type* t)
-{
-  Symbol *symbol = new Symbol(id, t);
-  return addSymbol(symbol);
-}
+// bool Scope::addSymbol(std::string id, Type* t)
+// {
+//   Symbol *symbol = new Symbol(id, t);
+//   return addSymbol(symbol);
+// }
 
 bool Scope::addSymbol(Symbol *symbol)
 {

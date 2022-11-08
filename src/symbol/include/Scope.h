@@ -50,7 +50,7 @@ public:
      * @return true If successful
      * @return false If this could not be done (ie, due to a redeclaration)
      */
-    bool addSymbol(std::string id, Type *t);
+    // bool addSymbol(std::string id, Type *t);
 
     /**
      * @brief Looks up a symbol in the current scope

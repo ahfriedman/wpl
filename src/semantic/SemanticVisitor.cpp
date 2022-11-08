@@ -641,7 +641,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::ExternStatementContext *ctx)
     const TypeInvoke *funcType = (ctx->ty) ? new TypeInvoke(procType->getParamTypes(), retType, variadic, false)
                                            : new TypeInvoke(procType->getParamTypes(), variadic, false);
 
-    Symbol *funcSymbol = new Symbol(id, funcType);
+    Symbol *funcSymbol = new Symbol(id, funcType, true, true); // FIXME: WAS N/A, FALSE before
 
     stmgr->addSymbol(funcSymbol);
     bindings->bind(ctx, funcSymbol);
@@ -728,7 +728,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::VarDeclStatementContext *ctx)
                 const Type *newAssignType = this->visitCtx(ctx->typeOrVar());
                 const Type *newExprType = (e->ex) ? std::any_cast<const Type *>(e->ex->accept(this)) : newAssignType;
 
-                Symbol *symbol = new Symbol(id, newExprType, stmgr->isGlobalScope()); // Done with exprType for later inferencing purposes
+                Symbol *symbol = new Symbol(id, newExprType, false, stmgr->isGlobalScope()); // Done with exprType for later inferencing purposes
                 stmgr->addSymbol(symbol);
                 bindings->bind(var, symbol);
             }

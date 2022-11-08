@@ -625,12 +625,19 @@ struct Symbol
 
     bool isGlobal;
 
+    /**
+     * @brief Tracks if symbol cna be modified at all or if it is a definition
+     * 
+     */
+    bool isDefinition; 
+
     // Constructs a symbol from an ID and symbol type.
-    Symbol(std::string id, const Type *t, bool glob = false)
+    Symbol(std::string id, const Type *t, bool definition, bool glob)
     {
         identifier = id;
         type = t;
         isGlobal = glob;
+        isDefinition = definition; 
 
         val = {};
     }

@@ -188,7 +188,7 @@ public:
                                  : Types::UNDEFINED;
 
         // Create a new func with the return type (or reuse the procType) NOTE: We do NOT need to worry about discarding the variadic here as variadic FUNC/PROC is not supported
-        const TypeInvoke *funcType = ty ? new TypeInvoke(procType->getParamTypes(), retType)
+        const TypeInvoke *funcType = ty ? new TypeInvoke(procType->getParamTypes(), retType) //FIXME: VERIFY THESE ARE DEFS IF THEY SHOULD BE
                                         : procType;
 
         // Create a new symbol for the PROC/FUNC
@@ -248,7 +248,7 @@ public:
 
                 auto param = paramList->params.at(i);
 
-                Symbol *paramSymbol = new Symbol(param->name->getText(), paramType);
+                Symbol *paramSymbol = new Symbol(param->name->getText(), paramType, false, false);
 
                 stmgr->addSymbol(paramSymbol);
 
