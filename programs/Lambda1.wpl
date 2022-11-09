@@ -1,6 +1,6 @@
 extern int func printf(...);
 
-
+# FIXME: TEST AS THE ACTUAL LAMBDA AND TEST RETURN
 int func foo(int x) {
     printf("FOO: %u\n", x);
     return x; 
@@ -8,7 +8,7 @@ int func foo(int x) {
 
 
 int func program() {
-    int -> int ref <- foo; 
+    var ref <- foo; 
 
     ref(10); 
     foo(11); 
