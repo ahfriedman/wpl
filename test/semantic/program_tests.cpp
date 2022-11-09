@@ -1989,6 +1989,44 @@ TEST_CASE("Function return nothing", "[semantic][program]")
 }
 
 
+TEST_CASE("Various Undefined Types", "[semantic][program]")
+{
+  antlr4::ANTLRInputStream input(
+      R""""(
+int func program() {
+    int b <- a[0];
+
+    d <- 10; 
+    int b <- 10; 
+
+    return 0; 
+}
+    )"""");
+  WPLLexer lexer(&input);
+  // lexer.removeErrorListeners();
+  // lexer.addErrorListener(new TestErrorListener());
+  antlr4::CommonTokenStream tokens(&lexer);
+  WPLParser parser(&tokens);
+  parser.removeErrorListeners();
+  parser.addErrorListener(new TestErrorListener());
+
+  WPLParser::CompilationUnitContext *tree = NULL;
+  REQUIRE_NOTHROW(tree = parser.compilationUnit());
+  REQUIRE(tree != NULL);
+  REQUIRE(tree->getText() != "");
+
+  STManager *stmgr = new STManager();
+  PropertyManager *pm = new PropertyManager();
+
+  SemanticVisitor *sv = new SemanticVisitor(stmgr, pm);
+
+  sv->visitCompilationUnit(tree);
+  REQUIRE(sv->hasErrors(ERROR));
+  // CodegenVisitor *cv = new CodegenVisitor(pm, "test", CompilerFlags::NO_RUNTIME);
+  // cv->visitCompilationUnit(tree);
+  // REQUIRE(cv->hasErrors(0));
+}
+
 TEST_CASE("Function return wrong type", "[semantic][program]")
 {
   antlr4::ANTLRInputStream input(
