@@ -86,8 +86,9 @@ std::optional<Value *> CodegenVisitor::TvisitInvocation(WPLParser::InvocationCon
         std::cout << "85" << std::endl;
         llvm::Type * ty = sym->type->getLLVMType(module->getContext());
 
-        if (llvm::FunctionType *fnType = static_cast<llvm::FunctionType *>(ty))
+        if (dynamic_cast<const TypeInvoke*>(sym->type))
         {
+            llvm::FunctionType *fnType = static_cast<llvm::FunctionType *>(ty);
             // if(llvm:)
             llvm::Value *fnPtr = fnPtrOpt.value();
             

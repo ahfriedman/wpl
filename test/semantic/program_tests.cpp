@@ -897,12 +897,47 @@ TEST_CASE("Incorrect Argument Pass", "[semantic][program]")
   // REQUIRE(cv->hasErrors(0));
 }
 
-TEST_CASE("Invoke on Non-Invokable", "[semantic][program]")
+TEST_CASE("Invoke on Non-Invokable (str)", "[semantic][program]")
 {
   antlr4::ANTLRInputStream input(
       R""""(
     int func program() {
       var x <- "hey there!"; 
+      x();
+    }
+    )"""");
+  WPLLexer lexer(&input);
+  // lexer.removeErrorListeners();
+  // lexer.addErrorListener(new TestErrorListener());
+  antlr4::CommonTokenStream tokens(&lexer);
+  WPLParser parser(&tokens);
+  parser.removeErrorListeners();
+  parser.addErrorListener(new TestErrorListener());
+
+  WPLParser::CompilationUnitContext *tree = NULL;
+  REQUIRE_NOTHROW(tree = parser.compilationUnit());
+  REQUIRE(tree != NULL);
+  REQUIRE(tree->getText() != "");
+
+  STManager *stmgr = new STManager();
+  PropertyManager *pm = new PropertyManager();
+  SemanticVisitor *sv = new SemanticVisitor(stmgr, pm);
+
+  sv->visitCompilationUnit(tree);
+  REQUIRE(sv->hasErrors(ERROR));
+  CodegenVisitor *cv = new CodegenVisitor(pm, "test", CompilerFlags::NO_RUNTIME);
+  cv->visitCompilationUnit(tree);
+  REQUIRE(cv->hasErrors(0));
+}
+
+//FIXME: TYPE INFERENCE ON FUNCTIONS? AND TEST FUNCTION SUBTYPER!
+
+TEST_CASE("Invoke on Non-Invokable (int)", "[semantic][program]")
+{
+  antlr4::ANTLRInputStream input(
+      R""""(
+    int func program() {
+      var x <- 10; 
       x();
     }
     )"""");
