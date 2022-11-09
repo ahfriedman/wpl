@@ -904,6 +904,7 @@ TEST_CASE("Invoke on Non-Invokable", "[semantic][program]")
     int func program() {
       var x <- "hey there!"; 
       x();
+      return 0; 
     }
     )"""");
   WPLLexer lexer(&input);
