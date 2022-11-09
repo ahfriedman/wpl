@@ -466,6 +466,21 @@ std::optional<Value *> CodegenVisitor::TvisitVariableExpr(WPLParser::VariableExp
             Value *val = builder->CreateLoad(glob);
             return val;
         }
+        else if(llvm::FunctionType * fnType = static_cast<llvm::FunctionType*>(type)) 
+        {
+            // std::cout << "FUNCTION: " << id << std::endl; 
+            //FIXME: METHODIZE!!!
+            Function * fn = module->getFunction(id); 
+
+            //FIXME: COPY IN STUB GEN!
+            std::cout << "766" << std::endl; 
+            // Value *val = builder->CreateLoad(fn);
+
+            // std::cout << "479" << std::endl; 
+            // return val;
+            return fn; 
+
+        }
 
         errorHandler.addCodegenError(ctx->getStart(), "Unable to find allocation for variable: " + ctx->getText());
         return {};
@@ -737,14 +752,14 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
 
             // Get the type of the symbol
             llvm::Type *ty = varSymbol->type->getLLVMType(module->getContext());
-
+            std::cout << "TYPE: " << ty << std::endl; 
             // Branch depending on if the var is global or not
-            if (varSymbol->isGlobal)
+            if (!varSymbol->isGlobal)
             {
                 // If it is global, then we need to insert a new gobal variable of this type.
                 // A lot of these options are done to make it match what a C program would
                 // generate for global vars
-                module->getOrInsertGlobal(var->getText(), ty);
+                module->getOrInsertGlobal(var->getText(), ty->getPointerTo());
                 llvm::GlobalVariable *glob = module->getNamedGlobal(var->getText());
                 glob->setLinkage(GlobalValue::ExternalLinkage);
                 glob->setDSOLocal(true);
@@ -783,7 +798,7 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
             }
         }
     }
-
+    std::cout << "797 " << ctx->getText() << std::endl; 
     return {};
 }
 
