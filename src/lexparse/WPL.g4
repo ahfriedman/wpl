@@ -9,7 +9,7 @@ compilationUnit   :  (stmts+=statement | extens+=externStatement)* EOF ;
 
 externStatement : EXTERN (ty=type FUNC | PROC) name=VARIABLE '(' ((paramList=parameterList variadic=VariadicParam?)? | ELLIPSIS) ')' ';';
 
-invocation          :  VARIABLE '(' (args+=expression (',' args+=expression)* )? ')' ;
+invocation          :  var=VARIABLE '(' (args+=expression (',' args+=expression)* )? ')' ;
 
 //Helps allow us to use VARIABLE or arrayAccess and not other expressions (such as for assignments)
 arrayAccess         : var=VARIABLE '[' index=expression ']'; 

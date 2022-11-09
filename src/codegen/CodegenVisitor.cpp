@@ -6,7 +6,7 @@ std::optional<Value *> CodegenVisitor::TvisitCompilationUnit(WPLParser::Compilat
     {
         e->accept(this);
     }
-    
+
     for (auto e : ctx->stmts)
     {
         // Generate code for statement
@@ -64,7 +64,46 @@ std::optional<Value *> CodegenVisitor::TvisitInvocation(WPLParser::InvocationCon
 
     if (!call)
     {
-        errorHandler.addCodegenError(ctx->getStart(), "Could not locate function for invocation: " + ctx->VARIABLE()->getText() + ". Has it been defined in IR yet?");
+        std::optional<Symbol *> symOpt = props->getBinding(ctx);
+        if (!symOpt)
+        {
+            errorHandler.addCodegenError(ctx->getStart(), "Could not locate function for invocation: " + ctx->VARIABLE()->getText() + ". Has it been defined in IR yet?");
+            return {};
+        }
+
+        Symbol *sym = symOpt.value();
+
+        std::optional<llvm::Value *> fnPtrOpt = sym->val;
+
+        // FIXME: WILL NOT WORK FOR GLOBAL
+        if (!fnPtrOpt)
+        {
+            errorHandler.addCodegenError(ctx->getStart(), "Could not find value for function");
+            return {};
+        }
+        //FIXME: TEST GLOBAL LAMBDAS!!!
+
+        std::cout << "85" << std::endl;
+        llvm::Type * ty = sym->type->getLLVMType(module->getContext());
+
+        if (llvm::FunctionType *fnType = static_cast<llvm::FunctionType *>(ty))
+        {
+            // if(llvm:)
+            llvm::Value *fnPtr = fnPtrOpt.value();
+            
+            llvm::Value *fn = builder->CreateLoad(fnPtr);
+
+            Value * val = builder->CreateCall(fnType, fn, ref);
+            // llvm::FunctionCallee *callee = new llvm::FunctionCallee(fnType, fnPtr);
+            std::cout << "85a" << std::endl;
+            // Value *val = builder->CreateCall(callee, ref); // Needs to be separate line because, C++
+            return val; 
+            // std::cout << "87" << std::endl;
+            // return val;
+        }
+
+        errorHandler.addCodegenError(ctx->getStart(), "Invoke got non-function type: " + ctx->VARIABLE()->getText() + " : " + sym->type->toString());
+        // errorHandler.addCodegenError(ctx->getStart(), "Could not locate function for invocation: " + ctx->VARIABLE()->getText() + ". Has it been defined in IR yet?");
         return {};
     }
 
@@ -253,7 +292,7 @@ std::optional<Value *> CodegenVisitor::TvisitBinaryArithExpr(WPLParser::BinaryAr
     if (!lhs || !rhs)
     {
         errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code for: " + ctx->getText());
-        return {}; 
+        return {};
     }
 
     switch (ctx->op->getType())
@@ -443,7 +482,7 @@ std::optional<Value *> CodegenVisitor::TvisitVariableExpr(WPLParser::VariableExp
     if (!type)
     {
         errorHandler.addCodegenError(ctx->getStart(), "Unable to find type for variable: " + ctx->getText());
-        return {}; //FIXME: IS THIS USED? SOMETIMES MAYBE?
+        return {}; // FIXME: IS THIS USED? SOMETIMES MAYBE?
     }
 
     // Make sure the variable has an allocation (or that we can find it due to it being a global var)
@@ -466,20 +505,19 @@ std::optional<Value *> CodegenVisitor::TvisitVariableExpr(WPLParser::VariableExp
             Value *val = builder->CreateLoad(glob);
             return val;
         }
-        else if(llvm::FunctionType * fnType = static_cast<llvm::FunctionType*>(type)) 
+        else if (llvm::FunctionType *fnType = static_cast<llvm::FunctionType *>(type))
         {
-            // std::cout << "FUNCTION: " << id << std::endl; 
-            //FIXME: METHODIZE!!!
-            Function * fn = module->getFunction(id); 
+            // std::cout << "FUNCTION: " << id << std::endl;
+            // FIXME: METHODIZE!!!
+            Function *fn = module->getFunction(id);
 
-            //FIXME: COPY IN STUB GEN!
-            std::cout << "766" << std::endl; 
+            // FIXME: COPY IN STUB GEN!
+            std::cout << "766" << std::endl;
             // Value *val = builder->CreateLoad(fn);
 
-            // std::cout << "479" << std::endl; 
+            // std::cout << "479" << std::endl;
             // return val;
-            return fn; 
-
+            return fn;
         }
 
         errorHandler.addCodegenError(ctx->getStart(), "Unable to find allocation for variable: " + ctx->getText());
@@ -750,16 +788,23 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
 
             Symbol *varSymbol = varSymbolOpt.value();
 
+            //FIXME: test for varSymbol->type? 
             // Get the type of the symbol
             llvm::Type *ty = varSymbol->type->getLLVMType(module->getContext());
-            std::cout << "TYPE: " << ty << std::endl; 
+            
+            if(dynamic_cast<const TypeInvoke*>(varSymbol->type))
+            {
+                ty = ty->getPointerTo(); 
+            }
+
+            std::cout << "TYPE: " << ty << std::endl;
             // Branch depending on if the var is global or not
-            if (!varSymbol->isGlobal)
+            if (varSymbol->isGlobal)
             {
                 // If it is global, then we need to insert a new gobal variable of this type.
                 // A lot of these options are done to make it match what a C program would
                 // generate for global vars
-                module->getOrInsertGlobal(var->getText(), ty->getPointerTo());
+                module->getOrInsertGlobal(var->getText(), ty);
                 llvm::GlobalVariable *glob = module->getNamedGlobal(var->getText());
                 glob->setLinkage(GlobalValue::ExternalLinkage);
                 glob->setDSOLocal(true);
@@ -798,7 +843,7 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
             }
         }
     }
-    std::cout << "797 " << ctx->getText() << std::endl; 
+    std::cout << "797 " << ctx->getText() << std::endl;
     return {};
 }
 
