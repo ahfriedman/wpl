@@ -89,18 +89,15 @@ std::optional<Value *> CodegenVisitor::TvisitInvocation(WPLParser::InvocationCon
         if (dynamic_cast<const TypeInvoke*>(sym->type))
         {
             llvm::FunctionType *fnType = static_cast<llvm::FunctionType *>(ty);
-            // if(llvm:)
             llvm::Value *fnPtr = fnPtrOpt.value();
             
             llvm::Value *fn = builder->CreateLoad(fnPtr);
 
             Value * val = builder->CreateCall(fnType, fn, ref);
             // llvm::FunctionCallee *callee = new llvm::FunctionCallee(fnType, fnPtr);
-            std::cout << "85a" << std::endl;
+            // std::cout << "85a" << std::endl;
             // Value *val = builder->CreateCall(callee, ref); // Needs to be separate line because, C++
             return val; 
-            // std::cout << "87" << std::endl;
-            // return val;
         }
 
         errorHandler.addCodegenError(ctx->getStart(), "Invoke got non-function type: " + ctx->VARIABLE()->getText() + " : " + sym->type->toString());
