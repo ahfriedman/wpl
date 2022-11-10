@@ -83,7 +83,6 @@ std::optional<Value *> CodegenVisitor::TvisitInvocation(WPLParser::InvocationCon
         }
         // FIXME: TEST GLOBAL LAMBDAS!!!
 
-        std::cout << "85" << std::endl;
         llvm::Type *ty = sym->type->getLLVMType(module->getContext());
 
         if (dynamic_cast<const TypeInvoke *>(sym->type))
@@ -95,7 +94,7 @@ std::optional<Value *> CodegenVisitor::TvisitInvocation(WPLParser::InvocationCon
 
             Value *val = builder->CreateCall(fnType, fn, ref);
             // llvm::FunctionCallee *callee = new llvm::FunctionCallee(fnType, fnPtr);
-            // std::cout << "85a" << std::endl;
+
             // Value *val = builder->CreateCall(callee, ref); // Needs to be separate line because, C++
             return val;
         }
@@ -505,15 +504,11 @@ std::optional<Value *> CodegenVisitor::TvisitVariableExpr(WPLParser::VariableExp
         }
         else if (llvm::FunctionType *fnType = static_cast<llvm::FunctionType *>(type))
         {
-            // std::cout << "FUNCTION: " << id << std::endl;
             // FIXME: METHODIZE!!!
             Function *fn = module->getFunction(id);
 
             // FIXME: COPY IN STUB GEN!
-            std::cout << "766" << std::endl;
             // Value *val = builder->CreateLoad(fn);
-
-            // std::cout << "479" << std::endl;
             // return val;
             return fn;
         }
@@ -795,7 +790,6 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
                 ty = ty->getPointerTo();
             }
 
-            std::cout << "TYPE: " << ty << std::endl;
             // Branch depending on if the var is global or not
             if (varSymbol->isGlobal)
             {
@@ -841,7 +835,6 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
             }
         }
     }
-    std::cout << "797 " << ctx->getText() << std::endl;
     return {};
 }
 
@@ -1126,7 +1119,6 @@ std::optional<Value *> CodegenVisitor::TvisitLambdaConstExpr(WPLParser::LambdaCo
     // FIXME: SEE ALL ISSUES W GENERAL INVOKE VISIT
     // FIXME: SET OTHER LAMBDAS TO BE INTERNAL LINKAGE!!!
     // FIXME: TEST MULTIPLE LAMBDAS W/ SAME NAME!!
-    std::cout << "1129" << std::endl;
     // Get the current insertion point
     BasicBlock *ins = builder->GetInsertBlock();
 
@@ -1147,7 +1139,6 @@ std::optional<Value *> CodegenVisitor::TvisitLambdaConstExpr(WPLParser::LambdaCo
         return {};
     }
 
-std::cout << "1150" << std::endl;
     const Type *type = sym->type;
 
     llvm::Type *genericType = type->getLLVMType(module->getContext());
@@ -1155,33 +1146,30 @@ std::cout << "1150" << std::endl;
     if (llvm::FunctionType *fnType = static_cast<llvm::FunctionType *>(genericType))
     {
         Function *fn = Function::Create(fnType, GlobalValue::PrivateLinkage, "LAM", module); // FIXME: VERIFY
-        std::cout << "1158" << std::endl;
         WPLParser::ParameterListContext *paramList = ctx->parameterList();
+        
         // Create basic block
-        std::cout << "1161" << std::endl;
         BasicBlock *bBlk = BasicBlock::Create(module->getContext(), "entry", fn);
-        std::cout << "1163" << std::endl;
         builder->SetInsertPoint(bBlk);
-        std::cout << "1165" << std::endl;
+        
         // Bind all of the arguments
         for (auto &arg : fn->args())
         {
-            std::cout << "1169" << std::endl;
             // Get the argumengt number (just seems easier than making my own counter)
             int argNumber = arg.getArgNo();
 
             // Get the argument's type
             llvm::Type *type = fnType->params()[argNumber];
-std::cout << "1175" << std::endl;
+
             // Get the argument name (This even works for arrays!)
             std::string argName = paramList->params.at(argNumber)->getText();
-std::cout << "1178" << std::endl;
+
             // Create an allocation for the argumentr
             llvm::AllocaInst *v = builder->CreateAlloca(type, 0, argName);
-std::cout << "1181" << std::endl;
+
             // Try to find the parameter's bnding to determine what value to bind to it.
             std::optional<Symbol *> symOpt = props->getBinding(paramList->params.at(argNumber));
-std::cout << "1184" << std::endl;
+
             if (!symOpt)
             {
                 errorHandler.addCodegenError(ctx->getStart(), "Unable to generate parameter for lambda: " + argName);
@@ -1189,26 +1177,21 @@ std::cout << "1184" << std::endl;
             else
             {
                 symOpt.value()->val = v;
-                std::cout << "1192" << std::endl;
+                
                 builder->CreateStore(&arg, v);
             }
-            std::cout << "1195" << std::endl;
         }
-        std::cout << "1197" << std::endl;
+
         // Generate code for the block
         for (auto e : ctx->block()->stmts)
         {
             e->accept(this);
         }
 
-        std::cout << "1204" << std::endl;
-
         // FIXME: NOTE HOW WE DONT NEED TO CREATE RET VOID EVER BC NO FN!
 
         // Return to original insert point
         builder->SetInsertPoint(ins);
-
-        std::cout << "1211" << std::endl;
 
         return fn;
     }
