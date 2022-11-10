@@ -5,7 +5,10 @@
 grammar WPL;
 
 // Parser rules
-compilationUnit   :  (stmts+=statement | extens+=externStatement)* EOF ; 
+compilationUnit   :  (stmts+=statement | extens+=externStatement | defs+=defineType)* EOF ; 
+
+defineType        : 'define' 'enum' name=VARIABLE '{' cases+=type (',' cases+=type)+ '}' # DefineEnum
+                  ; 
 
 externStatement : EXTERN (ty=type FUNC | PROC) name=VARIABLE '(' ((paramList=parameterList variadic=VariadicParam?)? | ELLIPSIS) ')' ';';
 
@@ -158,6 +161,8 @@ typeOrVar       : type | 'var'  ;
 //Allows us to have a type of ints, bools, or strings with the option for them to become 1d arrays. 
 type            :    ty=(TYPE_INT | TYPE_BOOL | TYPE_STR) (LBRC len=INTEGER RBRC)?  # BaseType
                 |    paramTypes+=type (',' paramTypes+=type)* '->' returnType=type  # LambdaType
+                |    '(' type ('+' type)+ ')'                                       # SumType 
+                |    VARIABLE                                                       # CustomType
                 ;
 
 TYPE_INT        :   'int' ; 
