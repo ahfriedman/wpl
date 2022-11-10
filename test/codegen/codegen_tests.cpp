@@ -1125,6 +1125,34 @@ TEST_CASE("programs/Lambda2 - Basic lambda Test w/ return", "[codegen][lambda]")
     REQUIRE(llvmIrToSHA256(cv->getModule()) == "5a0a559931acaef13bd08bcea1dfc4f76824129f176ad43cc4ae39f79cd61951");
 }
 
+TEST_CASE("programs/Lambda3 - Basic lambda Test w/ return and same name", "[codegen][lambda]")
+{
+    std::fstream *inStream = new std::fstream("/home/shared/programs/Lambda3.wpl");
+    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+
+    WPLLexer lexer(input);
+    antlr4::CommonTokenStream tokens(&lexer);
+    WPLParser parser(&tokens);
+    parser.removeErrorListeners();
+    WPLParser::CompilationUnitContext *tree = NULL;
+    REQUIRE_NOTHROW(tree = parser.compilationUnit());
+    REQUIRE(tree != NULL);
+    STManager *stm = new STManager();
+    PropertyManager *pm = new PropertyManager();
+    SemanticVisitor *sv = new SemanticVisitor(stm, pm, 0);
+    sv->visitCompilationUnit(tree);
+
+
+    REQUIRE_FALSE(sv->hasErrors(0));
+
+    CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll", 0);
+    cv->visitCompilationUnit(tree);
+
+    REQUIRE_FALSE(cv->hasErrors(0));
+
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "526b0bc9f9b76dad00ad13676e16a11273b40e928342c848bdb9b7e8dfd75ab9");
+}
+
 
 /************************************
  * Example C-Level Tests

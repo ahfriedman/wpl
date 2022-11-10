@@ -1,5 +1,8 @@
 extern int func printf(...);
 
+
+# FIXME: WHAT ABOUT PROCS? COULD GET THEM USING INF, BUT NOT BY SPECIFYING TYPE!
+
 int func foo(int x) {
     printf("FOO: %u\n", x);
     return x; 

@@ -51,6 +51,7 @@ expression          : '(' ex=expression ')'                         # ParenExpr
                     | v=VARIABLE   # VariableExpr
                     | i=INTEGER    # IConstExpr
                     | s=STRING     # SConstExpr 
+                    | '(' parameterList ')' ':' ret=type block  # LambdaConstExpr
                     ;
 
 /* 
@@ -142,6 +143,7 @@ RPAR      :     ')'     ;
 LBRC      :     '['     ;
 RBRC      :     ']'     ;
 SEMICOLON :     ';'     ;
+COLON     :     ':'     ;
 QUOTE     :     '"'     ;
 COMMA     :     ','     ;
 ELLIPSIS  :     '...'   ;

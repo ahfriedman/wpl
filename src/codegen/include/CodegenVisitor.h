@@ -126,6 +126,10 @@ public:
     std::optional<Value *> TvisitTypeOrVar(WPLParser::TypeOrVarContext *ctx);
     std::optional<Value *> TvisitType(WPLParser::TypeContext *ctx);
     std::optional<Value *> TvisitBooleanConst(WPLParser::BooleanConstContext *ctx);
+    
+    std::optional<Value *> TvisitLambdaConstExpr(WPLParser::LambdaConstExprContext *ctx);
+
+
 
     /******************************************************************
      * Standard visitor methods all defined to use the typed versions
@@ -172,6 +176,8 @@ public:
     std::any visitBooleanConst(WPLParser::BooleanConstContext *ctx) override { return TvisitBooleanConst(ctx); };
 
     //FIXME: Add Base and LamdaTypes?
+
+    std::any visitLambdaConstExpr(WPLParser::LambdaConstExprContext *ctx) override { return TvisitLambdaConstExpr(ctx); }
 
     bool hasErrors(int flags) { return errorHandler.hasErrors(flags); }
     std::string getErrors() { return errorHandler.errorList(); }

@@ -77,6 +77,8 @@ public:
     const Type *visitCtx(WPLParser::LambdaTypeContext *ctx);
     const Type *visitCtx(WPLParser::BaseTypeContext *ctx);
 
+    const Type* visitCtx(WPLParser::LambdaConstExprContext *ctx);
+
     /*
      * Traditional visitor methods all overridden with our typed versions
      */
@@ -121,6 +123,8 @@ public:
 
     std::any visitLambdaType(WPLParser::LambdaTypeContext *ctx) override { return visitCtx(ctx); }
     std::any visitBaseType(WPLParser::BaseTypeContext *ctx) override { return visitCtx(ctx); }
+
+    std::any visitLambdaConstExpr(WPLParser::LambdaConstExprContext *ctx) override { return visitCtx(ctx); }
 
     /**
      * @brief Used to safely enter a block. This is used to ensure there aren't FUNC/PROC definitions / code following returns in it.

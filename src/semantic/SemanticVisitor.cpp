@@ -635,7 +635,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::ExternStatementContext *ctx)
 
     const TypeInvoke *procType = dynamic_cast<const TypeInvoke *>(ty); // Always true, but needs separate statement to make C happy.
 
-    const Type *retType = ctx->ty ? std::any_cast<const Type *>(ctx->ty->accept(this))//this->visitCtx(ctx->ty)
+    const Type *retType = ctx->ty ? std::any_cast<const Type *>(ctx->ty->accept(this)) // this->visitCtx(ctx->ty)
                                   : Types::UNDEFINED;
 
     const TypeInvoke *funcType = (ctx->ty) ? new TypeInvoke(procType->getParamTypes(), retType, variadic, false)
@@ -861,25 +861,64 @@ const Type *SemanticVisitor::visitCtx(WPLParser::TypeOrVarContext *ctx)
     // If we do have a type, then visit that context.
     // std::any temp = this->visit(ctx->type());
 
-    const Type * type = std::any_cast<const Type *>(ctx->type()->accept(this));
-    return type; 
+    const Type *type = std::any_cast<const Type *>(ctx->type()->accept(this));
+    return type;
 }
 
+const Type *SemanticVisitor::visitCtx(WPLParser::LambdaConstExprContext *ctx)
+{
+    // FIXME: VERIFY THIS IS ALWAYS SAFE!!!
+    const TypeInvoke *paramType = dynamic_cast<const TypeInvoke *>(visitCtx(ctx->parameterList()));
+    const Type *retType = std::any_cast<const Type *>(ctx->ret->accept(this));
 
-const Type *SemanticVisitor::visitCtx(WPLParser::LambdaTypeContext *ctx) 
+    const TypeInvoke *funcType = new TypeInvoke(paramType->getParamTypes(), retType);
+
+    stmgr->enterScope(true);
+    stmgr->addSymbol(new Symbol("@RETURN", retType, false, false)); // FIXME: VERIFY
+
+    for (unsigned int i = 0; i < ctx->parameterList()->params.size(); i++)
+    {
+        const Type *ty = funcType->getParamTypes().at(i);
+        auto param = ctx->parameterList()->params.at(i);
+
+        Symbol *paramSymbol = new Symbol(param->name->getText(), ty, false, false);
+
+        stmgr->addSymbol(paramSymbol);
+
+        bindings->bind(param, paramSymbol);
+    }
+
+    this->safeVisitBlock(ctx->block(), false);
+
+    // If we have a return type, make sure that we return as the last statement in the FUNC. The type of the return is managed when we visited it.
+    if (ctx->block()->stmts.size() == 0 || !dynamic_cast<WPLParser::ReturnStatementContext *>(ctx->block()->stmts.at(ctx->block()->stmts.size() - 1)))
+    {
+        errorHandler.addSemanticError(ctx->getStart(), "Lambda must end in return statement");
+    }
+    safeExitScope(ctx);
+
+
+    Symbol *funcSymbol = new Symbol("@LAMBDA", funcType, false, false); //FIXME: DO BETTER!
+    bindings->bind(ctx, funcSymbol); //FIXME: NEED TO FIGURE OUT SOME BINDING?
+
+    return funcType;
+
+}
+
+const Type *SemanticVisitor::visitCtx(WPLParser::LambdaTypeContext *ctx)
 {
     std::vector<const Type *> params;
 
     for (auto param : ctx->paramTypes)
     {
         // const Type *type = this->visitCtx(param);
-        const Type * type = std::any_cast<const Type *>(param->accept(this));
+        const Type *type = std::any_cast<const Type *>(param->accept(this));
         params.push_back(type);
     }
 
-    const Type * returnType = std::any_cast<const Type *>(ctx->returnType->accept(this));
+    const Type *returnType = std::any_cast<const Type *>(ctx->returnType->accept(this));
 
-    const Type * lamType = new TypeInvoke(params, returnType);
+    const Type *lamType = new TypeInvoke(params, returnType);
 
     return lamType;
 }
