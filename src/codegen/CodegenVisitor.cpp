@@ -846,16 +846,16 @@ std::cout << "794" << std::endl;
                     if (const TypeSum *sum = dynamic_cast<const TypeSum *>(varSymbol->type))
                     {
                         // FIXME: SUMS CANT BE GENERATED AT GLOBAL LEVEL?
-                        auto tagPtr = builder->CreateGEP(v, {Int32Zero, Int32Zero});
-                        Value *tagVal = builder->CreateLoad(tagPtr->getType()->getPointerElementType(), tagPtr);
-                        builder->CreateStore(Int32Zero, tagVal);
+                        Value* tagPtr = builder->CreateGEP(v, {Int32Zero, Int32Zero});
+                        // Value *tagVal = builder->CreateLoad(tagPtr->getType()->getPointerElementType(), tagPtr);
+                        builder->CreateStore(Int32Zero, tagPtr);
                         std::cout << "843" << std::endl; 
                         //FIXME: MAY HAVE TO DEAL W CASTS
-                        auto valuePtr = builder->CreateGEP(v, {Int32Zero, Int32One});
+                        Value* valuePtr = builder->CreateGEP(v, {Int32Zero, Int32One});
                         std::cout << "841" << std::endl; 
-                        Value * valVal = builder->CreateLoad(valuePtr->getType()->getPointerElementType(), valuePtr);
+                        // Value * valVal = builder->CreateLoad(valuePtr->getType()->getPointerElementType(), valuePtr);
 
-                        Value* corrected = builder->CreateBitCast(valVal, Int1Ty); //FIXME: DO BETTER
+                        Value* corrected = builder->CreateBitCast(valuePtr, Int1Ty->getPointerTo()); //FIXME: DO BETTER
                         std::cout << "888" << std::endl; 
                         builder->CreateStore(exVal.value(), corrected);
 
