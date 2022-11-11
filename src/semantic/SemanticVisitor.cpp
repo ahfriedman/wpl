@@ -5,6 +5,12 @@ const Type *SemanticVisitor::visitCtx(WPLParser::CompilationUnitContext *ctx)
     // Enter initial scope
     stmgr->enterScope();
 
+    for(auto e : ctx->defs)
+    {
+        // this->visitCtx(e); 
+        e->accept(this); //FIXME: DO BETTER TO ENSURE WE CATCH ONES THAT WE DONT HAVE CODE FOR
+    }
+
     // Visit externs first; they will report any errors if they have any.
     for (auto e : ctx->extens)
     {
@@ -921,6 +927,41 @@ const Type *SemanticVisitor::visitCtx(WPLParser::LambdaTypeContext *ctx)
     const Type *lamType = new TypeInvoke(params, returnType);
 
     return lamType;
+}
+
+const Type* SemanticVisitor::visitCtx(WPLParser::DefineEnumContext * ctx) {
+
+    return Types::UNDEFINED; //FIXME
+}
+
+const Type* SemanticVisitor::visitCtx(WPLParser::CustomTypeContext * ctx) 
+{
+    
+    //FIXME: This is really bad and really broken b/c now any symbol can become var? 
+
+    std::string name = ctx->VARIABLE()->getText();
+
+    std::optional<Symbol *> opt = stmgr->lookup(name);
+    if(!opt) {
+        errorHandler.addSemanticError(ctx->getStart(), "Undefined type: " + name); //FIXME: WHY IS THIS CALLED TWICE?
+        return Types::UNDEFINED; //FIXME: DO BETTER
+    }
+
+    Symbol * sym = opt.value(); 
+
+    if(!sym->type || !sym->isDefinition)
+    {
+        errorHandler.addSemanticError(ctx->getStart(), "Cannot use: " + name + " as a type.");
+        return Types::UNDEFINED; 
+    }
+
+    bindings->bind(ctx, sym); //FIXME: DO BETTER
+    return sym->type; //FIXME: verify
+
+
+
+    // std::optional<Symbol *> binding = bindings->getBinding(ctx->z);
+
 }
 
 const Type *SemanticVisitor::visitCtx(WPLParser::BaseTypeContext *ctx)

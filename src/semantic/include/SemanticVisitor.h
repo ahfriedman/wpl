@@ -79,6 +79,11 @@ public:
 
     const Type* visitCtx(WPLParser::LambdaConstExprContext *ctx);
 
+    // const Type* visitCtx(WPLParser::SumTypeContext * ctx); //FIXME: NEED TO DO THIS & OTHERS!
+    const Type* visitCtx(WPLParser::CustomTypeContext * ctx);
+    const Type* visitCtx(WPLParser::DefineEnumContext * ctx);
+
+
     /*
      * Traditional visitor methods all overridden with our typed versions
      */
@@ -125,6 +130,9 @@ public:
     std::any visitBaseType(WPLParser::BaseTypeContext *ctx) override { return visitCtx(ctx); }
 
     std::any visitLambdaConstExpr(WPLParser::LambdaConstExprContext *ctx) override { return visitCtx(ctx); }
+
+    std::any visitCustomType(WPLParser::CustomTypeContext * ctx) override { return visitCtx(ctx); }
+    std::any visitDefineEnum(WPLParser::DefineEnumContext * ctx) override { return visitCtx(ctx); }
 
     /**
      * @brief Used to safely enter a block. This is used to ensure there aren't FUNC/PROC definitions / code following returns in it.
