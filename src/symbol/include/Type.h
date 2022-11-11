@@ -70,7 +70,10 @@ public:
      * @param C The llvm context
      * @return llvm::Type* The representation of this type in LLVM
      */
-    virtual llvm::Type *getLLVMType(llvm::LLVMContext &C) const { return llvm::Type::getVoidTy(C); }
+    virtual llvm::Type *getLLVMType(llvm::LLVMContext &C) const { 
+        std::cout << "GOT TYPE OF : " << this->toString() << std::endl; 
+        return llvm::Type::getVoidTy(C); 
+    }
 
 protected:
     /**
@@ -92,7 +95,10 @@ class TypeInt : public Type
 {
 public:
     std::string toString() const override { return "INT"; }
-    llvm::Type *getLLVMType(llvm::LLVMContext &C) const override { return llvm::Type::getInt32Ty(C); }
+    llvm::Type *getLLVMType(llvm::LLVMContext &C) const override { 
+        std::cout << "GOT TYPE OF : " << this->toString() << std::endl; 
+        return llvm::Type::getInt32Ty(C); 
+    }
 
 protected:
     bool isSupertypeFor(const Type *other) const override; // Defined in .cpp
@@ -108,7 +114,10 @@ class TypeBool : public Type
 {
 public:
     std::string toString() const override { return "BOOL"; }
-    llvm::Type *getLLVMType(llvm::LLVMContext &C) const override { return llvm::Type::getInt1Ty(C); }
+    llvm::Type *getLLVMType(llvm::LLVMContext &C) const override { 
+        std::cout << "GOT TYPE OF : " << this->toString() << std::endl; 
+    return llvm::Type::getInt1Ty(C); 
+    }
 
 protected:
     bool isSupertypeFor(const Type *other) const override; // Defined in .cpp
@@ -124,7 +133,7 @@ class TypeStr : public Type
 {
 public:
     std::string toString() const override { return "STR"; }
-    llvm::Type *getLLVMType(llvm::LLVMContext &C) const override { return llvm::Type::getInt8PtrTy(C); }
+    llvm::Type *getLLVMType(llvm::LLVMContext &C) const override { std::cout << "GOT TYPE OF : " << this->toString() << std::endl;  return llvm::Type::getInt8PtrTy(C); }
 
 protected:
     bool isSupertypeFor(const Type *other) const override; // Defined in .cpp
@@ -227,6 +236,7 @@ public:
      */
     llvm::Type *getLLVMType(llvm::LLVMContext &C) const override
     {
+        std::cout << "GOT TYPE OF : " << this->toString() << std::endl; 
         uint64_t len = (uint64_t)length;
         llvm::Type *inner = valueType->getLLVMType(C);
         llvm::Type *arr = llvm::ArrayType::get(inner, len);
@@ -384,6 +394,7 @@ public:
     // TODO: Build LLVM Type here instead of in codegen!
     llvm::Type *getLLVMType(llvm::LLVMContext &C) const override
     {
+        std::cout << "GOT TYPE OF : " << this->toString() << std::endl; 
         // Cretae a vector for our argument types
         std::vector<llvm::Type *> typeVec;
 
@@ -527,6 +538,7 @@ public:
      */
     llvm::Type *getLLVMType(llvm::LLVMContext &C) const override
     {
+        std::cout << "GOT TYPE OF : " << this->toString() << std::endl; 
         if (valueType->has_value())
             return valueType->value()->getLLVMType(C);
 
@@ -634,7 +646,7 @@ private:
      * @brief LLVM IR Representation of the type
      * 
      */
-    llvm::Type * llvmType; 
+    // llvm::Type * llvmType; 
 
 public:
     TypeSum(std::set<const Type *> c)
@@ -679,7 +691,16 @@ public:
      */
     llvm::Type *getLLVMType(llvm::LLVMContext &C) const override
     {
-        if(this->llvmType) return llvmType; 
+        std::cout << "GOT TYPE OF : " << this->toString() << std::endl; 
+        llvm::StructType * ty = llvm::StructType::getTypeByName(C, "foo");
+
+        if(ty) return ty; 
+
+    
+        // if(this->llvmType) {
+        //    return ; 
+            
+        // }//return llvmType; 
 
 
         std::vector<llvm::Type *> typeVec = {llvm::Type::getInt32Ty(C), llvm::Type::getInt32Ty(C)}; //FIXME: NEEDS TO BE LARGEST TYPE!
@@ -692,10 +713,13 @@ public:
         llvm::ArrayRef<llvm::Type *> ref = llvm::ArrayRef(typeVec);
 
         //Needed to prevent duplicating the type's definition 
-        TypeSum *mthis = const_cast<TypeSum *>(this);
-        mthis->llvmType = llvm::StructType::create(ref);
+        // TypeSum *mthis = const_cast<TypeSum *>(this);
+        ty = llvm::StructType::create(C, ref, "foo");
 
-        return this->llvmType; //FIXME: WHAT SHOULD THE DEFAULT OF EMPTY ENUMS BE? OR I GUESS WE SHOULDNT ALLOW ANY EMPTYS
+        // std::cout << "GOT " << ty << std::endl; 
+        // mthis->llvmType = ty; 
+
+        return ty; //this->llvmType; //FIXME: WHAT SHOULD THE DEFAULT OF EMPTY ENUMS BE? OR I GUESS WE SHOULDNT ALLOW ANY EMPTYS
         // return llvm::Type::getInt8PtrTy(C);
     }
 

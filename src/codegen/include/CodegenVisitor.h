@@ -128,6 +128,7 @@ public:
     std::optional<Value *> TvisitBooleanConst(WPLParser::BooleanConstContext *ctx);
     
     std::optional<Value *> TvisitLambdaConstExpr(WPLParser::LambdaConstExprContext *ctx);
+    std::optional<Value *> TvisitDefineEnum(WPLParser::DefineEnumContext * ctx);
 
 
 
@@ -178,6 +179,7 @@ public:
     //FIXME: Add Base and LamdaTypes?
 
     std::any visitLambdaConstExpr(WPLParser::LambdaConstExprContext *ctx) override { return TvisitLambdaConstExpr(ctx); }
+    std::any visitDefineEnum(WPLParser::DefineEnumContext * ctx) override { return TvisitDefineEnum(ctx); }
 
     bool hasErrors(int flags) { return errorHandler.hasErrors(flags); }
     std::string getErrors() { return errorHandler.errorList(); }

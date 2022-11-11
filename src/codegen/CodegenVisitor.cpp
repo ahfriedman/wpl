@@ -2,6 +2,12 @@
 
 std::optional<Value *> CodegenVisitor::TvisitCompilationUnit(WPLParser::CompilationUnitContext *ctx)
 {
+    for (auto e : ctx->defs)
+    {
+        // FIXME: ENSURE CATCH ALL?
+        e->accept(this);
+    }
+
     for (auto e : ctx->extens)
     {
         e->accept(this);
@@ -40,6 +46,25 @@ std::optional<Value *> CodegenVisitor::TvisitCompilationUnit(WPLParser::Compilat
     return {};
 }
 
+std::optional<Value *> CodegenVisitor::TvisitDefineEnum(WPLParser::DefineEnumContext *ctx)
+{
+    std::optional<Symbol *> symOpt = props->getBinding(ctx);
+    if (!symOpt)
+    {
+        errorHandler.addCodegenError(ctx->getStart(), "Could not locate symbol for enum defintion: " + ctx->name->getText());
+        return {};
+    }
+
+    Symbol * sym = symOpt.value(); 
+
+    std::cout << "SYM " << sym->type->toString() << std::endl; 
+
+    llvm::Type * ty = sym->type->getLLVMType(module->getContext());
+
+    std::cout << "TY " << ty << " | " << Int32Ty << std::endl; 
+
+    return {}; 
+}
 std::optional<Value *> CodegenVisitor::TvisitInvocation(WPLParser::InvocationContext *ctx)
 {
     // Create the argument vector
@@ -737,15 +762,15 @@ std::optional<Value *> CodegenVisitor::TvisitAssignStatement(WPLParser::AssignSt
 
 std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDeclStatementContext *ctx)
 {
-    std::cout << "740" << std::endl; 
+    std::cout << "740" << std::endl;
     /*
      * Visit each of the assignments in the context (variables paired with an expression)
      */
     for (auto e : ctx->assignments)
     {
-        std::cout << "746" << std::endl; 
+        std::cout << "746" << std::endl;
         std::optional<Value *> exVal = std::nullopt;
-
+        
         // If the declaration has a value, attempt to generate that value
         if (e->ex)
         {
@@ -761,13 +786,14 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
                 return {};
             }
         }
-        std::cout << "764" << std::endl; 
+        std::cout << "764" << std::endl;
         if ((e->ex) && !exVal)
         {
             errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code for: " + e->ex->getText());
             return {};
         }
-std::cout << "770" << std::endl; 
+        
+        std::cout << "770" << std::endl;
         // For each of the variabes being assigned to that value
         for (auto var : e->VARIABLE())
         {
@@ -780,22 +806,25 @@ std::cout << "770" << std::endl;
                 errorHandler.addCodegenError(ctx->getStart(), "Issue creating variable: " + var->getText());
                 return {};
             }
-            std::cout << "783" << std::endl; 
+            std::cout << "783" << std::endl;
             Symbol *varSymbol = varSymbolOpt.value();
 
+            std::cout << "786 " << varSymbol->type->toString() << std::endl;
             // FIXME: test for varSymbol->type?
             //  Get the type of the symbol
             llvm::Type *ty = varSymbol->type->getLLVMType(module->getContext());
-            std::cout << "789" << std::endl; 
+            std::cout << "789 " << ty << std::endl;
+            ty = varSymbol->type->getLLVMType(module->getContext());
+            std::cout << "789! " << ty << std::endl;
             if (dynamic_cast<const TypeInvoke *>(varSymbol->type))
             {
                 ty = ty->getPointerTo();
             }
-std::cout << "794" << std::endl; 
+            std::cout << "794" << std::endl;
             // Branch depending on if the var is global or not
             if (varSymbol->isGlobal)
             {
-                std::cout << "798" << std::endl; 
+                std::cout << "798" << std::endl;
                 // If it is global, then we need to insert a new gobal variable of this type.
                 // A lot of these options are done to make it match what a C program would
                 // generate for global vars
@@ -828,43 +857,46 @@ std::cout << "794" << std::endl;
             }
             else
             {
-                std::cout << "831" << ctx->getText() << std::endl; 
-                std::cout << "YTY " << ty << std::endl; 
+                std::cout << "831" << ctx->getText() << std::endl;
+                std::cout << "YTY " << ty << " | " << nullptr << std::endl;
+
+                module->dump(); 
+
                 // As this is a local var we can just create an allocation for it
                 llvm::AllocaInst *v = builder->CreateAlloca(ty, 0, var->getText());
-                std::cout << "WHAT" << std::endl; 
+                std::cout << "WHAT" << std::endl;
                 varSymbol->val = v;
 
-                std::cout << "837" << std::endl; 
+                std::cout << "837" << std::endl;
                 // Similarly, if we have an expression for the local var, we can store it. Otherwise, we can leave it undefined.
                 if (e->ex)
                 {
-                    std::cout << "835" << std::endl; 
+                    std::cout << "835" << std::endl;
 
-                    //FIXME: NEED TO ADD THIS FOR OTHER ASSIGN TYPE!
-                    std::cout << varSymbol->type->toString() << std::endl; 
+                    // FIXME: NEED TO ADD THIS FOR OTHER ASSIGN TYPE!
+                    std::cout << varSymbol->type->toString() << std::endl;
                     if (const TypeSum *sum = dynamic_cast<const TypeSum *>(varSymbol->type))
                     {
                         // FIXME: SUMS CANT BE GENERATED AT GLOBAL LEVEL?
-                        Value* tagPtr = builder->CreateGEP(v, {Int32Zero, Int32Zero});
+                        Value *tagPtr = builder->CreateGEP(v, {Int32Zero, Int32Zero});
                         // Value *tagVal = builder->CreateLoad(tagPtr->getType()->getPointerElementType(), tagPtr);
                         builder->CreateStore(Int32Zero, tagPtr);
-                        std::cout << "843" << std::endl; 
-                        //FIXME: MAY HAVE TO DEAL W CASTS
-                        Value* valuePtr = builder->CreateGEP(v, {Int32Zero, Int32One});
-                        std::cout << "841" << std::endl; 
+                        std::cout << "843" << std::endl;
+                        // FIXME: MAY HAVE TO DEAL W CASTS
+                        Value *valuePtr = builder->CreateGEP(v, {Int32Zero, Int32One});
+                        std::cout << "841" << std::endl;
                         // Value * valVal = builder->CreateLoad(valuePtr->getType()->getPointerElementType(), valuePtr);
 
-                        Value* corrected = builder->CreateBitCast(valuePtr, Int1Ty->getPointerTo()); //FIXME: DO BETTER
-                        std::cout << "888" << std::endl; 
+                        Value *corrected = builder->CreateBitCast(valuePtr, Int1Ty->getPointerTo()); // FIXME: DO BETTER
+                        std::cout << "888" << std::endl;
                         builder->CreateStore(exVal.value(), corrected);
-
                     }
                     else
                     {
                         builder->CreateStore(exVal.value(), v);
                     }
                 }
+                module->dump(); 
             }
         }
     }
