@@ -22,11 +22,10 @@
 #include <vector>   // Vectors
 #include <optional> // Optionals
 
-#include <set>      // Sets
+#include <set> // Sets
 
-
-//FIXME: CAN NOW HAVE UNDEFINED TYPES!!!! NEED TO TEST (AND PROBABLY REMOVE NULLPTR)!
-//FIXME: PROBABLY NEED A SEPARATE TYPE FOR DEFINITIONS AS THEY HAVE DIFFERENT INHERITANCES!
+// FIXME: CAN NOW HAVE UNDEFINED TYPES!!!! NEED TO TEST (AND PROBABLY REMOVE NULLPTR)!
+// FIXME: PROBABLY NEED A SEPARATE TYPE FOR DEFINITIONS AS THEY HAVE DIFFERENT INHERITANCES!
 
 /*******************************************
  *
@@ -394,8 +393,8 @@ public:
         }
 
         llvm::ArrayRef<llvm::Type *> paramRef = llvm::ArrayRef(typeVec);
-        
-        llvm::Type *ret = retType->getLLVMType(C); //FIXME: WHEN THIS WAS RETTYPE, TRY THAT CASE IN WPL
+
+        llvm::Type *ret = retType->getLLVMType(C); // FIXME: WHEN THIS WAS RETTYPE, TRY THAT CASE IN WPL
 
         llvm::FunctionType *fnType = llvm::FunctionType::get(
             ret,
@@ -617,34 +616,39 @@ protected:
     }
 };
 
-
 /*******************************************
  *
- * Sum Types 
+ * Sum Types
  *
  *******************************************/
 class TypeSum : public Type
 {
 private:
     /**
-     * @brief The types valid in this sum 
+     * @brief The types valid in this sum
      *
      */
-    std::set<const Type*> innerTypes = {}; 
+    std::set<const Type *> cases = {};
+
+    /**
+     * @brief LLVM IR Representation of the type
+     * 
+     */
+    llvm::Type * llvmType; 
 
 public:
-    TypeSum()
+    TypeSum(std::set<const Type *> c)
     {
+        cases = c;
         // valueType = v;
     }
 
-    void addType(const Type * ty) {
-        innerTypes.insert(ty); 
+    bool contains(const Type *ty) const
+    {
+        return cases.count(ty);
     }
 
-    bool contains(const Type* ty) {
-        return innerTypes.count(ty);
-    }
+    std::set<const Type *> getCases() const { return cases; }
 
     /**
      * @brief Returns the name of the string in form of <valueType name>[<array length>].
@@ -655,10 +659,11 @@ public:
     {
         std::ostringstream description;
 
-        description << "("; 
+        description << "(";
 
-        for(const Type * el : innerTypes) {
-            description << el->toString() << " + ";  //TODO: Do better!
+        for (const Type *el : cases)
+        {
+            description << el->toString() << " + "; // TODO: Do better!
         }
         description << ")";
         // description << valueType->toString() << "[\" << length << "]";
@@ -674,13 +679,24 @@ public:
      */
     llvm::Type *getLLVMType(llvm::LLVMContext &C) const override
     {
-        // uint64_t len = (uint64_t)length;
-        // llvm::Type *inner = valueType->getLLVMType(C);
-        // llvm::Type *arr = llvm::ArrayType::get(inner, len);
+        if(this->llvmType) return llvmType; 
 
-        // return arr;
 
-        return nullptr; 
+        std::vector<llvm::Type *> typeVec = {llvm::Type::getInt32Ty(C), llvm::Type::getInt32Ty(C)}; //FIXME: NEEDS TO BE LARGEST TYPE!
+
+        // for (const Type *ty : paramTypes)
+        // {
+        //     typeVec.push_back(ty->getLLVMType(C)); // paramTypes.typeVec); //FIXME: throw error if can't create?
+        // }
+
+        llvm::ArrayRef<llvm::Type *> ref = llvm::ArrayRef(typeVec);
+
+        //Needed to prevent duplicating the type's definition 
+        TypeSum *mthis = const_cast<TypeSum *>(this);
+        mthis->llvmType = llvm::StructType::create(ref);
+
+        return this->llvmType; 
+        // return llvm::Type::getInt8PtrTy(C);
     }
 
 protected:

@@ -929,7 +929,29 @@ const Type *SemanticVisitor::visitCtx(WPLParser::LambdaTypeContext *ctx)
     return lamType;
 }
 
-const Type* SemanticVisitor::visitCtx(WPLParser::DefineEnumContext * ctx) {
+const Type* SemanticVisitor::visitCtx(WPLParser::DefineEnumContext * ctx) 
+{
+    
+
+    std::set<const Type*> cases = {}; 
+
+    for(auto e : ctx->cases)
+    {
+        const Type * caseType = std::any_cast<const Type*>(e->accept(this)); //FIXME: verify if this is safe or not
+        cases.insert(caseType);
+    }
+
+    if(cases.size() != ctx->cases.size())
+    {
+        errorHandler.addSemanticError(ctx->getStart(), "Duplicate arguments to enum type, or failed to generate types");
+        return Types::UNDEFINED; 
+    }
+
+    const TypeSum * sum = new TypeSum(cases); 
+    Symbol * enumSym = new Symbol(ctx->name->getText(), sum, true, true); //FIXME: SCOPES!
+    
+    stmgr->addSymbol(enumSym);
+    bindings->bind(ctx, enumSym);
 
     return Types::UNDEFINED; //FIXME
 }
