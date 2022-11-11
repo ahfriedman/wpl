@@ -714,7 +714,7 @@ public:
 
         //Needed to prevent duplicating the type's definition 
         // TypeSum *mthis = const_cast<TypeSum *>(this);
-        ty = llvm::StructType::create(C, ref, "foo");
+        ty = llvm::StructType::create(C, ref, "foo"); //FIXME: USE STRING REF GET NAME!!!
 
         // std::cout << "GOT " << ty << std::endl; 
         // mthis->llvmType = ty; 
