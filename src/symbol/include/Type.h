@@ -695,14 +695,13 @@ public:
         TypeSum *mthis = const_cast<TypeSum *>(this);
         mthis->llvmType = llvm::StructType::create(ref);
 
-        return this->llvmType; 
+        return this->llvmType; //FIXME: WHAT SHOULD THE DEFAULT OF EMPTY ENUMS BE? OR I GUESS WE SHOULDNT ALLOW ANY EMPTYS
         // return llvm::Type::getInt8PtrTy(C);
     }
 
 protected:
     bool isSupertypeFor(const Type *other) const override
     {
-
-        return false;
+        return this->contains(other); //FIXME: ADDRESS SETTING SUM = SUM!
     }
 };

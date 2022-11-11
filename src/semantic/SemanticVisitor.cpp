@@ -732,8 +732,8 @@ const Type *SemanticVisitor::visitCtx(WPLParser::VarDeclStatementContext *ctx)
             {
                 // Needed to ensure vars get their own inf type
                 const Type *newAssignType = this->visitCtx(ctx->typeOrVar());
-                const Type *newExprType = (e->ex) ? std::any_cast<const Type *>(e->ex->accept(this)) : newAssignType;
-
+                const Type *newExprType = (dynamic_cast<const TypeInfer*>(newAssignType) && e->ex) ? std::any_cast<const Type *>(e->ex->accept(this)) : newAssignType;
+                // std::cout << newAssignType->toString() << " vs " << newExprType->toString() << std::endl; 
                 Symbol *symbol = new Symbol(id, newExprType, false, stmgr->isGlobalScope()); // Done with exprType for later inferencing purposes
                 stmgr->addSymbol(symbol);
                 bindings->bind(var, symbol);
@@ -949,7 +949,7 @@ const Type* SemanticVisitor::visitCtx(WPLParser::DefineEnumContext * ctx)
 
     const TypeSum * sum = new TypeSum(cases); 
     Symbol * enumSym = new Symbol(ctx->name->getText(), sum, true, true); //FIXME: SCOPES!
-    
+
     stmgr->addSymbol(enumSym);
     bindings->bind(ctx, enumSym);
 
