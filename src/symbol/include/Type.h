@@ -22,6 +22,12 @@
 #include <vector>   // Vectors
 #include <optional> // Optionals
 
+#include <set>      // Sets
+
+
+//FIXME: CAN NOW HAVE UNDEFINED TYPES!!!! NEED TO TEST (AND PROBABLY REMOVE NULLPTR)!
+//FIXME: PROBABLY NEED A SEPARATE TYPE FOR DEFINITIONS AS THEY HAVE DIFFERENT INHERITANCES!
+
 /*******************************************
  *
  * Top Type Definition
@@ -608,5 +614,79 @@ protected:
 
         // Try to update this type's inferred value with the other type
         return setValue(other);
+    }
+};
+
+
+/*******************************************
+ *
+ * Sum Types 
+ *
+ *******************************************/
+class TypeSum : public Type
+{
+private:
+    /**
+     * @brief The types valid in this sum 
+     *
+     */
+    std::set<const Type*> innerTypes = {}; 
+
+public:
+    TypeSum()
+    {
+        // valueType = v;
+    }
+
+    void addType(const Type * ty) {
+        innerTypes.insert(ty); 
+    }
+
+    bool contains(const Type* ty) {
+        return innerTypes.count(ty);
+    }
+
+    /**
+     * @brief Returns the name of the string in form of <valueType name>[<array length>].
+     *
+     * @return std::string String name representation of this type.
+     */
+    std::string toString() const override
+    {
+        std::ostringstream description;
+
+        description << "("; 
+
+        for(const Type * el : innerTypes) {
+            description << el->toString() << " + ";  //TODO: Do better!
+        }
+        description << ")";
+        // description << valueType->toString() << "[\" << length << "]";
+
+        return description.str();
+    }
+
+    /**
+     * @brief Gets the LLVM type for an array of the given valueType and length.
+     *
+     * @param C LLVM Context
+     * @return llvm::Type*
+     */
+    llvm::Type *getLLVMType(llvm::LLVMContext &C) const override
+    {
+        // uint64_t len = (uint64_t)length;
+        // llvm::Type *inner = valueType->getLLVMType(C);
+        // llvm::Type *arr = llvm::ArrayType::get(inner, len);
+
+        // return arr;
+
+        return nullptr; 
+    }
+
+protected:
+    bool isSupertypeFor(const Type *other) const override
+    {
+
+        return false;
     }
 };
