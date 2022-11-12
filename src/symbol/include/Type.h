@@ -7,7 +7,7 @@
  * @version 0.1
  * @date 2022-11-10
  *
- * @copyright Copyright (c) 2022
+ * @copyright Copyright (M->getContext()) 2022
  *
  */
 
@@ -23,6 +23,8 @@
 #include <optional> // Optionals
 
 #include <set> // Sets
+
+#include <climits> // Max & Min
 
 // FIXME: CAN NOW HAVE UNDEFINED TYPES!!!! NEED TO TEST (AND PROBABLY REMOVE NULLPTR)!
 // FIXME: PROBABLY NEED A SEPARATE TYPE FOR DEFINITIONS AS THEY HAVE DIFFERENT INHERITANCES!
@@ -70,8 +72,9 @@ public:
      * @param C The llvm context
      * @return llvm::Type* The representation of this type in LLVM
      */
-    virtual llvm::Type *getLLVMType(llvm::LLVMContext &C) const { 
-        return llvm::Type::getVoidTy(C); 
+    virtual llvm::Type *getLLVMType(llvm::Module *M) const
+    {
+        return llvm::Type::getVoidTy(M->getContext());
     }
 
 protected:
@@ -94,8 +97,9 @@ class TypeInt : public Type
 {
 public:
     std::string toString() const override { return "INT"; }
-    llvm::Type *getLLVMType(llvm::LLVMContext &C) const override { 
-        return llvm::Type::getInt32Ty(C); 
+    llvm::Type *getLLVMType(llvm::Module *M) const override
+    {
+        return llvm::Type::getInt32Ty(M->getContext());
     }
 
 protected:
@@ -112,8 +116,9 @@ class TypeBool : public Type
 {
 public:
     std::string toString() const override { return "BOOL"; }
-    llvm::Type *getLLVMType(llvm::LLVMContext &C) const override { 
-    return llvm::Type::getInt1Ty(C); 
+    llvm::Type *getLLVMType(llvm::Module *M) const override
+    {
+        return llvm::Type::getInt1Ty(M->getContext());
     }
 
 protected:
@@ -130,7 +135,7 @@ class TypeStr : public Type
 {
 public:
     std::string toString() const override { return "STR"; }
-    llvm::Type *getLLVMType(llvm::LLVMContext &C) const override { return llvm::Type::getInt8PtrTy(C); }
+    llvm::Type *getLLVMType(llvm::Module *M) const override { return llvm::Type::getInt8PtrTy(M->getContext()); }
 
 protected:
     bool isSupertypeFor(const Type *other) const override; // Defined in .cpp
@@ -231,10 +236,10 @@ public:
      * @param C LLVM Context
      * @return llvm::Type*
      */
-    llvm::Type *getLLVMType(llvm::LLVMContext &C) const override
+    llvm::Type *getLLVMType(llvm::Module *M) const override
     {
         uint64_t len = (uint64_t)length;
-        llvm::Type *inner = valueType->getLLVMType(C);
+        llvm::Type *inner = valueType->getLLVMType(M);
         llvm::Type *arr = llvm::ArrayType::get(inner, len);
 
         return arr;
@@ -388,19 +393,19 @@ public:
     }
 
     // TODO: Build LLVM Type here instead of in codegen!
-    llvm::Type *getLLVMType(llvm::LLVMContext &C) const override
+    llvm::Type *getLLVMType(llvm::Module *M) const override
     {
         // Cretae a vector for our argument types
         std::vector<llvm::Type *> typeVec;
 
         for (const Type *ty : paramTypes)
         {
-            typeVec.push_back(ty->getLLVMType(C)); // paramTypes.typeVec); //FIXME: throw error if can't create?
+            typeVec.push_back(ty->getLLVMType(M)); // paramTypes.typeVec); //FIXME: throw error if can't create?
         }
 
         llvm::ArrayRef<llvm::Type *> paramRef = llvm::ArrayRef(typeVec);
 
-        llvm::Type *ret = retType->getLLVMType(C); // FIXME: WHEN THIS WAS RETTYPE, TRY THAT CASE IN WPL
+        llvm::Type *ret = retType->getLLVMType(M); // FIXME: WHEN THIS WAS RETTYPE, TRY THAT CASE IN WPL
 
         llvm::FunctionType *fnType = llvm::FunctionType::get(
             ret,
@@ -453,6 +458,7 @@ public:
 protected:
     bool isSupertypeFor(const Type *other) const override
     {
+        std::cout << "461" << std::endl;
         // Checks that the other type is also invokable
         if (const TypeInvoke *p = dynamic_cast<const TypeInvoke *>(other))
         {
@@ -531,10 +537,10 @@ public:
      * @param C LLVM Context
      * @return llvm::Type* the llvm type for the inferred type.
      */
-    llvm::Type *getLLVMType(llvm::LLVMContext &C) const override
+    llvm::Type *getLLVMType(llvm::Module *M) const override
     {
         if (valueType->has_value())
-            return valueType->value()->getLLVMType(C);
+            return valueType->value()->getLLVMType(M);
 
         // This should never happen: we should have always detected such cases in our semantic analyis
         return nullptr;
@@ -638,10 +644,10 @@ private:
 
     /**
      * @brief LLVM IR Representation of the type
-     * 
+     *
      */
-    // llvm::Type * llvmType; 
-    std::optional<llvm::StringRef> name = {}; 
+    // llvm::Type * llvmType;
+    std::optional<llvm::StringRef> name = {};
 
 public:
     TypeSum(std::set<const Type *> c)
@@ -684,41 +690,71 @@ public:
      * @param C LLVM Context
      * @return llvm::Type*
      */
-    llvm::Type *getLLVMType(llvm::LLVMContext &C) const override
+    llvm::Type *getLLVMType(llvm::Module *M) const override
     {
-        llvm::StructType * ty = llvm::StructType::getTypeByName(C, toString());
+        llvm::StructType *ty = llvm::StructType::getTypeByName(M->getContext(), toString());
 
-        if(ty) return ty; 
+        if (ty)
+            return ty;
 
-    
+        // FIXME: HANDLE ZERO SIZE OBJS!!
+        unsigned int min = std::numeric_limits<unsigned int>::max();
+        unsigned int max = std::numeric_limits<unsigned int>::min();
+
+        for (auto e : cases)
+        {
+            // FIXME: HERE IS WHY WE CANT DO RECURSIVE STUFF WO PTRS!
+            unsigned int t = (dynamic_cast<const TypeInvoke *>(e)) ? 8 : M->getDataLayout().getTypeAllocSize(e->getLLVMType(M));
+            // FIXME: DO BETTER - ALSO WILL NOT WORK ON VARS!
+
+            // M->getDataLayout().getTypeAllocSize(e->getLLVMType(M));
+
+            if (t < min)
+            {
+                min = t;
+            }
+
+            if (t > max)
+            {
+                max = t;
+            }
+
+            std::cout << t << std::endl;
+        }
+
+        // FIXME: DO BETTER
+        uint64_t len = (uint64_t)max;
+        llvm::Type *inner = llvm::Type::getInt8Ty(M->getContext());
+        llvm::Type *arr = llvm::ArrayType::get(inner, len);
+
         // if(this->llvmType) {
-        //    return ; 
-            
-        // }//return llvmType; 
+        //    return ;
 
+        // }//return llvmType;
 
-        std::vector<llvm::Type *> typeVec = {llvm::Type::getInt32Ty(C), llvm::Type::getInt32Ty(C)}; //FIXME: NEEDS TO BE LARGEST TYPE!
+        std::vector<llvm::Type *> typeVec = {llvm::Type::getInt32Ty(M->getContext()), arr}; // FIXME: NEEDS TO BE LARGEST TYPE!
 
         // for (const Type *ty : paramTypes)
         // {
-        //     typeVec.push_back(ty->getLLVMType(C)); // paramTypes.typeVec); //FIXME: throw error if can't create?
+        //     typeVec.push_back(ty->getLLVMType(M->getContext())); // paramTypes.typeVec); //FIXME: throw error if can't create?
         // }
 
         llvm::ArrayRef<llvm::Type *> ref = llvm::ArrayRef(typeVec);
 
-        //Needed to prevent duplicating the type's definition 
-        // TypeSum *mthis = const_cast<TypeSum *>(this);
-        ty = llvm::StructType::create(C, ref, toString()); //FIXME: USE STRING REF GET NAME!!!
+        // Needed to prevent duplicating the type's definition
+        //  TypeSum *mthis = const_cast<TypeSum *>(this);
+        ty = llvm::StructType::create(M->getContext(), ref, toString()); // FIXME: USE STRING REF GET NAME!!!
 
-        // mthis->llvmType = ty; 
+        // mthis->llvmType = ty;
 
-        return ty; //this->llvmType; //FIXME: WHAT SHOULD THE DEFAULT OF EMPTY ENUMS BE? OR I GUESS WE SHOULDNT ALLOW ANY EMPTYS
-        // return llvm::Type::getInt8PtrTy(C);
+        return ty; // this->llvmType; //FIXME: WHAT SHOULD THE DEFAULT OF EMPTY ENUMS BE? OR I GUESS WE SHOULDNT ALLOW ANY EMPTYS
+        // return llvm::Type::getInt8PtrTy(M->getContext());
     }
 
 protected:
     bool isSupertypeFor(const Type *other) const override
     {
-        return this->contains(other); //FIXME: ADDRESS SETTING SUM = SUM!
+        //FIXME: DOESNT WORK FOR FUNCTIONS, SUMS, ETC
+        return this->contains(other); // FIXME: ADDRESS SETTING SUM = SUM!
     }
 };

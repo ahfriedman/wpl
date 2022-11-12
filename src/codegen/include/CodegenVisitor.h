@@ -243,7 +243,7 @@ public:
 
         const Type *type = sym->type;
 
-        llvm::Type *genericType = type->getLLVMType(module->getContext());
+        llvm::Type *genericType = type->getLLVMType(module);
 
         if (llvm::FunctionType *fnType = static_cast<llvm::FunctionType *>(genericType))
         {
@@ -351,7 +351,7 @@ private:
 
     // Commonly used types
     llvm::Type *VoidTy;
-    llvm::IntegerType *Int1Ty;
+    llvm::Type *Int1Ty;
     llvm::IntegerType *Int8Ty;
     llvm::IntegerType *Int32Ty; // Things like 32 bit integers
     llvm::Type *i8p;

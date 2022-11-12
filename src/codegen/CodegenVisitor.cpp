@@ -57,7 +57,7 @@ std::optional<Value *> CodegenVisitor::TvisitDefineEnum(WPLParser::DefineEnumCon
 
     Symbol *sym = symOpt.value();
 
-    llvm::Type *ty = sym->type->getLLVMType(module->getContext());
+    llvm::Type *ty = sym->type->getLLVMType(module);
 
     return {};
 }
@@ -107,16 +107,16 @@ std::optional<Value *> CodegenVisitor::TvisitMatchStatement(WPLParser::MatchStat
                     return {};
                 }
 
-                llvm::Type *toFind = localSymOpt.value()->type->getLLVMType(module->getContext()); // FIXME: DO THIS ALL BETTER, MORE CHECKS!!
+                llvm::Type *toFind = localSymOpt.value()->type->getLLVMType(module); // FIXME: DO THIS ALL BETTER, MORE CHECKS!!
 
                 // FIXME: METHODIZE!!
-                unsigned int index = [sumType, toFind](llvm::LLVMContext &C)
+                unsigned int index = [sumType, toFind](llvm::Module *M)
                 {
                     unsigned i = 1;
 
                     for (auto e : sumType->getCases())
                     {
-                        if (e->getLLVMType(C) == toFind)
+                        if (e->getLLVMType(M) == toFind)
                         {
                             return i;
                         }
@@ -124,7 +124,7 @@ std::optional<Value *> CodegenVisitor::TvisitMatchStatement(WPLParser::MatchStat
                     }
 
                     return (unsigned int)0;
-                }(module->getContext());
+                }(module);
 
                 if (index == 0)
                 {
@@ -135,6 +135,45 @@ std::optional<Value *> CodegenVisitor::TvisitMatchStatement(WPLParser::MatchStat
                 BasicBlock *matchBlk = BasicBlock::Create(module->getContext(), "tagBranch" + std::to_string(index));
 
                 builder->SetInsertPoint(matchBlk);
+
+                // FIXME: VERIFY SIGNED VS UNSIGNED
+                switchInst->addCase(ConstantInt::get(Int32Ty, index, true), matchBlk);
+                origParent->getBasicBlockList().push_back(matchBlk);
+
+                // FIME: METHODIZE VAR DECL?
+
+                std::optional<Symbol *> varSymbolOpt = props->getBinding(altCtx->VARIABLE());
+
+                if (!varSymbolOpt)
+                {
+                    errorHandler.addCodegenError(altCtx->getStart(), "Failed to find symbol in match");
+                    return {}; // FIXME: SHOULD WE RETURN OR WOULD THIS BREAK STUFF?
+                }
+
+                Symbol *varSymbol = varSymbolOpt.value();
+
+                // FIXME: test for varSymbol->type?
+                //  Get the type of the symbol
+                llvm::Type *ty = varSymbol->type->getLLVMType(module);
+
+                if (dynamic_cast<const TypeInvoke *>(varSymbol->type))
+                {
+                    ty = ty->getPointerTo();
+                }
+
+                // Can skip global stuff
+                llvm::AllocaInst *v = builder->CreateAlloca(ty, 0, altCtx->VARIABLE()->getText());
+                varSymbol->val = v;
+                // varSymbol->val = v;
+
+                //Now to store the var
+                Value *valuePtr = builder->CreateGEP(sumVal, {Int32Zero, Int32One});
+                Value *corrected = builder->CreateBitCast(valuePtr, ty->getPointerTo()); // FIXME: DO BETTER
+
+                Value *val = builder->CreateLoad(ty, corrected); //FIXME: WILL THIS WORK WITH NESTED SUMS?
+
+                builder->CreateStore(val, v);
+
                 // FIXME: DEFINE AND BIND THE VAR!!!
                 altCtx->eval->accept(this);
 
@@ -156,9 +195,6 @@ std::optional<Value *> CodegenVisitor::TvisitMatchStatement(WPLParser::MatchStat
                     builder->CreateBr(mergeBlk);
                 }
 
-                //FIXME: VERIFY SIGNED VS UNSIGNED
-                switchInst->addCase(ConstantInt::get(Int32Ty, index, true), matchBlk);
-                origParent->getBasicBlockList().push_back(matchBlk);
             }
         }
 
@@ -216,7 +252,7 @@ std::optional<Value *> CodegenVisitor::TvisitInvocation(WPLParser::InvocationCon
         }
         // FIXME: TEST GLOBAL LAMBDAS!!!
 
-        llvm::Type *ty = sym->type->getLLVMType(module->getContext());
+        llvm::Type *ty = sym->type->getLLVMType(module);
 
         if (dynamic_cast<const TypeInvoke *>(sym->type))
         {
@@ -608,7 +644,7 @@ std::optional<Value *> CodegenVisitor::TvisitVariableExpr(WPLParser::VariableExp
     Symbol *sym = symOpt.value();
 
     // Try getting the type for the symbol, raising an error if it could not be determined
-    llvm::Type *type = sym->type->getLLVMType(module->getContext());
+    llvm::Type *type = sym->type->getLLVMType(module);
     if (!type)
     {
         errorHandler.addCodegenError(ctx->getStart(), "Unable to find type for variable: " + ctx->getText());
@@ -770,7 +806,7 @@ std::optional<Value *> CodegenVisitor::TvisitExternStatement(WPLParser::ExternSt
 
     if (const TypeInvoke *type = dynamic_cast<const TypeInvoke *>(generalType))
     {
-        llvm::Type *genericType = type->getLLVMType(module->getContext());
+        llvm::Type *genericType = type->getLLVMType(module);
 
         if (llvm::FunctionType *fnType = static_cast<llvm::FunctionType *>(genericType))
         {
@@ -922,9 +958,9 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
 
             // FIXME: test for varSymbol->type?
             //  Get the type of the symbol
-            llvm::Type *ty = varSymbol->type->getLLVMType(module->getContext());
+            llvm::Type *ty = varSymbol->type->getLLVMType(module);
 
-            ty = varSymbol->type->getLLVMType(module->getContext());
+            ty = varSymbol->type->getLLVMType(module);
 
             if (dynamic_cast<const TypeInvoke *>(varSymbol->type))
             {
@@ -980,14 +1016,14 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
                     if (const TypeSum *sum = dynamic_cast<const TypeSum *>(varSymbol->type))
                     {
                         // FIXME: METHODIZE!!
-                        unsigned int index = [sum, stoVal](llvm::LLVMContext &C)
+                        unsigned int index = [sum, stoVal](llvm::Module *M)
                         {
                             unsigned i = 1;
                             auto toFind = stoVal->getType();
 
                             for (auto e : sum->getCases())
                             {
-                                if (e->getLLVMType(C) == toFind)
+                                if (e->getLLVMType(M) == toFind)
                                 {
                                     return i;
                                 }
@@ -995,7 +1031,7 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
                             }
 
                             return (unsigned int)0;
-                        }(module->getContext());
+                        }(module);
 
                         if (index == 0)
                         {
@@ -1326,7 +1362,7 @@ std::optional<Value *> CodegenVisitor::TvisitLambdaConstExpr(WPLParser::LambdaCo
 
     const Type *type = sym->type;
 
-    llvm::Type *genericType = type->getLLVMType(module->getContext());
+    llvm::Type *genericType = type->getLLVMType(module);
 
     if (llvm::FunctionType *fnType = static_cast<llvm::FunctionType *>(genericType))
     {
