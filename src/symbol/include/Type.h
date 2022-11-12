@@ -71,7 +71,6 @@ public:
      * @return llvm::Type* The representation of this type in LLVM
      */
     virtual llvm::Type *getLLVMType(llvm::LLVMContext &C) const { 
-        std::cout << "GOT TYPE OF : " << this->toString() << std::endl; 
         return llvm::Type::getVoidTy(C); 
     }
 
@@ -96,7 +95,6 @@ class TypeInt : public Type
 public:
     std::string toString() const override { return "INT"; }
     llvm::Type *getLLVMType(llvm::LLVMContext &C) const override { 
-        std::cout << "GOT TYPE OF : " << this->toString() << std::endl; 
         return llvm::Type::getInt32Ty(C); 
     }
 
@@ -115,7 +113,6 @@ class TypeBool : public Type
 public:
     std::string toString() const override { return "BOOL"; }
     llvm::Type *getLLVMType(llvm::LLVMContext &C) const override { 
-        std::cout << "GOT TYPE OF : " << this->toString() << std::endl; 
     return llvm::Type::getInt1Ty(C); 
     }
 
@@ -133,7 +130,7 @@ class TypeStr : public Type
 {
 public:
     std::string toString() const override { return "STR"; }
-    llvm::Type *getLLVMType(llvm::LLVMContext &C) const override { std::cout << "GOT TYPE OF : " << this->toString() << std::endl;  return llvm::Type::getInt8PtrTy(C); }
+    llvm::Type *getLLVMType(llvm::LLVMContext &C) const override { return llvm::Type::getInt8PtrTy(C); }
 
 protected:
     bool isSupertypeFor(const Type *other) const override; // Defined in .cpp
@@ -236,7 +233,6 @@ public:
      */
     llvm::Type *getLLVMType(llvm::LLVMContext &C) const override
     {
-        std::cout << "GOT TYPE OF : " << this->toString() << std::endl; 
         uint64_t len = (uint64_t)length;
         llvm::Type *inner = valueType->getLLVMType(C);
         llvm::Type *arr = llvm::ArrayType::get(inner, len);
@@ -394,7 +390,6 @@ public:
     // TODO: Build LLVM Type here instead of in codegen!
     llvm::Type *getLLVMType(llvm::LLVMContext &C) const override
     {
-        std::cout << "GOT TYPE OF : " << this->toString() << std::endl; 
         // Cretae a vector for our argument types
         std::vector<llvm::Type *> typeVec;
 
@@ -538,7 +533,6 @@ public:
      */
     llvm::Type *getLLVMType(llvm::LLVMContext &C) const override
     {
-        std::cout << "GOT TYPE OF : " << this->toString() << std::endl; 
         if (valueType->has_value())
             return valueType->value()->getLLVMType(C);
 
@@ -647,6 +641,7 @@ private:
      * 
      */
     // llvm::Type * llvmType; 
+    std::optional<llvm::StringRef> name = {}; 
 
 public:
     TypeSum(std::set<const Type *> c)
@@ -691,8 +686,7 @@ public:
      */
     llvm::Type *getLLVMType(llvm::LLVMContext &C) const override
     {
-        std::cout << "GOT TYPE OF : " << this->toString() << std::endl; 
-        llvm::StructType * ty = llvm::StructType::getTypeByName(C, "foo");
+        llvm::StructType * ty = llvm::StructType::getTypeByName(C, toString());
 
         if(ty) return ty; 
 
@@ -714,9 +708,8 @@ public:
 
         //Needed to prevent duplicating the type's definition 
         // TypeSum *mthis = const_cast<TypeSum *>(this);
-        ty = llvm::StructType::create(C, ref, "foo"); //FIXME: USE STRING REF GET NAME!!!
+        ty = llvm::StructType::create(C, ref, toString()); //FIXME: USE STRING REF GET NAME!!!
 
-        // std::cout << "GOT " << ty << std::endl; 
         // mthis->llvmType = ty; 
 
         return ty; //this->llvmType; //FIXME: WHAT SHOULD THE DEFAULT OF EMPTY ENUMS BE? OR I GUESS WE SHOULDNT ALLOW ANY EMPTYS
