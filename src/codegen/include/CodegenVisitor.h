@@ -351,9 +351,9 @@ private:
 
     // Commonly used types
     llvm::Type *VoidTy;
-    llvm::Type *Int1Ty;
-    llvm::Type *Int8Ty;
-    llvm::Type *Int32Ty; // Things like 32 bit integers
+    llvm::IntegerType *Int1Ty;
+    llvm::IntegerType *Int8Ty;
+    llvm::IntegerType *Int32Ty; // Things like 32 bit integers
     llvm::Type *i8p;
     llvm::Type *Int8PtrPtrTy;
     Constant *Int32Zero;

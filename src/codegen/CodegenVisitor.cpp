@@ -90,12 +90,80 @@ std::optional<Value *> CodegenVisitor::TvisitMatchStatement(WPLParser::MatchStat
             }
 
             Value *sumVal = optVal.value();
+            // Value *corrPtr = builder->CreateBitCast(sumVal, sumVal->getType()->getPointerTo()); // FIXME: DO BETTER
+
             Value *tagPtr = builder->CreateGEP(sumVal, {Int32Zero, Int32Zero});
-            // Value *tag = builder->CreateLoad(tagPtr->getType()->getPointerElementType(), tagPtr);
+            Value *tag = builder->CreateLoad(tagPtr->getType()->getPointerElementType(), tagPtr);
 
+            llvm::SwitchInst *switchInst = builder->CreateSwitch(tag, mergeBlk, sumType->getCases().size());
 
-            llvm::SwitchInst * switchInst = builder->CreateSwitch(sumVal, mergeBlk, sumType->getCases().size());
+            for (WPLParser::MatchAlternativeContext *altCtx : ctx->cases)
+            {
+                std::optional<Symbol *> localSymOpt = props->getBinding(altCtx->VARIABLE());
+
+                if (!localSymOpt)
+                {
+                    errorHandler.addCodegenError(altCtx->getStart(), "Failed to lookup type for case");
+                    return {};
+                }
+
+                llvm::Type *toFind = localSymOpt.value()->type->getLLVMType(module->getContext()); // FIXME: DO THIS ALL BETTER, MORE CHECKS!!
+
+                // FIXME: METHODIZE!!
+                unsigned int index = [sumType, toFind](llvm::LLVMContext &C)
+                {
+                    unsigned i = 1;
+
+                    for (auto e : sumType->getCases())
+                    {
+                        if (e->getLLVMType(C) == toFind)
+                        {
+                            return i;
+                        }
+                        i++;
+                    }
+
+                    return (unsigned int)0;
+                }(module->getContext());
+
+                if (index == 0)
+                {
+                    errorHandler.addCodegenError(ctx->getStart(), "Unable to find key for type in sum");
+                    return {}; // FIXME: DO BETTER!
+                }
+
+                BasicBlock *matchBlk = BasicBlock::Create(module->getContext(), "tagBranch" + std::to_string(index));
+
+                builder->SetInsertPoint(matchBlk);
+                // FIXME: DEFINE AND BIND THE VAR!!!
+                altCtx->eval->accept(this);
+
+                if (WPLParser::BlockStatementContext *blkStmtCtx = dynamic_cast<WPLParser::BlockStatementContext *>(altCtx->eval))
+                {
+                    WPLParser::BlockContext *blkCtx = blkStmtCtx->block();
+                    if (!CodegenVisitor::blockEndsInReturn(blkCtx))
+                    {
+                        builder->CreateBr(mergeBlk);
+                    }
+                    // if it ends in a return, we're good!
+                }
+                else if (WPLParser::ReturnStatementContext *retCtx = dynamic_cast<WPLParser::ReturnStatementContext *>(altCtx->eval))
+                {
+                    // Similarly, we don't need to generate the branch
+                }
+                else
+                {
+                    builder->CreateBr(mergeBlk);
+                }
+
+                //FIXME: VERIFY SIGNED VS UNSIGNED
+                switchInst->addCase(ConstantInt::get(Int32Ty, index, true), matchBlk);
+                origParent->getBasicBlockList().push_back(matchBlk);
+            }
         }
+
+        origParent->getBasicBlockList().push_back(mergeBlk);
+        builder->SetInsertPoint(mergeBlk);
 
         return {};
     }
@@ -582,6 +650,11 @@ std::optional<Value *> CodegenVisitor::TvisitVariableExpr(WPLParser::VariableExp
         return {};
     }
 
+    if (dynamic_cast<const TypeSum *>(sym->type)) // FIXME: VERIFY
+    {
+        return sym->val.value();
+    }
+
     // Otherwise, we are a local variable with an allocation and, thus, can simply load it.
     Value *v = builder->CreateLoad(type, sym->val.value(), id);
     return v;
@@ -906,7 +979,7 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
                     // FIXME: NEED TO ADD THIS FOR OTHER ASSIGN TYPE!
                     if (const TypeSum *sum = dynamic_cast<const TypeSum *>(varSymbol->type))
                     {
-
+                        // FIXME: METHODIZE!!
                         unsigned int index = [sum, stoVal](llvm::LLVMContext &C)
                         {
                             unsigned i = 1;
