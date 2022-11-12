@@ -1,0 +1,44 @@
+extern int func printf(str s, ...);
+
+define enum lambdaOp {
+    str, int -> str,
+    str -> str
+}
+
+
+define enum a {
+    int, 
+    boolean,
+    str,
+    lambdaOp # FIXME: UNRECOGNIZED!
+    # (str, int -> str + str -> str) # FIXME: CAUSES BAS ANYCAST 
+}
+
+# FIXME: LET FOR () AROUND FN PARAMS IN Grammar?
+
+int func program() {
+    # FIXME: CANNOT ASSIGN DIRECTLY 
+    var fn <- (str msg, int times) : str {
+        while times > 0 do {
+            printf("msg=%s\n", msg);
+            times <- times -1; 
+        }
+        return msg; 
+    };
+
+
+
+    var t2 <- fn; # FIXME: CANNOT DO THIS! -> Fixed now? :D  STILL HAVE TO FIX NAME COLLISIONS ON FUNC DEF THO
+
+    lambdaOp op <- fn; 
+    
+    match op {
+        str, int -> str fn => fn("Hello", 2);
+        str -> str fn => fn("Goodbye");
+    }
+
+
+    # a obscured <- op; 
+
+    return 0; 
+}
