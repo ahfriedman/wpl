@@ -70,6 +70,7 @@ condition           : ('(' ex=expression ')') | ex=expression ;
 
 //Used to model each alternative in a selection 
 selectAlternative   : check=expression ':' eval=statement ; 
+matchAlternative    : check=type name=VARIABLE '=>' eval=statement ;  //FIXME: DO BETTER
 
 
 /*
@@ -112,14 +113,15 @@ assignment : v+=VARIABLE (',' v+=VARIABLE)* (ASSIGN ex=expression)? ;
  */
 statement           : ty=type FUNC name=VARIABLE '(' (paramList=parameterList)? ')' block   # FuncDef 
                     | PROC name=VARIABLE '(' (paramList=parameterList)? ')' block           # ProcDef
-                    | <assoc=right> to=arrayOrVar ASSIGN ex=expression ';'                     # AssignStatement 
+                    | <assoc=right> to=arrayOrVar ASSIGN ex=expression ';'                  # AssignStatement 
                     | <assoc=right> ty=typeOrVar assignments+=assignment (',' assignments+=assignment)* ';'   # VarDeclStatement
-                    | WHILE check=condition DO block                                # LoopStatement 
-                    | IF check=condition IF_THEN? trueBlk=block (ELSE falseBlk=block)? # ConditionalStatement
-                    | SELECT '{' (cases+=selectAlternative)* '}'  # SelectStatement  
-                    | call=invocation  ';'?    # CallStatement 
-                    | RETURN expression? ';'  # ReturnStatement 
-                    | block # BlockStatement
+                    | WHILE check=condition DO block                                    # LoopStatement 
+                    | IF check=condition IF_THEN? trueBlk=block (ELSE falseBlk=block)?  # ConditionalStatement
+                    | SELECT '{' (cases+=selectAlternative)* '}'                        # SelectStatement  
+                    | MATCH check=condition '{' (cases+=matchAlternative)* '}'          # MatchStatement
+                    | call=invocation  ';'?     # CallStatement 
+                    | RETURN expression? ';'    # ReturnStatement 
+                    | block                     # BlockStatement
                     ;   
 
 //Operators
@@ -180,6 +182,7 @@ RETURN          :   'return';
 SELECT          :   'select';
 DO              :   'do'    ;
 EXTERN          :   'extern';
+MATCH           :   'match' ;
 
 
 //Booleans

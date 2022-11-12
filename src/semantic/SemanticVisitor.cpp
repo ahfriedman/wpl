@@ -5,10 +5,10 @@ const Type *SemanticVisitor::visitCtx(WPLParser::CompilationUnitContext *ctx)
     // Enter initial scope
     stmgr->enterScope();
 
-    for(auto e : ctx->defs)
+    for (auto e : ctx->defs)
     {
-        // this->visitCtx(e); 
-        e->accept(this); //FIXME: DO BETTER TO ENSURE WE CATCH ONES THAT WE DONT HAVE CODE FOR
+        // this->visitCtx(e);
+        e->accept(this); // FIXME: DO BETTER TO ENSURE WE CATCH ONES THAT WE DONT HAVE CODE FOR
     }
 
     // Visit externs first; they will report any errors if they have any.
@@ -733,8 +733,8 @@ const Type *SemanticVisitor::visitCtx(WPLParser::VarDeclStatementContext *ctx)
                 // Needed to ensure vars get their own inf type
                 const Type *newAssignType = this->visitCtx(ctx->typeOrVar());
                 // const Type *newExprType = (e->ex) ? std::any_cast<const Type *>(e->ex->accept(this)) : newAssignType; //FIXME: VERIFY
-                const Type *newExprType = (dynamic_cast<const TypeInfer*>(newAssignType) && e->ex) ? std::any_cast<const Type *>(e->ex->accept(this)) : newAssignType;
-                // std::cout << id << " " << newAssignType->toString() << " vs " << newExprType->toString() << std::endl; 
+                const Type *newExprType = (dynamic_cast<const TypeInfer *>(newAssignType) && e->ex) ? std::any_cast<const Type *>(e->ex->accept(this)) : newAssignType;
+                // std::cout << id << " " << newAssignType->toString() << " vs " << newExprType->toString() << std::endl;
                 Symbol *symbol = new Symbol(id, newExprType, false, stmgr->isGlobalScope()); // Done with exprType for later inferencing purposes
                 stmgr->addSymbol(symbol);
                 bindings->bind(var, symbol);
@@ -743,6 +743,68 @@ const Type *SemanticVisitor::visitCtx(WPLParser::VarDeclStatementContext *ctx)
     }
     // Return UNDEFINED because this is a statement, and UNDEFINED cannot be assigned to anything
     return Types::UNDEFINED;
+}
+
+const Type *SemanticVisitor::visitCtx(WPLParser::MatchStatementContext *ctx)
+{
+    // const Type * condType = this->visitCtx(ctx->check->ex);
+    const Type *condType = std::any_cast<const Type *>(ctx->check->ex->accept(this)); // FIXME: VERIFY?
+
+    // FIXME: ADD ERROR CHAINS TO LIMIT DUPL MSGS
+    // FIXME: ADD OTHER LISTENERS W ERROR MSGS?
+    if (const TypeSum *sumType = dynamic_cast<const TypeSum *>(condType))
+    {
+        std::set<const Type *> foundCaseTypes = {};
+        // FIXME: Maybe make so these can return values?
+
+        for (WPLParser::MatchAlternativeContext *altCtx : ctx->cases)
+        {
+            // FIXME: METHODIZE WITH SelectAlternativeContext?
+            //  Might not be easily able to though bc we need to track types...
+
+            const Type *caseType = std::any_cast<const Type *>(altCtx->type()->accept(this)); // FIXME: VERIFY?
+
+            // FIXME: VERIFY THIS WILL WORK! WILL PROBS BREAK FOR SUMs AND STRUCTS!!
+            if (!sumType->contains(caseType))
+            {
+                errorHandler.addSemanticError(altCtx->type()->getStart(), "Impossible case for " + sumType->toString() + " to act as " + caseType->toString());
+            }
+
+            if (foundCaseTypes.count(caseType)) // FIXME: SAME AS BEFORE, WILL PROBS BREAK W STRUCTS
+            {
+                errorHandler.addSemanticError(altCtx->type()->getStart(), "Duplicate case in match");
+            }
+            else
+            {
+                foundCaseTypes.insert(caseType); // FIXME: DO BETTER TRACKING OF SATISFYING RQMTS. Right now, can pass check for having all cases due to having invalid ones!!
+            }
+
+            stmgr->enterScope();
+            Symbol *local = new Symbol(altCtx->name->getText(), caseType, false, false);
+            stmgr->addSymbol(local); 
+            bindings->bind(altCtx->VARIABLE(), local);
+
+            altCtx->eval->accept(this);
+            this->safeExitScope(altCtx);
+
+            if (dynamic_cast<WPLParser::FuncDefContext *>(altCtx->eval) ||
+                dynamic_cast<WPLParser::ProcDefContext *>(altCtx->eval) ||
+                dynamic_cast<WPLParser::VarDeclStatementContext *>(altCtx->eval))
+            {
+                errorHandler.addSemanticError(altCtx->getStart(), "Dead code: definition as select alternative.");
+            }
+        }
+
+        if (foundCaseTypes.size() != sumType->getCases().size())
+        {
+            errorHandler.addSemanticError(ctx->getStart(), "Match statement did not cover all cases needed for " + sumType->toString());
+        }
+
+        return {}; //FIXME: THIS OR UNDEFINED?
+    }
+
+    errorHandler.addSemanticError(ctx->check->getStart(), "Can only case on Sum Types, not " + condType->toString());
+    return {};
 }
 
 /**
@@ -904,12 +966,10 @@ const Type *SemanticVisitor::visitCtx(WPLParser::LambdaConstExprContext *ctx)
     }
     safeExitScope(ctx);
 
-
-    Symbol *funcSymbol = new Symbol("@LAMBDA", funcType, false, false); //FIXME: DO BETTER!
-    bindings->bind(ctx, funcSymbol); //FIXME: NEED TO FIGURE OUT SOME BINDING?
+    Symbol *funcSymbol = new Symbol("@LAMBDA", funcType, false, false); // FIXME: DO BETTER!
+    bindings->bind(ctx, funcSymbol);                                    // FIXME: NEED TO FIGURE OUT SOME BINDING?
 
     return funcType;
-
 }
 
 const Type *SemanticVisitor::visitCtx(WPLParser::LambdaTypeContext *ctx)
@@ -930,61 +990,58 @@ const Type *SemanticVisitor::visitCtx(WPLParser::LambdaTypeContext *ctx)
     return lamType;
 }
 
-const Type* SemanticVisitor::visitCtx(WPLParser::DefineEnumContext * ctx) 
+const Type *SemanticVisitor::visitCtx(WPLParser::DefineEnumContext *ctx)
 {
-    
 
-    std::set<const Type*> cases = {}; 
+    std::set<const Type *> cases = {};
 
-    for(auto e : ctx->cases)
+    for (auto e : ctx->cases)
     {
-        const Type * caseType = std::any_cast<const Type*>(e->accept(this)); //FIXME: verify if this is safe or not
+        const Type *caseType = std::any_cast<const Type *>(e->accept(this)); // FIXME: verify if this is safe or not
         cases.insert(caseType);
     }
 
-    if(cases.size() != ctx->cases.size())
+    if (cases.size() != ctx->cases.size())
     {
         errorHandler.addSemanticError(ctx->getStart(), "Duplicate arguments to enum type, or failed to generate types");
-        return Types::UNDEFINED; 
+        return Types::UNDEFINED;
     }
 
-    const TypeSum * sum = new TypeSum(cases); 
-    Symbol * enumSym = new Symbol(ctx->name->getText(), sum, true, true); //FIXME: SCOPES!
+    const TypeSum *sum = new TypeSum(cases);
+    Symbol *enumSym = new Symbol(ctx->name->getText(), sum, true, true); // FIXME: SCOPES!
 
     stmgr->addSymbol(enumSym);
     bindings->bind(ctx, enumSym);
 
-    return Types::UNDEFINED; //FIXME
+    return Types::UNDEFINED; // FIXME
 }
 
-const Type* SemanticVisitor::visitCtx(WPLParser::CustomTypeContext * ctx) 
+const Type *SemanticVisitor::visitCtx(WPLParser::CustomTypeContext *ctx)
 {
-    
-    //FIXME: This is really bad and really broken b/c now any symbol can become var? 
+
+    // FIXME: This is really bad and really broken b/c now any symbol can become var?
 
     std::string name = ctx->VARIABLE()->getText();
 
     std::optional<Symbol *> opt = stmgr->lookup(name);
-    if(!opt) {
-        errorHandler.addSemanticError(ctx->getStart(), "Undefined type: " + name); //FIXME: WHY IS THIS CALLED TWICE?
-        return Types::UNDEFINED; //FIXME: DO BETTER
+    if (!opt)
+    {
+        errorHandler.addSemanticError(ctx->getStart(), "Undefined type: " + name); // FIXME: WHY IS THIS CALLED TWICE?
+        return Types::UNDEFINED;                                                   // FIXME: DO BETTER
     }
 
-    Symbol * sym = opt.value(); 
+    Symbol *sym = opt.value();
 
-    if(!sym->type || !sym->isDefinition)
+    if (!sym->type || !sym->isDefinition)
     {
         errorHandler.addSemanticError(ctx->getStart(), "Cannot use: " + name + " as a type.");
-        return Types::UNDEFINED; 
+        return Types::UNDEFINED;
     }
 
-    bindings->bind(ctx, sym); //FIXME: DO BETTER
-    return sym->type; //FIXME: verify
-
-
+    bindings->bind(ctx, sym); // FIXME: DO BETTER
+    return sym->type;         // FIXME: verify
 
     // std::optional<Symbol *> binding = bindings->getBinding(ctx->z);
-
 }
 
 const Type *SemanticVisitor::visitCtx(WPLParser::BaseTypeContext *ctx)
