@@ -994,7 +994,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::LambdaTypeContext *ctx)
 const Type *SemanticVisitor::visitCtx(WPLParser::DefineEnumContext *ctx)
 {
 
-    std::set<const Type *> cases = {};
+    std::set<const Type *, TypeCompare> cases = {};
 
     for (auto e : ctx->cases)
     {

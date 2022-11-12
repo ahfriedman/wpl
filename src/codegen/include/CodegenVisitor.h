@@ -243,7 +243,7 @@ public:
 
         const Type *type = sym->type;
 
-        llvm::Type *genericType = type->getLLVMType(module);
+        llvm::Type *genericType = type->getLLVMType(module)->getPointerElementType();
 
         if (llvm::FunctionType *fnType = static_cast<llvm::FunctionType *>(genericType))
         {

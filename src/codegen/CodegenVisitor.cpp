@@ -64,6 +64,7 @@ std::optional<Value *> CodegenVisitor::TvisitDefineEnum(WPLParser::DefineEnumCon
 
 std::optional<Value *> CodegenVisitor::TvisitMatchStatement(WPLParser::MatchStatementContext *ctx)
 {
+    std::cout << "HELLO" << std::endl; 
     std::optional<Symbol *> symOpt = props->getBinding(ctx->check); // FIXME: THIS DOES NOTHING
     if (!symOpt)
     {
@@ -73,7 +74,6 @@ std::optional<Value *> CodegenVisitor::TvisitMatchStatement(WPLParser::MatchStat
 
     if (const TypeSum *sumType = dynamic_cast<const TypeSum *>(symOpt.value()->type))
     {
-
         auto origParent = builder->GetInsertBlock()->getParent();
         BasicBlock *mergeBlk = BasicBlock::Create(module->getContext(), "matchcont");
 
@@ -128,7 +128,7 @@ std::optional<Value *> CodegenVisitor::TvisitMatchStatement(WPLParser::MatchStat
 
                 if (index == 0)
                 {
-                    errorHandler.addCodegenError(ctx->getStart(), "Unable to find key for type in sum");
+                    errorHandler.addCodegenError(ctx->getStart(), "Unable to find key for type " + localSymOpt.value()->type->toString() + " in sum");
                     return {}; // FIXME: DO BETTER!
                 }
 
@@ -156,10 +156,10 @@ std::optional<Value *> CodegenVisitor::TvisitMatchStatement(WPLParser::MatchStat
                 //  Get the type of the symbol
                 llvm::Type *ty = varSymbol->type->getLLVMType(module);
 
-                if (dynamic_cast<const TypeInvoke *>(varSymbol->type))
-                {
-                    ty = ty->getPointerTo();
-                }
+                // if (dynamic_cast<const TypeInvoke *>(varSymbol->type))
+                // {
+                //     ty = ty->getPointerTo();
+                // }
 
                 // Can skip global stuff
                 llvm::AllocaInst *v = builder->CreateAlloca(ty, 0, altCtx->VARIABLE()->getText());
@@ -806,7 +806,7 @@ std::optional<Value *> CodegenVisitor::TvisitExternStatement(WPLParser::ExternSt
 
     if (const TypeInvoke *type = dynamic_cast<const TypeInvoke *>(generalType))
     {
-        llvm::Type *genericType = type->getLLVMType(module);
+        llvm::Type *genericType = type->getLLVMType(module)->getPointerElementType();
 
         if (llvm::FunctionType *fnType = static_cast<llvm::FunctionType *>(genericType))
         {
@@ -962,10 +962,10 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
 
             ty = varSymbol->type->getLLVMType(module);
 
-            if (dynamic_cast<const TypeInvoke *>(varSymbol->type))
-            {
-                ty = ty->getPointerTo();
-            }
+            // if (dynamic_cast<const TypeInvoke *>(varSymbol->type))
+            // {
+            //     ty = ty->getPointerTo();
+            // }
 
             // Branch depending on if the var is global or not
             if (varSymbol->isGlobal)
@@ -1007,14 +1007,18 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
 
                 varSymbol->val = v;
 
+                std::cout << "1010" << std::endl;
+
                 // Similarly, if we have an expression for the local var, we can store it. Otherwise, we can leave it undefined.
                 if (e->ex)
                 {
+                    std::cout << "1015" << std::endl;
                     Value *stoVal = exVal.value();
-
+std::cout << "1017" << std::endl;
                     // FIXME: NEED TO ADD THIS FOR OTHER ASSIGN TYPE!
                     if (const TypeSum *sum = dynamic_cast<const TypeSum *>(varSymbol->type))
                     {
+                        std::cout << "1021" << std::endl;
                         // FIXME: METHODIZE!!
                         unsigned int index = [sum, stoVal](llvm::Module *M)
                         {
@@ -1039,6 +1043,8 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
                             return {}; // FIXME: DO BETTER!
                         }
 
+                        std::cout << "1044" << std::endl;
+
                         // FIXME: SUMS CANT BE GENERATED AT GLOBAL LEVEL?
                         Value *tagPtr = builder->CreateGEP(v, {Int32Zero, Int32Zero});
 
@@ -1050,6 +1056,7 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
                     }
                     else
                     {
+                        std::cout << "1059" << std::endl;
                         builder->CreateStore(stoVal, v);
                     }
                 }
@@ -1362,7 +1369,7 @@ std::optional<Value *> CodegenVisitor::TvisitLambdaConstExpr(WPLParser::LambdaCo
 
     const Type *type = sym->type;
 
-    llvm::Type *genericType = type->getLLVMType(module);
+    llvm::Type *genericType = type->getLLVMType(module)->getPointerElementType(); //FIXME: CHECK IF SAFE!
 
     if (llvm::FunctionType *fnType = static_cast<llvm::FunctionType *>(genericType))
     {

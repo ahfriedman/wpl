@@ -162,6 +162,13 @@ protected:
  *
  *******************************************/
 
+struct TypeCompare {
+    bool operator() (const Type *a, const Type *b) const {
+        return a->toString() < b->toString();
+    }
+};
+
+
 namespace Types
 {
     inline const Type *INT = new TypeInt();
@@ -412,7 +419,7 @@ public:
             paramRef,
             variadic);
 
-        return fnType;
+        return fnType->getPointerTo();
     }
 
     /**
@@ -628,6 +635,8 @@ protected:
     }
 };
 
+
+
 /*******************************************
  *
  * Sum Types
@@ -640,7 +649,7 @@ private:
      * @brief The types valid in this sum
      *
      */
-    std::set<const Type *> cases = {};
+    std::set<const Type *, TypeCompare> cases = {};
 
     /**
      * @brief LLVM IR Representation of the type
@@ -650,18 +659,20 @@ private:
     std::optional<llvm::StringRef> name = {};
 
 public:
-    TypeSum(std::set<const Type *> c)
+    TypeSum(std::set<const Type *, TypeCompare> c)
     {
         cases = c;
         // valueType = v;
     }
+
+    // auto lexical_compare = [](int a, int b) { return to_string(a) < to_string(b); };
 
     bool contains(const Type *ty) const
     {
         return cases.count(ty);
     }
 
-    std::set<const Type *> getCases() const { return cases; }
+    std::set<const Type *, TypeCompare> getCases() const { return cases; }
 
     /**
      * @brief Returns the name of the string in form of <valueType name>[<array length>].
@@ -704,7 +715,7 @@ public:
         for (auto e : cases)
         {
             // FIXME: HERE IS WHY WE CANT DO RECURSIVE STUFF WO PTRS!
-            unsigned int t = (dynamic_cast<const TypeInvoke *>(e)) ? 8 : M->getDataLayout().getTypeAllocSize(e->getLLVMType(M));
+            unsigned int t = M->getDataLayout().getTypeAllocSize(e->getLLVMType(M));
             // FIXME: DO BETTER - ALSO WILL NOT WORK ON VARS!
 
             // M->getDataLayout().getTypeAllocSize(e->getLLVMType(M));
@@ -722,6 +733,7 @@ public:
             std::cout << t << std::endl;
         }
 
+        std::cout << "736" << std::endl;
         // FIXME: DO BETTER
         uint64_t len = (uint64_t)max;
         llvm::Type *inner = llvm::Type::getInt8Ty(M->getContext());
@@ -746,7 +758,7 @@ public:
         ty = llvm::StructType::create(M->getContext(), ref, toString()); // FIXME: USE STRING REF GET NAME!!!
 
         // mthis->llvmType = ty;
-
+std::cout << "761" << std::endl;
         return ty; // this->llvmType; //FIXME: WHAT SHOULD THE DEFAULT OF EMPTY ENUMS BE? OR I GUESS WE SHOULDNT ALLOW ANY EMPTYS
         // return llvm::Type::getInt8PtrTy(M->getContext());
     }
@@ -754,7 +766,7 @@ public:
 protected:
     bool isSupertypeFor(const Type *other) const override
     {
-        //FIXME: DOESNT WORK FOR FUNCTIONS, SUMS, ETC
+        // FIXME: DOESNT WORK FOR FUNCTIONS, SUMS, ETC
         return this->contains(other); // FIXME: ADDRESS SETTING SUM = SUM!
     }
 };
