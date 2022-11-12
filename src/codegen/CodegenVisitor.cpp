@@ -48,19 +48,63 @@ std::optional<Value *> CodegenVisitor::TvisitCompilationUnit(WPLParser::Compilat
 
 std::optional<Value *> CodegenVisitor::TvisitDefineEnum(WPLParser::DefineEnumContext *ctx)
 {
-    std::optional<Symbol *> symOpt = props->getBinding(ctx); //FIXME: THIS DOES NOTHING
+    std::optional<Symbol *> symOpt = props->getBinding(ctx); // FIXME: THIS DOES NOTHING
     if (!symOpt)
     {
         errorHandler.addCodegenError(ctx->getStart(), "Could not locate symbol for enum defintion: " + ctx->name->getText());
         return {};
     }
 
-    Symbol * sym = symOpt.value(); 
+    Symbol *sym = symOpt.value();
 
-    llvm::Type * ty = sym->type->getLLVMType(module->getContext());
+    llvm::Type *ty = sym->type->getLLVMType(module->getContext());
 
-    return {}; 
+    return {};
 }
+
+std::optional<Value *> CodegenVisitor::TvisitMatchStatement(WPLParser::MatchStatementContext *ctx)
+{
+    std::optional<Symbol *> symOpt = props->getBinding(ctx->check); // FIXME: THIS DOES NOTHING
+    if (!symOpt)
+    {
+        errorHandler.addCodegenError(ctx->getStart(), "Could not locate symbol for case");
+        return {};
+    }
+
+    if (const TypeSum *sumType = dynamic_cast<const TypeSum *>(symOpt.value()->type))
+    {
+
+        auto origParent = builder->GetInsertBlock()->getParent();
+        BasicBlock *mergeBlk = BasicBlock::Create(module->getContext(), "matchcont");
+
+        std::any anyCheck = ctx->check->accept(this);
+
+        // Attempt to cast the check; if this fails, then codegen for the check failed //FIXME: VERIFY THESE ARE FINE
+        if (std::optional<Value *> optVal = std::any_cast<std::optional<Value *>>(anyCheck))
+        {
+            // Check that the optional, in fact, has a value. Otherwise, something went wrong.
+            if (!optVal)
+            {
+                errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code for: " + ctx->check->getText());
+                return {};
+            }
+
+            Value *sumVal = optVal.value();
+            Value *tagPtr = builder->CreateGEP(sumVal, {Int32Zero, Int32Zero});
+            // Value *tag = builder->CreateLoad(tagPtr->getType()->getPointerElementType(), tagPtr);
+
+
+            llvm::SwitchInst * switchInst = builder->CreateSwitch(sumVal, mergeBlk, sumType->getCases().size());
+        }
+
+        return {};
+    }
+
+    errorHandler.addCodegenError(ctx->getStart(), "Failed to lookup type for case");
+
+    return {};
+}
+
 std::optional<Value *> CodegenVisitor::TvisitInvocation(WPLParser::InvocationContext *ctx)
 {
     // Create the argument vector
@@ -763,9 +807,9 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
      */
     for (auto e : ctx->assignments)
     {
-        
+
         std::optional<Value *> exVal = std::nullopt;
-        
+
         // If the declaration has a value, attempt to generate that value
         if (e->ex)
         {
@@ -781,14 +825,13 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
                 return {};
             }
         }
-        
+
         if ((e->ex) && !exVal)
         {
             errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code for: " + e->ex->getText());
             return {};
         }
-        
-        
+
         // For each of the variabes being assigned to that value
         for (auto var : e->VARIABLE())
         {
@@ -801,21 +844,20 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
                 errorHandler.addCodegenError(ctx->getStart(), "Issue creating variable: " + var->getText());
                 return {};
             }
-            
+
             Symbol *varSymbol = varSymbolOpt.value();
 
-            
             // FIXME: test for varSymbol->type?
             //  Get the type of the symbol
             llvm::Type *ty = varSymbol->type->getLLVMType(module->getContext());
-            
+
             ty = varSymbol->type->getLLVMType(module->getContext());
-            
+
             if (dynamic_cast<const TypeInvoke *>(varSymbol->type))
             {
                 ty = ty->getPointerTo();
             }
-            
+
             // Branch depending on if the var is global or not
             if (varSymbol->isGlobal)
             {
@@ -853,39 +895,40 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
             {
                 // As this is a local var we can just create an allocation for it
                 llvm::AllocaInst *v = builder->CreateAlloca(ty, 0, var->getText());
-                
+
                 varSymbol->val = v;
 
                 // Similarly, if we have an expression for the local var, we can store it. Otherwise, we can leave it undefined.
                 if (e->ex)
                 {
-                    Value * stoVal = exVal.value(); 
+                    Value *stoVal = exVal.value();
 
                     // FIXME: NEED TO ADD THIS FOR OTHER ASSIGN TYPE!
                     if (const TypeSum *sum = dynamic_cast<const TypeSum *>(varSymbol->type))
                     {
 
-                        unsigned int index = [sum, stoVal](llvm::LLVMContext &C){
-                            unsigned i = 1; 
-                            auto toFind = stoVal->getType(); 
+                        unsigned int index = [sum, stoVal](llvm::LLVMContext &C)
+                        {
+                            unsigned i = 1;
+                            auto toFind = stoVal->getType();
 
-                            for(auto e : sum->getCases()) {
-                                if(e->getLLVMType(C) == toFind)
+                            for (auto e : sum->getCases())
+                            {
+                                if (e->getLLVMType(C) == toFind)
                                 {
                                     return i;
                                 }
                                 i++;
                             }
 
-                            return (unsigned int) 0;
+                            return (unsigned int)0;
                         }(module->getContext());
 
-
-                        if(index == 0) {
+                        if (index == 0)
+                        {
                             errorHandler.addCodegenError(ctx->getStart(), "Unable to find key for type in sum");
-                            return {}; //FIXME: DO BETTER!
+                            return {}; // FIXME: DO BETTER!
                         }
-
 
                         // FIXME: SUMS CANT BE GENERATED AT GLOBAL LEVEL?
                         Value *tagPtr = builder->CreateGEP(v, {Int32Zero, Int32Zero});

@@ -129,7 +129,7 @@ public:
     
     std::optional<Value *> TvisitLambdaConstExpr(WPLParser::LambdaConstExprContext *ctx);
     std::optional<Value *> TvisitDefineEnum(WPLParser::DefineEnumContext * ctx);
-
+    std::optional<Value *> TvisitMatchStatement(WPLParser::MatchStatementContext * ctx);
 
 
     /******************************************************************
@@ -180,6 +180,7 @@ public:
 
     std::any visitLambdaConstExpr(WPLParser::LambdaConstExprContext *ctx) override { return TvisitLambdaConstExpr(ctx); }
     std::any visitDefineEnum(WPLParser::DefineEnumContext * ctx) override { return TvisitDefineEnum(ctx); }
+    std::any visitMatchStatement(WPLParser::MatchStatementContext * ctx) override { return TvisitMatchStatement(ctx); }
 
     bool hasErrors(int flags) { return errorHandler.hasErrors(flags); }
     std::string getErrors() { return errorHandler.errorList(); }

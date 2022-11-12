@@ -800,6 +800,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::MatchStatementContext *ctx)
             errorHandler.addSemanticError(ctx->getStart(), "Match statement did not cover all cases needed for " + sumType->toString());
         }
 
+        bindings->bind(ctx->check, new Symbol(ctx->check->ex->getText(), sumType, false, false)); //FIXME: DO BETTER!
         return {}; //FIXME: THIS OR UNDEFINED?
     }
 
