@@ -1097,6 +1097,8 @@ TEST_CASE("programs/Lambda1 - Basic lambda Test", "[codegen][lambda]")
     REQUIRE(llvmIrToSHA256(cv->getModule()) == "6e352285edacc42db930c25774b68b3a8fff977e2e858a61294b1ac14ad8c3a0");
 }
 
+//FIXME: LAMBDAS, ENUMS CAN"T BE ASSIGNED OUTSIDE OF DECL
+
 TEST_CASE("programs/Lambda2 - Basic lambda Test w/ return", "[codegen][lambda]")
 {
     std::fstream *inStream = new std::fstream("/home/shared/programs/Lambda2.wpl");
