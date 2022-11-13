@@ -781,7 +781,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::MatchStatementContext *ctx)
 
             stmgr->enterScope();
             Symbol *local = new Symbol(altCtx->name->getText(), caseType, false, false);
-            stmgr->addSymbol(local); 
+            stmgr->addSymbol(local);
             bindings->bind(altCtx->VARIABLE(), local);
 
             altCtx->eval->accept(this);
@@ -800,8 +800,8 @@ const Type *SemanticVisitor::visitCtx(WPLParser::MatchStatementContext *ctx)
             errorHandler.addSemanticError(ctx->getStart(), "Match statement did not cover all cases needed for " + sumType->toString());
         }
 
-        bindings->bind(ctx->check, new Symbol(ctx->check->ex->getText(), sumType, false, false)); //FIXME: DO BETTER!
-        return {}; //FIXME: THIS OR UNDEFINED?
+        bindings->bind(ctx->check, new Symbol(ctx->check->ex->getText(), sumType, false, false)); // FIXME: DO BETTER!
+        return {};                                                                                // FIXME: THIS OR UNDEFINED?
     }
 
     errorHandler.addSemanticError(ctx->check->getStart(), "Can only case on Sum Types, not " + condType->toString());
@@ -989,6 +989,27 @@ const Type *SemanticVisitor::visitCtx(WPLParser::LambdaTypeContext *ctx)
     const Type *lamType = new TypeInvoke(params, returnType);
 
     return lamType;
+}
+
+const Type *SemanticVisitor::visitCtx(WPLParser::SumTypeContext *ctx)
+{
+    std::set<const Type *, TypeCompare> cases = {};
+
+    for (auto e : ctx->type())
+    {
+        const Type *caseType = std::any_cast<const Type *>(e->accept(this)); // FIXME: verify if this is safe or not
+        cases.insert(caseType);
+    }
+
+    if (cases.size() != ctx->type().size())
+    {
+        errorHandler.addSemanticError(ctx->getStart(), "Duplicate arguments to enum type, or failed to generate types");
+        return Types::UNDEFINED;
+    }
+
+    const TypeSum *sum = new TypeSum(cases);
+
+    return sum; // FIXME
 }
 
 const Type *SemanticVisitor::visitCtx(WPLParser::DefineEnumContext *ctx)

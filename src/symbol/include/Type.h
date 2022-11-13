@@ -766,7 +766,16 @@ std::cout << "761" << std::endl;
 protected:
     bool isSupertypeFor(const Type *other) const override
     {
+        std::cout << this->toString() << " vs " << other->toString() << std::endl; 
+        if(this->contains(other)) return true; 
+
+        if(const TypeSum* oSum = dynamic_cast<const TypeSum*>(other))
+        {
+            std::cout << "773 OTHER SUM!" << std::endl; 
+            return this->cases == oSum->cases; //FIXME: VERIFY
+        }
         // FIXME: DOESNT WORK FOR FUNCTIONS, SUMS, ETC
-        return this->contains(other); // FIXME: ADDRESS SETTING SUM = SUM!
+        // return this->contains(other); // FIXME: ADDRESS SETTING SUM = SUM!
+        return false; 
     }
 };

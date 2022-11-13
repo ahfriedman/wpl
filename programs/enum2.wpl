@@ -10,8 +10,8 @@ define enum a {
     int, 
     boolean,
     str,
-    lambdaOp # FIXME: UNRECOGNIZED!
-    # (str, int -> str + str -> str) # FIXME: CAUSES BAS ANYCAST 
+    #lambdaOp # FIXME: UNRECOGNIZED!
+    (str, int -> str + str -> str) # FIXME: CAUSES BAS ANYCAST 
 }
 
 # FIXME: LET FOR () AROUND FN PARAMS IN Grammar?
@@ -38,7 +38,19 @@ int func program() {
     }
 
 
-    # a obscured <- op; 
+    a obscured <- op; 
+
+    match obscured {
+        int i => printf("Integer: %u\n", i);
+        boolean b => if b then { printf("Boolean: true\n"); } else { printf("Boolean: false\n"); }
+        str s => printf("String: %s\n", s);
+        (str, int -> str + str -> str) s => {
+            match s {
+                str, int -> str fn => fn("Repeat 2 times!", 2);
+                str -> str fn => fn("Plain old print!");
+            }
+        }
+    }
 
     return 0; 
 }

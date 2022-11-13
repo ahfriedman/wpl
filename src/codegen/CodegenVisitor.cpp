@@ -64,7 +64,7 @@ std::optional<Value *> CodegenVisitor::TvisitDefineEnum(WPLParser::DefineEnumCon
 
 std::optional<Value *> CodegenVisitor::TvisitMatchStatement(WPLParser::MatchStatementContext *ctx)
 {
-    std::cout << "HELLO" << std::endl; 
+    std::cout << "HELLO" << std::endl;
     std::optional<Symbol *> symOpt = props->getBinding(ctx->check); // FIXME: THIS DOES NOTHING
     if (!symOpt)
     {
@@ -89,12 +89,17 @@ std::optional<Value *> CodegenVisitor::TvisitMatchStatement(WPLParser::MatchStat
                 return {};
             }
 
+            std::cout << "92" << std::endl;
             Value *sumVal = optVal.value();
+            llvm::AllocaInst *SumPtr = builder->CreateAlloca(sumVal->getType());
+            builder->CreateStore(sumVal, SumPtr);
+
             // Value *corrPtr = builder->CreateBitCast(sumVal, sumVal->getType()->getPointerTo()); // FIXME: DO BETTER
-
-            Value *tagPtr = builder->CreateGEP(sumVal, {Int32Zero, Int32Zero});
+            std::cout << "95" << std::endl;
+            Value *tagPtr = builder->CreateGEP( SumPtr, {Int32Zero, Int32Zero});
+            std::cout << "97" << std::endl;
             Value *tag = builder->CreateLoad(tagPtr->getType()->getPointerElementType(), tagPtr);
-
+            std::cout << "99" << std::endl;
             llvm::SwitchInst *switchInst = builder->CreateSwitch(tag, mergeBlk, sumType->getCases().size());
 
             for (WPLParser::MatchAlternativeContext *altCtx : ctx->cases)
@@ -166,11 +171,13 @@ std::optional<Value *> CodegenVisitor::TvisitMatchStatement(WPLParser::MatchStat
                 varSymbol->val = v;
                 // varSymbol->val = v;
 
-                //Now to store the var
-                Value *valuePtr = builder->CreateGEP(sumVal, {Int32Zero, Int32One});
+                std::cout << "169" << std::endl;
+                // Now to store the var
+                Value *valuePtr = builder->CreateGEP(SumPtr, {Int32Zero, Int32One});
+                std::cout << "172" << std::endl;
                 Value *corrected = builder->CreateBitCast(valuePtr, ty->getPointerTo()); // FIXME: DO BETTER
-
-                Value *val = builder->CreateLoad(ty, corrected); //FIXME: WILL THIS WORK WITH NESTED SUMS?
+                std::cout << "174" << std::endl;
+                Value *val = builder->CreateLoad(ty, corrected); // FIXME: WILL THIS WORK WITH NESTED SUMS?
 
                 builder->CreateStore(val, v);
 
@@ -194,7 +201,6 @@ std::optional<Value *> CodegenVisitor::TvisitMatchStatement(WPLParser::MatchStat
                 {
                     builder->CreateBr(mergeBlk);
                 }
-
             }
         }
 
@@ -329,6 +335,7 @@ std::optional<Value *> CodegenVisitor::TvisitArrayAccess(WPLParser::ArrayAccessC
         }
     }
 
+    //FIXME: CAN WE BREAK ARRAYS DUE TO THE ACCESS OF THE ALLOC VALUE?
     auto ptr = builder->CreateGEP(arrayPtr.value(), {Int32Zero, index.value()});
     Value *val = builder->CreateLoad(ptr->getType()->getPointerElementType(), ptr);
     return val;
@@ -686,10 +693,10 @@ std::optional<Value *> CodegenVisitor::TvisitVariableExpr(WPLParser::VariableExp
         return {};
     }
 
-    if (dynamic_cast<const TypeSum *>(sym->type)) // FIXME: VERIFY
-    {
-        return sym->val.value();
-    }
+    // if (dynamic_cast<const TypeSum *>(sym->type)) // FIXME: VERIFY
+    // {
+    //     return sym->val.value();
+    // }
 
     // Otherwise, we are a local variable with an allocation and, thus, can simply load it.
     Value *v = builder->CreateLoad(type, sym->val.value(), id);
@@ -1014,7 +1021,7 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
                 {
                     std::cout << "1015" << std::endl;
                     Value *stoVal = exVal.value();
-std::cout << "1017" << std::endl;
+                    std::cout << "1017" << std::endl;
                     // FIXME: NEED TO ADD THIS FOR OTHER ASSIGN TYPE!
                     if (const TypeSum *sum = dynamic_cast<const TypeSum *>(varSymbol->type))
                     {
@@ -1024,15 +1031,25 @@ std::cout << "1017" << std::endl;
                         {
                             unsigned i = 1;
                             auto toFind = stoVal->getType();
-
+                            std::cout << "1027 toFind " << toFind << std::endl;
+                            std::string type_str;
+                            llvm::raw_string_ostream rso(type_str);
+                            toFind->print(rso);
+                            std::cout << rso.str() << std::endl;
+                            std::cout << "vvvvvv" << std::endl;
                             for (auto e : sum->getCases())
                             {
+                                std::string type_str;
+                                llvm::raw_string_ostream rso(type_str);
+                                e->getLLVMType(M)->print(rso);
+                                std::cout << rso.str() << std::endl;
                                 if (e->getLLVMType(M) == toFind)
                                 {
                                     return i;
                                 }
                                 i++;
                             }
+                            std::cout << "^^^^^^^" << std::endl;
 
                             return (unsigned int)0;
                         }(module);
@@ -1369,7 +1386,7 @@ std::optional<Value *> CodegenVisitor::TvisitLambdaConstExpr(WPLParser::LambdaCo
 
     const Type *type = sym->type;
 
-    llvm::Type *genericType = type->getLLVMType(module)->getPointerElementType(); //FIXME: CHECK IF SAFE!
+    llvm::Type *genericType = type->getLLVMType(module)->getPointerElementType(); // FIXME: CHECK IF SAFE!
 
     if (llvm::FunctionType *fnType = static_cast<llvm::FunctionType *>(genericType))
     {

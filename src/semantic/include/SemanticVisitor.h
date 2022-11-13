@@ -79,7 +79,7 @@ public:
 
     const Type* visitCtx(WPLParser::LambdaConstExprContext *ctx);
 
-    // const Type* visitCtx(WPLParser::SumTypeContext * ctx); //FIXME: NEED TO DO THIS & OTHERS!
+    const Type* visitCtx(WPLParser::SumTypeContext * ctx); //FIXME: NEED TO DO THIS & OTHERS!
     const Type* visitCtx(WPLParser::CustomTypeContext * ctx);
     const Type* visitCtx(WPLParser::DefineEnumContext * ctx);
     const Type* visitCtx(WPLParser::MatchStatementContext * ctx);
@@ -133,6 +133,7 @@ public:
 
     std::any visitLambdaConstExpr(WPLParser::LambdaConstExprContext *ctx) override { return visitCtx(ctx); }
 
+    std::any visitSumType(WPLParser::SumTypeContext * ctx) override { return visitCtx(ctx); }
     std::any visitCustomType(WPLParser::CustomTypeContext * ctx) override { return visitCtx(ctx); }
     std::any visitDefineEnum(WPLParser::DefineEnumContext * ctx) override { return visitCtx(ctx); }
     std::any visitMatchStatement(WPLParser::MatchStatementContext * ctx) override { return visitCtx(ctx); }
