@@ -15,6 +15,7 @@ define enum a {
 }
 
 # FIXME: LET FOR () AROUND FN PARAMS IN Grammar?
+# FIXME: CAN WE REDEFINE WITHIN THE SUM?
 
 int func program() {
     # FIXME: CANNOT ASSIGN DIRECTLY 
