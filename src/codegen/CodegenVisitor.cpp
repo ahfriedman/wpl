@@ -223,10 +223,7 @@ std::optional<Value *> CodegenVisitor::TvisitInvocation(WPLParser::InvocationCon
     // Populate the argument vector, breaking out of compilation if any argument fails to generate.
     for (auto e : ctx->args)
     {
-        std::cout << "GEN " << e->getText() << std::endl; 
         std::optional<Value *> valOpt = std::any_cast<std::optional<Value *>>(e->accept(this));
-        module->dump(); 
-        
         if (!valOpt)
         {
             errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code");
