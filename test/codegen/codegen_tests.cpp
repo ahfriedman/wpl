@@ -1094,7 +1094,7 @@ TEST_CASE("programs/Lambda1 - Basic lambda Test", "[codegen][lambda]")
 
     REQUIRE_FALSE(cv->hasErrors(0));
 
-    REQUIRE(llvmIrToSHA256(cv->getModule()) == "28857ea4eb9243486dea893cf00fa69d95b811df8a327308f6a7a89a1da47a6f");
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "6e352285edacc42db930c25774b68b3a8fff977e2e858a61294b1ac14ad8c3a0");
 }
 
 TEST_CASE("programs/Lambda2 - Basic lambda Test w/ return", "[codegen][lambda]")
