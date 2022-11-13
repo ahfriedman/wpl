@@ -223,7 +223,10 @@ std::optional<Value *> CodegenVisitor::TvisitInvocation(WPLParser::InvocationCon
     // Populate the argument vector, breaking out of compilation if any argument fails to generate.
     for (auto e : ctx->args)
     {
+        std::cout << "GEN " << e->getText() << std::endl; 
         std::optional<Value *> valOpt = std::any_cast<std::optional<Value *>>(e->accept(this));
+        module->dump(); 
+        
         if (!valOpt)
         {
             errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code");
@@ -262,15 +265,16 @@ std::optional<Value *> CodegenVisitor::TvisitInvocation(WPLParser::InvocationCon
 
         if (dynamic_cast<const TypeInvoke *>(sym->type))
         {
-            llvm::FunctionType *fnType = static_cast<llvm::FunctionType *>(ty);
+            llvm::FunctionType *fnType = static_cast<llvm::FunctionType *>(ty->getPointerElementType());
             llvm::Value *fnPtr = fnPtrOpt.value();
 
             llvm::Value *fn = builder->CreateLoad(fnPtr);
+            
 
             Value *val = builder->CreateCall(fnType, fn, ref);
             // llvm::FunctionCallee *callee = new llvm::FunctionCallee(fnType, fnPtr);
 
-            // Value *val = builder->CreateCall(callee, ref); // Needs to be separate line because, C++
+            // Value *val = builder->CreateCall(*callee, ref); // Needs to be separate line because, C++
             return val;
         }
 
