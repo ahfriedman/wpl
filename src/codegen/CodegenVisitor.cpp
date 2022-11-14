@@ -13,6 +13,51 @@ std::optional<Value *> CodegenVisitor::TvisitCompilationUnit(WPLParser::Compilat
         e->accept(this);
     }
 
+    // Pre-declare all functions //FIXME: VERIFY
+    for (auto e : ctx->stmts)
+    {
+        if (WPLParser::FuncDefContext *fnCtx = dynamic_cast<WPLParser::FuncDefContext *>(e))
+        {
+            //FIXME: VERIFY SWITCH OVER TO PROC AND REM EXTERN, METHODIZE, ALSO, EDIT INVOKE GEN ELSEWHERE TO REFLECT THIS
+            std::optional<Symbol *> optSym = props->getBinding(fnCtx);
+
+            if (!optSym)
+            {
+                errorHandler.addCodegenError(fnCtx->getStart(), "Incorrectly bound symbol in function definition. Probably a compiler error.");
+                return {};
+            }
+
+            Symbol *symbol = optSym.value();
+
+            if (!symbol->type)
+            {
+                errorHandler.addCodegenError(fnCtx->getStart(), "Type for function not correctly bound! Probably a compiler errror.");
+                return {};
+            }
+
+            const Type *generalType = symbol->type;
+
+            if (const TypeInvoke *type = dynamic_cast<const TypeInvoke *>(generalType))
+            {
+                llvm::Type *genericType = type->getLLVMType(module)->getPointerElementType();
+
+                if (llvm::FunctionType *fnType = static_cast<llvm::FunctionType *>(genericType))
+                {
+                    Function::Create(fnType, GlobalValue::ExternalLinkage, fnCtx->name->getText(), module);
+                }
+                else
+                {
+                    errorHandler.addCodegenError(fnCtx->getStart(), "Could not treat function type as function.");
+                    return {};
+                }
+            }
+            else
+            {
+                errorHandler.addCodegenError(fnCtx->getStart(), "Function bound to: " + generalType->toString() + ". Requires Invokable!");
+            }
+        }
+    }
+
     for (auto e : ctx->stmts)
     {
         // Generate code for statement
@@ -253,7 +298,7 @@ std::optional<Value *> CodegenVisitor::TvisitInvocation(WPLParser::InvocationCon
         // FIXME: WILL NOT WORK FOR GLOBAL
         if (!fnPtrOpt)
         {
-            errorHandler.addCodegenError(ctx->getStart(), "Could not find value for function");
+            errorHandler.addCodegenError(ctx->getStart(), "Could not find value for function: " + sym->toString());
             return {};
         }
         // FIXME: TEST GLOBAL LAMBDAS!!!
@@ -678,7 +723,7 @@ std::optional<Value *> CodegenVisitor::TvisitVariableExpr(WPLParser::VariableExp
             Value *val = builder->CreateLoad(glob);
             return val;
         }
-        else if (llvm::FunctionType *fnType = static_cast<llvm::FunctionType *>(type))
+        else if (llvm::FunctionType *fnType = static_cast<llvm::FunctionType *>(type)) //FIXME: ALWAYS TRUE?
         {
             // FIXME: METHODIZE!!!
             Function *fn = module->getFunction(id);
@@ -907,7 +952,7 @@ std::optional<Value *> CodegenVisitor::TvisitAssignStatement(WPLParser::AssignSt
 
     // Store the expression's value
     // FIXME: METHODIZE?
-    Value * v = val.value();
+    Value *v = val.value();
     Value *stoVal = exprVal.value();
     if (const TypeSum *sum = dynamic_cast<const TypeSum *>(varSym->type))
     {

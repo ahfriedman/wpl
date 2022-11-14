@@ -17,15 +17,40 @@ const Type *SemanticVisitor::visitCtx(WPLParser::CompilationUnitContext *ctx)
         this->visitCtx(e);
     }
 
-    //Auto forward decl //FIXME: VERIFY
-    // for (auto e : ctx->stmts)
-    // {
-    //     if (!(dynamic_cast<WPLParser::FuncDefContext *>(e))
-    //     {
-    //         errorHandler.addSemanticCritWarning(ctx->getStart(), "Currently, only FUNC, PROC, EXTERN, and variable declarations allowed at top-level. Not: " + e->getText());
-    //     }
-    //     e->accept(this);
-    // }
+    // Auto forward decl //FIXME: VERIFY
+    for (auto e : ctx->stmts)
+    {
+        if (WPLParser::FuncDefContext *fnCtx = dynamic_cast<WPLParser::FuncDefContext *>(e))
+        {
+            std::string id = fnCtx->name->getText();
+
+            std::optional<Symbol *> opt = stmgr->lookup(id);
+
+            if (opt)
+            {
+                errorHandler.addSemanticError(ctx->getStart(), "Unsupported redeclaration of " + id);
+                // return Types::UNDEFINED;
+            }
+
+            const Type *ty = (fnCtx->paramList) ? this->visitCtx(fnCtx->paramList)
+                                              : new TypeInvoke();
+
+            const TypeInvoke *procType = dynamic_cast<const TypeInvoke *>(ty); // Always true, but needs separate statement to make C happy.
+
+            const Type *retType = fnCtx->ty ? std::any_cast<const Type *>(fnCtx->ty->accept(this)) // this->visitCtx(ctx->ty)
+                                          : Types::UNDEFINED;
+
+            const TypeInvoke *funcType = (fnCtx->ty) ? new TypeInvoke(procType->getParamTypes(), retType, false, false)
+                                                   : new TypeInvoke(procType->getParamTypes(), false, false);
+
+            Symbol *funcSymbol = new Symbol(id, funcType, true, false); // FIXME: WAS N/A, FALSE before -> VERY HACKY
+
+            stmgr->addSymbol(funcSymbol);
+            bindings->bind(ctx, funcSymbol);
+            // errorHandler.addSemanticCritWarning(ctx->getStart(), "Currently, only FUNC, PROC, EXTERN, and variable declarations allowed at top-level. Not: " + e->getText());
+        }
+        // e->accept(this);
+    }
 
     // Visit the statements contained in the unit
     for (auto e : ctx->stmts)
@@ -653,8 +678,8 @@ const Type *SemanticVisitor::visitCtx(WPLParser::ExternStatementContext *ctx)
     const Type *retType = ctx->ty ? std::any_cast<const Type *>(ctx->ty->accept(this)) // this->visitCtx(ctx->ty)
                                   : Types::UNDEFINED;
 
-    const TypeInvoke *funcType = (ctx->ty) ? new TypeInvoke(procType->getParamTypes(), retType, variadic, false)
-                                           : new TypeInvoke(procType->getParamTypes(), variadic, false);
+    const TypeInvoke *funcType = (ctx->ty) ? new TypeInvoke(procType->getParamTypes(), retType, variadic, true)
+                                           : new TypeInvoke(procType->getParamTypes(), variadic, true);
 
     Symbol *funcSymbol = new Symbol(id, funcType, true, true); // FIXME: WAS N/A, FALSE before
 
