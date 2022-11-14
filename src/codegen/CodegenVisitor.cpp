@@ -96,7 +96,7 @@ std::optional<Value *> CodegenVisitor::TvisitMatchStatement(WPLParser::MatchStat
 
             // Value *corrPtr = builder->CreateBitCast(sumVal, sumVal->getType()->getPointerTo()); // FIXME: DO BETTER
             std::cout << "95" << std::endl;
-            Value *tagPtr = builder->CreateGEP( SumPtr, {Int32Zero, Int32Zero});
+            Value *tagPtr = builder->CreateGEP(SumPtr, {Int32Zero, Int32Zero});
             std::cout << "97" << std::endl;
             Value *tag = builder->CreateLoad(tagPtr->getType()->getPointerElementType(), tagPtr);
             std::cout << "99" << std::endl;
@@ -266,7 +266,6 @@ std::optional<Value *> CodegenVisitor::TvisitInvocation(WPLParser::InvocationCon
             llvm::Value *fnPtr = fnPtrOpt.value();
 
             llvm::Value *fn = builder->CreateLoad(fnPtr);
-            
 
             Value *val = builder->CreateCall(fnType, fn, ref);
             // llvm::FunctionCallee *callee = new llvm::FunctionCallee(fnType, fnPtr);
@@ -336,7 +335,7 @@ std::optional<Value *> CodegenVisitor::TvisitArrayAccess(WPLParser::ArrayAccessC
         }
     }
 
-    //FIXME: CAN WE BREAK ARRAYS DUE TO THE ACCESS OF THE ALLOC VALUE?
+    // FIXME: CAN WE BREAK ARRAYS DUE TO THE ACCESS OF THE ALLOC VALUE?
     auto ptr = builder->CreateGEP(arrayPtr.value(), {Int32Zero, index.value()});
     Value *val = builder->CreateLoad(ptr->getType()->getPointerElementType(), ptr);
     return val;
@@ -912,7 +911,46 @@ std::optional<Value *> CodegenVisitor::TvisitAssignStatement(WPLParser::AssignSt
     }
 
     // Store the expression's value
-    builder->CreateStore(exprVal.value(), val.value());
+    // FIXME: METHODIZE?
+    Value * v = val.value();
+    Value *stoVal = exprVal.value();
+    if (const TypeSum *sum = dynamic_cast<const TypeSum *>(varSym->type))
+    {
+        // FIXME: METHODIZE!!
+        unsigned int index = [sum, stoVal](llvm::Module *M)
+        {
+            unsigned i = 1;
+            auto toFind = stoVal->getType();
+            for (auto e : sum->getCases())
+            {
+                if (e->getLLVMType(M) == toFind)
+                {
+                    return i;
+                }
+                i++;
+            }
+
+            return (unsigned int)0;
+        }(module);
+
+        if (index == 0)
+        {
+            errorHandler.addCodegenError(ctx->getStart(), "Unable to find key for type in sum");
+            return {}; // FIXME: DO BETTER!
+        }
+
+        Value *tagPtr = builder->CreateGEP(v, {Int32Zero, Int32Zero});
+
+        builder->CreateStore(ConstantInt::get(Int32Ty, index, true), tagPtr);
+        Value *valuePtr = builder->CreateGEP(v, {Int32Zero, Int32One});
+
+        Value *corrected = builder->CreateBitCast(valuePtr, stoVal->getType()->getPointerTo()); // FIXME: DO BETTER
+        builder->CreateStore(stoVal, corrected);
+    }
+    else
+    {
+        builder->CreateStore(stoVal, v);
+    }
 
     return {};
 }
@@ -1020,37 +1058,23 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
                 // Similarly, if we have an expression for the local var, we can store it. Otherwise, we can leave it undefined.
                 if (e->ex)
                 {
-                    std::cout << "1015" << std::endl;
                     Value *stoVal = exVal.value();
-                    std::cout << "1017" << std::endl;
                     // FIXME: NEED TO ADD THIS FOR OTHER ASSIGN TYPE!
                     if (const TypeSum *sum = dynamic_cast<const TypeSum *>(varSymbol->type))
                     {
-                        std::cout << "1021" << std::endl;
                         // FIXME: METHODIZE!!
                         unsigned int index = [sum, stoVal](llvm::Module *M)
                         {
                             unsigned i = 1;
                             auto toFind = stoVal->getType();
-                            std::cout << "1027 toFind " << toFind << std::endl;
-                            std::string type_str;
-                            llvm::raw_string_ostream rso(type_str);
-                            toFind->print(rso);
-                            std::cout << rso.str() << std::endl;
-                            std::cout << "vvvvvv" << std::endl;
                             for (auto e : sum->getCases())
                             {
-                                std::string type_str;
-                                llvm::raw_string_ostream rso(type_str);
-                                e->getLLVMType(M)->print(rso);
-                                std::cout << rso.str() << std::endl;
                                 if (e->getLLVMType(M) == toFind)
                                 {
                                     return i;
                                 }
                                 i++;
                             }
-                            std::cout << "^^^^^^^" << std::endl;
 
                             return (unsigned int)0;
                         }(module);
