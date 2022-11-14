@@ -17,10 +17,20 @@ const Type *SemanticVisitor::visitCtx(WPLParser::CompilationUnitContext *ctx)
         this->visitCtx(e);
     }
 
+    //Auto forward decl //FIXME: VERIFY
+    // for (auto e : ctx->stmts)
+    // {
+    //     if (!(dynamic_cast<WPLParser::FuncDefContext *>(e))
+    //     {
+    //         errorHandler.addSemanticCritWarning(ctx->getStart(), "Currently, only FUNC, PROC, EXTERN, and variable declarations allowed at top-level. Not: " + e->getText());
+    //     }
+    //     e->accept(this);
+    // }
+
     // Visit the statements contained in the unit
     for (auto e : ctx->stmts)
     {
-        if (!(dynamic_cast<WPLParser::FuncDefContext *>(e) || dynamic_cast<WPLParser::ProcDefContext *>(e) || dynamic_cast<WPLParser::VarDeclStatementContext *>(e)))
+        if (!(dynamic_cast<WPLParser::FuncDefContext *>(e) || dynamic_cast<WPLParser::VarDeclStatementContext *>(e)))
         {
             errorHandler.addSemanticCritWarning(ctx->getStart(), "Currently, only FUNC, PROC, EXTERN, and variable declarations allowed at top-level. Not: " + e->getText());
         }
@@ -558,7 +568,6 @@ const Type *SemanticVisitor::visitCtx(WPLParser::SelectAlternativeContext *ctx)
      *  Just make sure that we don't try to define functions and stuff in a select as that doesn't make sense (and would cause codegen issues as it stands).
      */
     if (dynamic_cast<WPLParser::FuncDefContext *>(ctx->eval) ||
-        dynamic_cast<WPLParser::ProcDefContext *>(ctx->eval) ||
         dynamic_cast<WPLParser::VarDeclStatementContext *>(ctx->eval))
     {
         errorHandler.addSemanticError(ctx->getStart(), "Dead code: definition as select alternative.");
@@ -658,11 +667,6 @@ const Type *SemanticVisitor::visitCtx(WPLParser::ExternStatementContext *ctx)
 const Type *SemanticVisitor::visitCtx(WPLParser::FuncDefContext *ctx)
 {
     return this->visitInvokeable(ctx, ctx->name->getText(), ctx->paramList, ctx->ty, ctx->block());
-}
-
-const Type *SemanticVisitor::visitCtx(WPLParser::ProcDefContext *ctx)
-{
-    return visitInvokeable(ctx, ctx->name->getText(), ctx->paramList, nullptr, ctx->block());
 }
 
 const Type *SemanticVisitor::visitCtx(WPLParser::AssignStatementContext *ctx)
@@ -788,7 +792,6 @@ const Type *SemanticVisitor::visitCtx(WPLParser::MatchStatementContext *ctx)
             this->safeExitScope(altCtx);
 
             if (dynamic_cast<WPLParser::FuncDefContext *>(altCtx->eval) ||
-                dynamic_cast<WPLParser::ProcDefContext *>(altCtx->eval) ||
                 dynamic_cast<WPLParser::VarDeclStatementContext *>(altCtx->eval))
             {
                 errorHandler.addSemanticError(altCtx->getStart(), "Dead code: definition as select alternative.");

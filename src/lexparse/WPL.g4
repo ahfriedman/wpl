@@ -111,8 +111,7 @@ assignment : v+=VARIABLE (',' v+=VARIABLE)* (ASSIGN ex=expression)? ;
  * 10. Return statements
  * 11. Block statements. 
  */
-statement           : ty=type FUNC name=VARIABLE '(' (paramList=parameterList)? ')' block   # FuncDef 
-                    | PROC name=VARIABLE '(' (paramList=parameterList)? ')' block           # ProcDef
+statement           : ((ty=type FUNC) | PROC) name=VARIABLE '(' (paramList=parameterList)? ')' block   # FuncDef 
                     | <assoc=right> to=arrayOrVar ASSIGN ex=expression ';'                  # AssignStatement 
                     | <assoc=right> ty=typeOrVar assignments+=assignment (',' assignments+=assignment)* ';'   # VarDeclStatement
                     | WHILE check=condition DO block                                    # LoopStatement 

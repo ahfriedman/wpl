@@ -838,11 +838,6 @@ std::optional<Value *> CodegenVisitor::TvisitFuncDef(WPLParser::FuncDefContext *
     return CodegenVisitor::visitInvokeable(ctx);
 }
 
-std::optional<Value *> CodegenVisitor::TvisitProcDef(WPLParser::ProcDefContext *ctx)
-{
-    return CodegenVisitor::visitInvokeable(ctx);
-}
-
 std::optional<Value *> CodegenVisitor::TvisitAssignStatement(WPLParser::AssignStatementContext *ctx)
 {
     // Visit the expression to get the value we will assign

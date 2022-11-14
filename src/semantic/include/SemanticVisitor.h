@@ -61,7 +61,6 @@ public:
     const Type *visitCtx(WPLParser::AssignmentContext *ctx);
     const Type *visitCtx(WPLParser::ExternStatementContext *ctx);
     const Type *visitCtx(WPLParser::FuncDefContext *ctx);
-    const Type *visitCtx(WPLParser::ProcDefContext *ctx);
     const Type *visitCtx(WPLParser::AssignStatementContext *ctx);
     const Type *visitCtx(WPLParser::VarDeclStatementContext *ctx);
     const Type *visitCtx(WPLParser::LoopStatementContext *ctx);
@@ -115,7 +114,6 @@ public:
     std::any visitAssignment(WPLParser::AssignmentContext *ctx) override { return visitCtx(ctx); }
     std::any visitExternStatement(WPLParser::ExternStatementContext *ctx) override { return visitCtx(ctx); }
     std::any visitFuncDef(WPLParser::FuncDefContext *ctx) override { return visitCtx(ctx); }
-    std::any visitProcDef(WPLParser::ProcDefContext *ctx) override { return visitCtx(ctx); }
     std::any visitAssignStatement(WPLParser::AssignStatementContext *ctx) override { return visitCtx(ctx); }
     std::any visitVarDeclStatement(WPLParser::VarDeclStatementContext *ctx) override { return visitCtx(ctx); }
     std::any visitLoopStatement(WPLParser::LoopStatementContext *ctx) override { return visitCtx(ctx); }
@@ -170,7 +168,7 @@ public:
                 foundReturn = true;
 
             // Prevent defining a Func or PROC in the block as this is not yet supported. //FIXME: NEED TO DEAL WITH SCOPE ISSUES!
-            // if (dynamic_cast<WPLParser::FuncDefContext *>(e) || dynamic_cast<WPLParser::ProcDefContext *>(e))
+            // if (dynamic_cast<WPLParser::FuncDefContext *>(e))
             // {
             //     errorHandler.addSemanticError(ctx->getStart(), "Currenly, nested PROC/FUNCs are not supported by codegen.");
             // }
