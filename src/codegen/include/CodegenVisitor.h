@@ -224,13 +224,13 @@ public:
 
         if (llvm::FunctionType *fnType = static_cast<llvm::FunctionType *>(genericType))
         {
-            Function *fn = module->getFunction(funcId); // Lookup the function first
+            Function *fn = module->getFunction(funcId); // Lookup the function first //FIXME: DOESNT WORK FOR LOCAL FNS!
             /*
              * If we couldn't find the function, that means it wasn't pre-declared, and we need to create it here and now.
              */
             if (!fn)
             {
-                fn = Function::Create(fnType, GlobalValue::ExternalLinkage, funcId, module);
+                fn = Function::Create(fnType, GlobalValue::PrivateLinkage, funcId, module); //FIXME: DO BETTER
             }
 
             // Get the parameter list context for the invokable
