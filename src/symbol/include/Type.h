@@ -730,7 +730,7 @@ public:
                 max = t;
             }
 
-            std::cout << t << std::endl;
+            std::cout << e->toString() << " size: " << t << std::endl; //FIXME: Verify that strings (and such) are done with pointers (which I think they are) so that they don't go out of bounds
         }
 
         std::cout << "736" << std::endl;
