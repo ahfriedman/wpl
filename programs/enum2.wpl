@@ -10,8 +10,8 @@ define enum a {
     int, 
     boolean,
     str,
-    #lambdaOp # FIXME: UNRECOGNIZED!
-    (str, int -> str + str -> str) # FIXME: CAUSES BAS ANYCAST 
+    lambdaOp # FIXME: UNRECOGNIZED! -> Maybe not now?
+    # (str, int -> str + str -> str) # FIXME: CAUSES BAS ANYCAST 
 }
 
 # FIXME: LET FOR () AROUND FN PARAMS IN Grammar?
