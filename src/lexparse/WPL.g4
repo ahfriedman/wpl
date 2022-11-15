@@ -5,7 +5,10 @@
 grammar WPL;
 
 // Parser rules
-compilationUnit   :  (stmts+=statement | extens+=externStatement)* EOF ; 
+compilationUnit   :  (stmts+=statement | extens+=externStatement | defs+=defineType)* EOF ; 
+
+defineType        : 'define' 'enum' name=VARIABLE '{' cases+=type (',' cases+=type)+ '}' # DefineEnum
+                  ; 
 
 externStatement : EXTERN (ty=type FUNC | PROC) name=VARIABLE '(' ((paramList=parameterList variadic=VariadicParam?)? | ELLIPSIS) ')' ';';
 
@@ -67,6 +70,7 @@ condition           : ('(' ex=expression ')') | ex=expression ;
 
 //Used to model each alternative in a selection 
 selectAlternative   : check=expression ':' eval=statement ; 
+matchAlternative    : check=type name=VARIABLE '=>' eval=statement ;  //FIXME: DO BETTER
 
 
 /*
@@ -107,16 +111,16 @@ assignment : v+=VARIABLE (',' v+=VARIABLE)* (ASSIGN ex=expression)? ;
  * 10. Return statements
  * 11. Block statements. 
  */
-statement           : ty=type FUNC name=VARIABLE '(' (paramList=parameterList)? ')' block   # FuncDef 
-                    | PROC name=VARIABLE '(' (paramList=parameterList)? ')' block           # ProcDef
-                    | <assoc=right> to=arrayOrVar ASSIGN ex=expression ';'                     # AssignStatement 
+statement           : ((ty=type FUNC) | PROC) name=VARIABLE '(' (paramList=parameterList)? ')' block   # FuncDef 
+                    | <assoc=right> to=arrayOrVar ASSIGN ex=expression ';'                  # AssignStatement 
                     | <assoc=right> ty=typeOrVar assignments+=assignment (',' assignments+=assignment)* ';'   # VarDeclStatement
-                    | WHILE check=condition DO block                                # LoopStatement 
-                    | IF check=condition IF_THEN? trueBlk=block (ELSE falseBlk=block)? # ConditionalStatement
-                    | SELECT '{' (cases+=selectAlternative)* '}'  # SelectStatement  
-                    | call=invocation  ';'?    # CallStatement 
-                    | RETURN expression? ';'  # ReturnStatement 
-                    | block # BlockStatement
+                    | WHILE check=condition DO block                                    # LoopStatement 
+                    | IF check=condition IF_THEN? trueBlk=block (ELSE falseBlk=block)?  # ConditionalStatement
+                    | SELECT '{' (cases+=selectAlternative)* '}'                        # SelectStatement  
+                    | MATCH check=condition '{' (cases+=matchAlternative)* '}'          # MatchStatement
+                    | call=invocation  ';'?     # CallStatement 
+                    | RETURN expression? ';'    # ReturnStatement 
+                    | block                     # BlockStatement
                     ;   
 
 //Operators
@@ -158,6 +162,8 @@ typeOrVar       : type | 'var'  ;
 //Allows us to have a type of ints, bools, or strings with the option for them to become 1d arrays. 
 type            :    ty=(TYPE_INT | TYPE_BOOL | TYPE_STR) (LBRC len=INTEGER RBRC)?  # BaseType
                 |    paramTypes+=type (',' paramTypes+=type)* '->' returnType=type  # LambdaType
+                |    '(' type ('+' type)+ ')'                                       # SumType 
+                |    VARIABLE                                                       # CustomType
                 ;
 
 TYPE_INT        :   'int' ; 
@@ -175,6 +181,7 @@ RETURN          :   'return';
 SELECT          :   'select';
 DO              :   'do'    ;
 EXTERN          :   'extern';
+MATCH           :   'match' ;
 
 
 //Booleans

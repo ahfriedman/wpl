@@ -1,4 +1,3 @@
-// #include "Symbol.h"
 #include "Scope.h"
 
 /**

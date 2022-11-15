@@ -61,7 +61,6 @@ public:
     const Type *visitCtx(WPLParser::AssignmentContext *ctx);
     const Type *visitCtx(WPLParser::ExternStatementContext *ctx);
     const Type *visitCtx(WPLParser::FuncDefContext *ctx);
-    const Type *visitCtx(WPLParser::ProcDefContext *ctx);
     const Type *visitCtx(WPLParser::AssignStatementContext *ctx);
     const Type *visitCtx(WPLParser::VarDeclStatementContext *ctx);
     const Type *visitCtx(WPLParser::LoopStatementContext *ctx);
@@ -78,6 +77,13 @@ public:
     const Type *visitCtx(WPLParser::BaseTypeContext *ctx);
 
     const Type* visitCtx(WPLParser::LambdaConstExprContext *ctx);
+
+    const Type* visitCtx(WPLParser::SumTypeContext * ctx); //FIXME: NEED TO DO THIS & OTHERS!
+    const Type* visitCtx(WPLParser::CustomTypeContext * ctx);
+    const Type* visitCtx(WPLParser::DefineEnumContext * ctx);
+    const Type* visitCtx(WPLParser::MatchStatementContext * ctx);
+
+
 
     /*
      * Traditional visitor methods all overridden with our typed versions
@@ -108,7 +114,6 @@ public:
     std::any visitAssignment(WPLParser::AssignmentContext *ctx) override { return visitCtx(ctx); }
     std::any visitExternStatement(WPLParser::ExternStatementContext *ctx) override { return visitCtx(ctx); }
     std::any visitFuncDef(WPLParser::FuncDefContext *ctx) override { return visitCtx(ctx); }
-    std::any visitProcDef(WPLParser::ProcDefContext *ctx) override { return visitCtx(ctx); }
     std::any visitAssignStatement(WPLParser::AssignStatementContext *ctx) override { return visitCtx(ctx); }
     std::any visitVarDeclStatement(WPLParser::VarDeclStatementContext *ctx) override { return visitCtx(ctx); }
     std::any visitLoopStatement(WPLParser::LoopStatementContext *ctx) override { return visitCtx(ctx); }
@@ -125,6 +130,11 @@ public:
     std::any visitBaseType(WPLParser::BaseTypeContext *ctx) override { return visitCtx(ctx); }
 
     std::any visitLambdaConstExpr(WPLParser::LambdaConstExprContext *ctx) override { return visitCtx(ctx); }
+
+    std::any visitSumType(WPLParser::SumTypeContext * ctx) override { return visitCtx(ctx); }
+    std::any visitCustomType(WPLParser::CustomTypeContext * ctx) override { return visitCtx(ctx); }
+    std::any visitDefineEnum(WPLParser::DefineEnumContext * ctx) override { return visitCtx(ctx); }
+    std::any visitMatchStatement(WPLParser::MatchStatementContext * ctx) override { return visitCtx(ctx); }
 
     /**
      * @brief Used to safely enter a block. This is used to ensure there aren't FUNC/PROC definitions / code following returns in it.
@@ -158,7 +168,7 @@ public:
                 foundReturn = true;
 
             // Prevent defining a Func or PROC in the block as this is not yet supported. //FIXME: NEED TO DEAL WITH SCOPE ISSUES!
-            // if (dynamic_cast<WPLParser::FuncDefContext *>(e) || dynamic_cast<WPLParser::ProcDefContext *>(e))
+            // if (dynamic_cast<WPLParser::FuncDefContext *>(e))
             // {
             //     errorHandler.addSemanticError(ctx->getStart(), "Currenly, nested PROC/FUNCs are not supported by codegen.");
             // }

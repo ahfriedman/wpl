@@ -1158,47 +1158,6 @@ TEST_CASE("Redeclaration in extern", "[semantic][program]")
   // REQUIRE(cv->hasErrors(0));
 }
 
-TEST_CASE("Out of order function", "[semantic][program]")
-{
-  antlr4::ANTLRInputStream input(
-      R""""(
-extern int func printf(...);
-
-str a <- "hello";
-
-int func program() {
-    foo(); 
-    return 0;
-}
-
-proc foo() {
-    printf("a = %s\n", a);
-}
-    )"""");
-  WPLLexer lexer(&input);
-  // lexer.removeErrorListeners();
-  // lexer.addErrorListener(new TestErrorListener());
-  antlr4::CommonTokenStream tokens(&lexer);
-  WPLParser parser(&tokens);
-  parser.removeErrorListeners();
-  parser.addErrorListener(new TestErrorListener());
-
-  WPLParser::CompilationUnitContext *tree = NULL;
-  REQUIRE_NOTHROW(tree = parser.compilationUnit());
-  REQUIRE(tree != NULL);
-  REQUIRE(tree->getText() != "");
-
-  STManager *stmgr = new STManager();
-  PropertyManager *pm = new PropertyManager();
-  SemanticVisitor *sv = new SemanticVisitor(stmgr, pm);
-
-  sv->visitCompilationUnit(tree);
-  REQUIRE(sv->hasErrors(ERROR));
-  CodegenVisitor *cv = new CodegenVisitor(pm, "test", CompilerFlags::NO_RUNTIME);
-  cv->visitCompilationUnit(tree);
-  REQUIRE(cv->hasErrors(0));
-}
-
 TEST_CASE("Out of order function w/ forward declaration", "[semantic][program]")
 {
   antlr4::ANTLRInputStream input(
@@ -1232,10 +1191,15 @@ proc foo() {
   REQUIRE(tree->getText() != "");
 
   STManager *stmgr = new STManager();
-  SemanticVisitor *sv = new SemanticVisitor(stmgr, new PropertyManager());
+  PropertyManager *pm = new PropertyManager();
+  SemanticVisitor *sv = new SemanticVisitor(stmgr, pm);
 
   sv->visitCompilationUnit(tree);
-  REQUIRE_FALSE(sv->hasErrors(ERROR));
+  REQUIRE(sv->hasErrors(ERROR));
+
+  CodegenVisitor *cv = new CodegenVisitor(pm, "test", CompilerFlags::NO_RUNTIME);
+  cv->visitCompilationUnit(tree);
+  REQUIRE(cv->hasErrors(0));
 }
 
 TEST_CASE("Out of order function w/ forward declaration with Out of order global", "[semantic][program]")

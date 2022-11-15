@@ -114,7 +114,6 @@ public:
     std::optional<Value *> TvisitAssignment(WPLParser::AssignmentContext *ctx);
     std::optional<Value *> TvisitExternStatement(WPLParser::ExternStatementContext *ctx);
     std::optional<Value *> TvisitFuncDef(WPLParser::FuncDefContext *ctx);
-    std::optional<Value *> TvisitProcDef(WPLParser::ProcDefContext *ctx);
     std::optional<Value *> TvisitAssignStatement(WPLParser::AssignStatementContext *ctx);
     std::optional<Value *> TvisitVarDeclStatement(WPLParser::VarDeclStatementContext *ctx);
     std::optional<Value *> TvisitLoopStatement(WPLParser::LoopStatementContext *ctx);
@@ -128,7 +127,8 @@ public:
     std::optional<Value *> TvisitBooleanConst(WPLParser::BooleanConstContext *ctx);
     
     std::optional<Value *> TvisitLambdaConstExpr(WPLParser::LambdaConstExprContext *ctx);
-
+    std::optional<Value *> TvisitDefineEnum(WPLParser::DefineEnumContext * ctx);
+    std::optional<Value *> TvisitMatchStatement(WPLParser::MatchStatementContext * ctx);
 
 
     /******************************************************************
@@ -162,7 +162,6 @@ public:
     std::any visitAssignment(WPLParser::AssignmentContext *ctx) override { return TvisitAssignment(ctx); };
     std::any visitExternStatement(WPLParser::ExternStatementContext *ctx) override { return TvisitExternStatement(ctx); };
     std::any visitFuncDef(WPLParser::FuncDefContext *ctx) override { return TvisitFuncDef(ctx); };
-    std::any visitProcDef(WPLParser::ProcDefContext *ctx) override { return TvisitProcDef(ctx); };
     std::any visitAssignStatement(WPLParser::AssignStatementContext *ctx) override { return TvisitAssignStatement(ctx); };
     std::any visitVarDeclStatement(WPLParser::VarDeclStatementContext *ctx) override { return TvisitVarDeclStatement(ctx); };
     std::any visitLoopStatement(WPLParser::LoopStatementContext *ctx) override { return TvisitLoopStatement(ctx); };
@@ -178,6 +177,8 @@ public:
     //FIXME: Add Base and LamdaTypes?
 
     std::any visitLambdaConstExpr(WPLParser::LambdaConstExprContext *ctx) override { return TvisitLambdaConstExpr(ctx); }
+    std::any visitDefineEnum(WPLParser::DefineEnumContext * ctx) override { return TvisitDefineEnum(ctx); }
+    std::any visitMatchStatement(WPLParser::MatchStatementContext * ctx) override { return TvisitMatchStatement(ctx); }
 
     bool hasErrors(int flags) { return errorHandler.hasErrors(flags); }
     std::string getErrors() { return errorHandler.errorList(); }
@@ -187,42 +188,21 @@ public:
     Module *getModule() { return module; }
     void modPrint() { module->print(llvm::outs(), nullptr); }
 
-    // From C++ Documentation for visitors
-    template <class... Ts>
-    struct overloaded : Ts...
-    {
-        using Ts::operator()...;
-    };
-    template <class... Ts>
-    overloaded(Ts...) -> overloaded<Ts...>;
-
     /**
      * @brief Generates the code for an InvokeableType (PROC/FUNC)
      *
-     * @param sum The ProcDefContext or FuncDefContext to build the function from
+     * @param sum The FuncDefContext to build the function from
      * @return std::optional<Value *> Empty as this shouldn't be seen as a value
      */
-    std::optional<Value *> visitInvokeable(std::variant<WPLParser::ProcDefContext *, WPLParser::FuncDefContext *> sum)
+    std::optional<Value *> visitInvokeable(WPLParser::FuncDefContext * ctx)
     {
         BasicBlock * ins = builder->GetInsertBlock();  //FIXME: DO BETTER PROCESS DISCOVERY ALSO //FIXME: HAVE TO FIX SCOPING ISSUES
-
-        // From C++ Documentation for visitors
-        // Gets the general context we can use for error reporting
-        antlr4::ParserRuleContext *ctx = std::visit(overloaded{[](WPLParser::ProcDefContext *arg)
-                                                               { return (antlr4::ParserRuleContext *)arg; },
-                                                               [](WPLParser::FuncDefContext *arg)
-                                                               { return (antlr4::ParserRuleContext *)arg; }},
-                                                    sum);
 
         // Lookup the symbol from the context
         std::optional<Symbol *> symOpt = props->getBinding(ctx);
 
         // Get the function name. Done separatley from sym in case the symbol isn't found
-        std::string funcId = std::visit(overloaded{[](WPLParser::ProcDefContext *arg)
-                                                   { return arg->name->getText(); },
-                                                   [](WPLParser::FuncDefContext *arg)
-                                                   { return arg->name->getText(); }},
-                                        sum);
+        std::string funcId = ctx->name->getText();
 
         // If we couldn't find the function, throw an error.
         if (!symOpt)
@@ -240,25 +220,21 @@ public:
 
         const Type *type = sym->type;
 
-        llvm::Type *genericType = type->getLLVMType(module->getContext());
+        llvm::Type *genericType = type->getLLVMType(module)->getPointerElementType();
 
         if (llvm::FunctionType *fnType = static_cast<llvm::FunctionType *>(genericType))
         {
-            Function *fn = module->getFunction(funcId); // Lookup the function first
+            Function *fn = module->getFunction(funcId); // Lookup the function first //FIXME: DOESNT WORK FOR LOCAL FNS!
             /*
              * If we couldn't find the function, that means it wasn't pre-declared, and we need to create it here and now.
              */
             if (!fn)
             {
-                fn = Function::Create(fnType, GlobalValue::ExternalLinkage, funcId, module);
+                fn = Function::Create(fnType, GlobalValue::PrivateLinkage, funcId, module); //FIXME: DO BETTER
             }
 
             // Get the parameter list context for the invokable
-            WPLParser::ParameterListContext *paramList = std::visit(overloaded{[](WPLParser::ProcDefContext *arg)
-                                                                               { return arg->paramList; },
-                                                                               [](WPLParser::FuncDefContext *arg)
-                                                                               { return arg->paramList; }},
-                                                                    sum);
+            WPLParser::ParameterListContext *paramList = ctx->paramList;
             // Create basic block
             BasicBlock *bBlk = BasicBlock::Create(module->getContext(), "entry", fn);
             builder->SetInsertPoint(bBlk);
@@ -294,11 +270,7 @@ public:
             }
 
             // Get the codeblock for the PROC/FUNC
-            WPLParser::BlockContext *block = std::visit(overloaded{[](WPLParser::ProcDefContext *arg)
-                                                                   { return arg->block(); },
-                                                                   [](WPLParser::FuncDefContext *arg)
-                                                                   { return arg->block(); }},
-                                                        sum);
+            WPLParser::BlockContext *block = ctx->block();
 
             // Generate code for the block
             for (auto e : block->stmts)
@@ -307,7 +279,7 @@ public:
             }
 
             // If we are a PROC, make sure to add a return type (if we don't already have one)
-            if (std::holds_alternative<WPLParser::ProcDefContext *>(sum) && !CodegenVisitor::blockEndsInReturn(block))
+            if (ctx->PROC() && !CodegenVisitor::blockEndsInReturn(block))
             {
                 builder->CreateRetVoid();
             }
@@ -349,8 +321,8 @@ private:
     // Commonly used types
     llvm::Type *VoidTy;
     llvm::Type *Int1Ty;
-    llvm::Type *Int8Ty;
-    llvm::Type *Int32Ty; // Things like 32 bit integers
+    llvm::IntegerType *Int8Ty;
+    llvm::IntegerType *Int32Ty; // Things like 32 bit integers
     llvm::Type *i8p;
     llvm::Type *Int8PtrPtrTy;
     Constant *Int32Zero;

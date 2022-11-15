@@ -28,9 +28,10 @@ std::optional<Scope *> STManager::exitScope()
     currentScope = last->getParent();
     scopes.pop_back(); // FIXME: Delete last element in vector? -> We don't due this because it breaks the scope count
 
-    int depth = scopes.size(); 
-    if(getCurrentStop() == depth && getCurrentStop() != 0) {
-        stops.pop(); 
+    int depth = scopes.size();
+    if (getCurrentStop() == depth && getCurrentStop() != 0)
+    {
+        stops.pop();
     }
 
     return std::optional<Scope *>{last};
@@ -69,7 +70,7 @@ std::optional<Symbol *> STManager::lookup(std::string id)
         std::optional<Symbol *> sym = scope->lookup(id);
         if (sym)
         {
-            // std::cout << sym.value()->toString() << " " << depth << " >= " << stop  << " || " << sym.value()->isDefinition << std::endl; 
+            // std::cout << sym.value()->toString() << " " << depth << " >= " << stop  << " || " << sym.value()->isDefinition << std::endl;
             if (depth >= stop || sym.value()->isDefinition || sym.value()->isGlobal) // FIXME: VERIFY, ALSO MAY GET CONFUSING IF WE HAVE DUPLICATE NAMED VARS!!!
                 return sym;
             return {};
@@ -92,6 +93,21 @@ std::optional<Symbol *> STManager::lookupInCurrentScope(std::string id)
         std::optional<Symbol *> sym = scope->lookup(id);
         if (sym)
             return sym;
+
+        opt = scope->getParent();
+        while (opt)
+        {
+            scope = opt.value();
+            std::optional<Symbol *> sym = scope->lookup(id);
+            if (sym)
+            {
+                // std::cout << sym.value()->toString() << " " << depth << " >= " << stop  << " || " << sym.value()->isDefinition << std::endl;
+                if (sym.value()->isDefinition) // FIXME: VERIFY, ALSO MAY GET CONFUSING IF WE HAVE DUPLICATE NAMED VARS!!!
+                    return sym;
+                return {};
+            }
+            opt = scope->getParent();
+        }
     }
 
     return {};
