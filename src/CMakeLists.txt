@@ -33,7 +33,11 @@ add_subdirectory(utility)
 add_subdirectory(codegen)
 add_subdirectory(runtime)
 
+
+
 add_executable(wplc wplc.cpp)
+
+llvm_map_components_to_libnames(LLVM_LIBS ${LLVM_TARGETS_TO_BUILD} support core irreader codegen mc mcparser option)
 
 # add dependencies as you need them
 add_dependencies(wplc 
@@ -53,6 +57,7 @@ target_include_directories(wplc PUBLIC
   ${CODEGEN_INCLUDE}
   ${LLVM_BINARY_DIR}/include
   ${LLVM_INCLUDE_DIR}
+  ${LLVM_TARGETS_TO_BUILD}
 )
 
 target_link_libraries(wplc 

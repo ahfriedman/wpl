@@ -22,6 +22,15 @@
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/InitLLVM.h"
+#include "llvm/Support/TargetSelect.h"
+#include "llvm/Support/Host.h"
+#include "llvm/Support/TargetRegistry.h"
+#include "llvm/Target/TargetOptions.h"
+#include "llvm/Target/TargetMachine.h"
+#include "llvm/IR/LegacyPassManager.h"
+
+#include "ExecUtils.h"
+#include <sstream>  //String stream
 
 llvm::cl::OptionCategory WPLCOptions("wplc Options");
 static llvm::cl::list<std::string>
@@ -76,6 +85,34 @@ int main(int argc, const char *argv[])
    * ******************************************************************/
   llvm::cl::HideUnrelatedOptions(WPLCOptions);
   llvm::cl::ParseCommandLineOptions(argc, argv);
+
+  llvm::InitializeAllTargetInfos();
+  llvm::InitializeAllTargets();
+  llvm::InitializeAllTargetMCs();
+  llvm::InitializeAllAsmParsers();
+  llvm::InitializeAllAsmPrinters();
+
+  auto TargetTriple = llvm::sys::getDefaultTargetTriple();
+
+  std::string Error;
+  auto Target = llvm::TargetRegistry::lookupTarget(TargetTriple, Error);
+
+  // Print an error and exit if we couldn't find the requested target.
+  // This generally occurs if we've forgotten to initialise the
+  // TargetRegistry or we have a bogus target triple.
+  if (!Target)
+  {
+    std::cerr << Error << std::endl;
+    return 1;
+  }
+
+  auto CPU = "generic";
+  auto Features = "";
+
+  llvm::TargetOptions opt;
+  auto RM = llvm::Optional<llvm::Reloc::Model>();
+  auto TheTargetMachine =
+      Target->createTargetMachine(TargetTriple, CPU, Features, opt, RM);
 
   if (inputFileName.empty() && inputString == "-")
   {
@@ -136,7 +173,7 @@ int main(int argc, const char *argv[])
 
       // TODO: THIS DOESN'T WORK IF NOT GIVEN A PROPER FILE EXTENSION
       inputs.push_back({new antlr4::ANTLRInputStream(*inStream),
-                        useOutputFileName ? outputFileName : fileName.substr(0, fileName.find_last_of('.')) + ".ll"});
+                        useOutputFileName ? outputFileName : fileName.substr(0, fileName.find_last_of('.'))});
     }
   }
   else
@@ -236,11 +273,12 @@ int main(int argc, const char *argv[])
       cv->modPrint();
     }
 
+    std::cout << "276" << std::endl; 
     // Dump the code to an output file
     if (!noCode)
     {
-      std::string irFileName = input.second;
-      std::error_code ec;
+      std::string irFileName = input.second + ".ll";
+      std::error_code ec; // FIXME: REPORT ERROR?
       llvm::raw_fd_ostream irFileStream(irFileName, ec);
       module->print(irFileStream, nullptr);
       irFileStream.flush();
@@ -250,14 +288,53 @@ int main(int argc, const char *argv[])
     {
       if (noRuntime)
       {
-        std::cout << "Code generation completed for " << input.second << "; program does NOT support runtime." << std::endl;
+        std::cout << "Code generation completed for " << input.second << ".wpl; program does NOT support runtime." << std::endl;
       }
       else
       {
-        std::cout << "Code generation completed for " << input.second << "; program may require runtime." << std::endl;
+        std::cout << "Code generation completed for " << input.second << ".wpl; program may require runtime." << std::endl;
       }
     }
+
+    module->setDataLayout(TheTargetMachine->createDataLayout());
+
+    std::string Filename = input.second + ".o";
+    std::cout << "Filename " << Filename << std::endl; 
+    std::error_code EC;
+    llvm::raw_fd_ostream dest(Filename, EC, llvm::sys::fs::OF_None);
+
+    if (EC)
+    {
+      std::cerr << "Could not open file: " << EC.message() << std::endl;
+      return 1;
+    }
+
+    llvm::legacy::PassManager pass;
+    auto FileType = llvm::CGFT_ObjectFile;
+
+    if (TheTargetMachine->addPassesToEmitFile(pass, dest, nullptr, FileType))
+    {
+      std::cerr << "TheTargetMachine can't emit a file of this type" << std::endl;
+      return 1;
+    }
+
+    pass.run(*module);
+    dest.flush();
+
+    std::cout << "Wrote " << Filename << std::endl; 
   }
+
+  std::ostringstream cmd; 
+  cmd << "clang ";
+
+  for (auto input : inputs)
+  {
+    cmd << input.second << ".o ";
+  }
+
+  cmd << "./runtime.o -no-pie";
+
+  std::cout << exec(cmd.str()) << std::endl; 
 
   return 0;
 }
