@@ -109,7 +109,6 @@ std::optional<Value *> CodegenVisitor::TvisitDefineEnum(WPLParser::DefineEnumCon
 
 std::optional<Value *> CodegenVisitor::TvisitMatchStatement(WPLParser::MatchStatementContext *ctx)
 {
-    std::cout << "HELLO" << std::endl;
     std::optional<Symbol *> symOpt = props->getBinding(ctx->check); // FIXME: THIS DOES NOTHING
     if (!symOpt)
     {
@@ -134,17 +133,16 @@ std::optional<Value *> CodegenVisitor::TvisitMatchStatement(WPLParser::MatchStat
                 return {};
             }
 
-            std::cout << "92" << std::endl;
             Value *sumVal = optVal.value();
             llvm::AllocaInst *SumPtr = builder->CreateAlloca(sumVal->getType());
             builder->CreateStore(sumVal, SumPtr);
 
             // Value *corrPtr = builder->CreateBitCast(sumVal, sumVal->getType()->getPointerTo()); // FIXME: DO BETTER
-            std::cout << "95" << std::endl;
+            
             Value *tagPtr = builder->CreateGEP(SumPtr, {Int32Zero, Int32Zero});
-            std::cout << "97" << std::endl;
+            
             Value *tag = builder->CreateLoad(tagPtr->getType()->getPointerElementType(), tagPtr);
-            std::cout << "99" << std::endl;
+            
             llvm::SwitchInst *switchInst = builder->CreateSwitch(tag, mergeBlk, sumType->getCases().size());
 
             for (WPLParser::MatchAlternativeContext *altCtx : ctx->cases)
@@ -216,12 +214,12 @@ std::optional<Value *> CodegenVisitor::TvisitMatchStatement(WPLParser::MatchStat
                 varSymbol->val = v;
                 // varSymbol->val = v;
 
-                std::cout << "169" << std::endl;
+                
                 // Now to store the var
                 Value *valuePtr = builder->CreateGEP(SumPtr, {Int32Zero, Int32One});
-                std::cout << "172" << std::endl;
+                
                 Value *corrected = builder->CreateBitCast(valuePtr, ty->getPointerTo()); // FIXME: DO BETTER
-                std::cout << "174" << std::endl;
+                
                 Value *val = builder->CreateLoad(ty, corrected); // FIXME: WILL THIS WORK WITH NESTED SUMS?
 
                 builder->CreateStore(val, v);
@@ -1093,8 +1091,6 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
 
                 varSymbol->val = v;
 
-                std::cout << "1010" << std::endl;
-
                 // Similarly, if we have an expression for the local var, we can store it. Otherwise, we can leave it undefined.
                 if (e->ex)
                 {
@@ -1125,8 +1121,6 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
                             return {}; // FIXME: DO BETTER!
                         }
 
-                        std::cout << "1044" << std::endl;
-
                         // FIXME: SUMS CANT BE GENERATED AT GLOBAL LEVEL?
                         Value *tagPtr = builder->CreateGEP(v, {Int32Zero, Int32Zero});
 
@@ -1138,7 +1132,6 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
                     }
                     else
                     {
-                        std::cout << "1059" << std::endl;
                         builder->CreateStore(stoVal, v);
                     }
                 }

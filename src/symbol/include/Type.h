@@ -465,7 +465,6 @@ public:
 protected:
     bool isSupertypeFor(const Type *other) const override
     {
-        std::cout << "461" << std::endl;
         // Checks that the other type is also invokable
         if (const TypeInvoke *p = dynamic_cast<const TypeInvoke *>(other))
         {
@@ -730,10 +729,9 @@ public:
                 max = t;
             }
 
-            std::cout << e->toString() << " size: " << t << std::endl; //FIXME: Verify that strings (and such) are done with pointers (which I think they are) so that they don't go out of bounds
+            // std::cout << e->toString() << " size: " << t << std::endl; //FIXME: Verify that strings (and such) are done with pointers (which I think they are) so that they don't go out of bounds
         }
 
-        std::cout << "736" << std::endl;
         // FIXME: DO BETTER
         uint64_t len = (uint64_t)max;
         llvm::Type *inner = llvm::Type::getInt8Ty(M->getContext());
@@ -757,8 +755,7 @@ public:
         //  TypeSum *mthis = const_cast<TypeSum *>(this);
         ty = llvm::StructType::create(M->getContext(), ref, toString()); // FIXME: USE STRING REF GET NAME!!!
 
-        // mthis->llvmType = ty;
-std::cout << "761" << std::endl;
+        // mthis->llvmType = ty
         return ty; // this->llvmType; //FIXME: WHAT SHOULD THE DEFAULT OF EMPTY ENUMS BE? OR I GUESS WE SHOULDNT ALLOW ANY EMPTYS
         // return llvm::Type::getInt8PtrTy(M->getContext());
     }
@@ -766,12 +763,10 @@ std::cout << "761" << std::endl;
 protected:
     bool isSupertypeFor(const Type *other) const override
     {
-        std::cout << this->toString() << " vs " << other->toString() << std::endl; 
         if(this->contains(other)) return true; 
 
         if(const TypeSum* oSum = dynamic_cast<const TypeSum*>(other))
         {
-            std::cout << "773 OTHER SUM!" << std::endl; 
             return this->cases == oSum->cases; //FIXME: VERIFY
         }
         // FIXME: DOESNT WORK FOR FUNCTIONS, SUMS, ETC
