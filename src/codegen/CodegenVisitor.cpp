@@ -138,11 +138,11 @@ std::optional<Value *> CodegenVisitor::TvisitMatchStatement(WPLParser::MatchStat
             builder->CreateStore(sumVal, SumPtr);
 
             // Value *corrPtr = builder->CreateBitCast(sumVal, sumVal->getType()->getPointerTo()); // FIXME: DO BETTER
-            
+
             Value *tagPtr = builder->CreateGEP(SumPtr, {Int32Zero, Int32Zero});
-            
+
             Value *tag = builder->CreateLoad(tagPtr->getType()->getPointerElementType(), tagPtr);
-            
+
             llvm::SwitchInst *switchInst = builder->CreateSwitch(tag, mergeBlk, sumType->getCases().size());
 
             for (WPLParser::MatchAlternativeContext *altCtx : ctx->cases)
@@ -214,12 +214,11 @@ std::optional<Value *> CodegenVisitor::TvisitMatchStatement(WPLParser::MatchStat
                 varSymbol->val = v;
                 // varSymbol->val = v;
 
-                
                 // Now to store the var
                 Value *valuePtr = builder->CreateGEP(SumPtr, {Int32Zero, Int32One});
-                
+
                 Value *corrected = builder->CreateBitCast(valuePtr, ty->getPointerTo()); // FIXME: DO BETTER
-                
+
                 Value *val = builder->CreateLoad(ty, corrected); // FIXME: WILL THIS WORK WITH NESTED SUMS?
 
                 builder->CreateStore(val, v);
@@ -569,51 +568,88 @@ std::optional<Value *> CodegenVisitor::TvisitEqExpr(WPLParser::EqExprContext *ct
  */
 std::optional<Value *> CodegenVisitor::TvisitLogAndExpr(WPLParser::LogAndExprContext *ctx)
 {
+     //FIXME: DO BETTER W/ AST 
+    std::vector<WPLParser::ExpressionContext *> toVisit = ctx->exprs; 
+    std::vector<WPLParser::ExpressionContext *> toGen;
 
-    std::optional<Value *> lhs = std::any_cast<std::optional<Value *>>(ctx->left->accept(this));
-
-    if (!lhs)
+    while(toVisit.size() > 0)
     {
-        errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code for: " + ctx->left->getText());
-        return {};
+        WPLParser::ExpressionContext* curr = toVisit.at(0); 
+        toVisit.erase(toVisit.begin());
+
+        if(WPLParser::LogAndExprContext * orCtx = dynamic_cast<WPLParser::LogAndExprContext*>(curr))
+        {
+            toVisit.insert(toVisit.end(), orCtx->exprs.begin(), orCtx->exprs.end());
+        }
+        else 
+        {
+            toGen.push_back(curr); 
+        }
     }
+
 
     // Create the basic block for our conditions
     BasicBlock *current = builder->GetInsertBlock();
-    auto parent = current->getParent();
-    BasicBlock *trueBlk = BasicBlock::Create(module->getContext(), "lhsTrue", parent);
-    BasicBlock *falseBlk = BasicBlock::Create(module->getContext(), "lhsFalse");
-
-    // Branch on the lhs value
-    builder->CreateCondBr(lhs.value(), trueBlk, falseBlk);
+    BasicBlock *mergeBlk = BasicBlock::Create(module->getContext(), "mergeBlkAnd");
 
     /*
-     * LHS True - Need to check RHS
+     * PHI node to merge both sides back together
      */
-    builder->SetInsertPoint(trueBlk);
-    std::optional<Value *> rhs = std::any_cast<std::optional<Value *>>(ctx->right->accept(this));
+    builder->SetInsertPoint(mergeBlk);
+    PHINode *phi = builder->CreatePHI(Int1Ty, toGen.size(), "logAnd");
 
-    if (!rhs)
+    builder->SetInsertPoint(current);
+
+    std::optional<Value *> first = std::any_cast<std::optional<Value *>>(toGen.at(0)->accept(this));
+
+    if (!first)
     {
-        errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code for: " + ctx->right->getText());
+        errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code for: " + toGen.at(0)->getText());
         return {};
     }
 
-    builder->CreateBr(falseBlk);
-    trueBlk = builder->GetInsertBlock();
+    Value *lastValue = first.value();
+
+    auto parent = current->getParent();
+    phi->addIncoming(lastValue, current);
+
+    BasicBlock *falseBlk;
+
+    // Branch on the lhs value
+    for (unsigned int i = 1; i < toGen.size(); i++)
+    {
+        falseBlk = BasicBlock::Create(module->getContext(), "prevTrueAnd", parent);
+        builder->CreateCondBr(lastValue, falseBlk, mergeBlk);
+
+        /*
+         * LHS False - Need to check RHS value
+         */
+        builder->SetInsertPoint(falseBlk);
+
+        std::optional<Value *> rhs = std::any_cast<std::optional<Value *>>(toGen.at(i)->accept(this));
+
+        if (!rhs)
+        {
+            errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code for: " + toGen.at(i)->getText());
+            return {};
+        }
+        lastValue = rhs.value();
+
+        falseBlk = builder->GetInsertBlock();
+        parent = falseBlk->getParent();
+        phi->addIncoming(lastValue, falseBlk);
+    }
+
+    builder->CreateBr(mergeBlk); 
+    // falseBlk = builder->GetInsertBlock();
 
     /*
-     * LHS False - Can short as statement being false
+     * LHS True - Can skip checking RHS and return true
      */
-    parent->getBasicBlockList().push_back(falseBlk);
-    builder->SetInsertPoint(falseBlk);
+    parent->getBasicBlockList().push_back(mergeBlk);
+    builder->SetInsertPoint(mergeBlk);
 
-    /*
-     * Add PHI node to merge things back together
-     */
-    PHINode *phi = builder->CreatePHI(Int1Ty, 2, "logAnd");
-    phi->addIncoming(builder->getFalse(), current);
-    phi->addIncoming(rhs.value(), trueBlk);
+    // phi->addIncoming(rhs.value(), falseBlk);
     return phi;
 }
 
@@ -627,51 +663,88 @@ std::optional<Value *> CodegenVisitor::TvisitLogAndExpr(WPLParser::LogAndExprCon
  */
 std::optional<Value *> CodegenVisitor::TvisitLogOrExpr(WPLParser::LogOrExprContext *ctx)
 {
-    std::optional<Value *> lhs = std::any_cast<std::optional<Value *>>(ctx->left->accept(this));
+    //FIXME: DO BETTER W/ AST 
+    std::vector<WPLParser::ExpressionContext *> toVisit = ctx->exprs; 
+    std::vector<WPLParser::ExpressionContext *> toGen;
 
-    if (!lhs)
+    while(toVisit.size() > 0)
     {
-        errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code for: " + ctx->left->getText());
-        return {};
+        WPLParser::ExpressionContext* curr = toVisit.at(0); 
+        toVisit.erase(toVisit.begin());
+
+        if(WPLParser::LogOrExprContext * orCtx = dynamic_cast<WPLParser::LogOrExprContext*>(curr))
+        {
+            toVisit.insert(toVisit.end(), orCtx->exprs.begin(), orCtx->exprs.end());
+        }
+        else 
+        {
+            toGen.push_back(curr); 
+        }
     }
+
 
     // Create the basic block for our conditions
     BasicBlock *current = builder->GetInsertBlock();
-    auto parent = current->getParent();
-    BasicBlock *falseBlk = BasicBlock::Create(module->getContext(), "lhsFalse", parent);
-    BasicBlock *trueBlk = BasicBlock::Create(module->getContext(), "lhsTrue");
-
-    // Branch on the lhs value
-    builder->CreateCondBr(lhs.value(), trueBlk, falseBlk);
-
-    /*
-     * LHS False - Need to check RHS value
-     */
-    builder->SetInsertPoint(falseBlk);
-
-    std::optional<Value *> rhs = std::any_cast<std::optional<Value *>>(ctx->right->accept(this));
-
-    if (!rhs)
-    {
-        errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code for: " + ctx->right->getText());
-        return {};
-    }
-
-    builder->CreateBr(trueBlk);
-    falseBlk = builder->GetInsertBlock();
-
-    /*
-     * LHS True - Can skip checking RHS and return true
-     */
-    parent->getBasicBlockList().push_back(trueBlk);
-    builder->SetInsertPoint(trueBlk);
+    BasicBlock *mergeBlk = BasicBlock::Create(module->getContext(), "mergeBlkOr");
 
     /*
      * PHI node to merge both sides back together
      */
-    PHINode *phi = builder->CreatePHI(Int1Ty, 2, "logOr");
-    phi->addIncoming(lhs.value(), current);
-    phi->addIncoming(rhs.value(), falseBlk);
+    builder->SetInsertPoint(mergeBlk);
+    PHINode *phi = builder->CreatePHI(Int1Ty, toGen.size(), "logOr");
+
+    builder->SetInsertPoint(current);
+
+    std::optional<Value *> first = std::any_cast<std::optional<Value *>>(toGen.at(0)->accept(this));
+
+    if (!first)
+    {
+        errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code for: " + toGen.at(0)->getText());
+        return {};
+    }
+
+    Value *lastValue = first.value();
+
+    auto parent = current->getParent();
+    phi->addIncoming(lastValue, current);
+
+    BasicBlock *falseBlk;
+
+    // Branch on the lhs value
+    for (unsigned int i = 1; i < toGen.size(); i++)
+    {
+        falseBlk = BasicBlock::Create(module->getContext(), "prevFalseOr", parent);
+        builder->CreateCondBr(lastValue, mergeBlk, falseBlk);
+
+        /*
+         * LHS False - Need to check RHS value
+         */
+        builder->SetInsertPoint(falseBlk);
+
+        std::optional<Value *> rhs = std::any_cast<std::optional<Value *>>(toGen.at(i)->accept(this));
+
+        if (!rhs)
+        {
+            errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code for: " + toGen.at(i)->getText());
+            return {};
+        }
+        lastValue = rhs.value();
+
+        falseBlk = builder->GetInsertBlock();
+        parent = falseBlk->getParent();
+        phi->addIncoming(lastValue, falseBlk);
+    }
+
+    builder->CreateBr(mergeBlk); 
+    
+
+    /*
+     * LHS True - Can skip checking RHS and return true
+     */
+    parent->getBasicBlockList().push_back(mergeBlk);
+    builder->SetInsertPoint(mergeBlk);
+
+    // phi->addIncoming(rhs.value(), falseBlk);
     return phi;
 }
 

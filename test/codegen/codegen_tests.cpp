@@ -134,18 +134,18 @@ TEST_CASE("programs/test2 - Scopes, multiple assignments, equality (non-arrays)"
     REQUIRE(tree != NULL);
     STManager *stm = new STManager();
     PropertyManager *pm = new PropertyManager();
-    SemanticVisitor *sv = new SemanticVisitor(stm, pm, CompilerFlags::NO_RUNTIME);
+    SemanticVisitor *sv = new SemanticVisitor(stm, pm, 0);
     sv->visitCompilationUnit(tree);
 
 
     REQUIRE_FALSE(sv->hasErrors(0));
 
-    CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll", CompilerFlags::NO_RUNTIME);
+    CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll", 0);
     cv->visitCompilationUnit(tree);
 
     REQUIRE_FALSE(cv->hasErrors(0));
 
-    REQUIRE(llvmIrToSHA256(cv->getModule()) == "f4b7fbda0e0f7f25c20056aacce4eed4c1bcfffb1464c6ba525d9f156238b4c9");
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "6fe85492b8cabea3bee19c2fc54a5276861eb992ebdb4a97de10008cefb0832e");
 }
 
 TEST_CASE("programs/test3 - If w/o else", "[codegen]")
@@ -744,17 +744,17 @@ TEST_CASE("programs/test13 - Recursive Fibonacci", "[codegen]")
     REQUIRE(tree != NULL);
     STManager *stm = new STManager();
     PropertyManager *pm = new PropertyManager();
-    SemanticVisitor *sv = new SemanticVisitor(stm, pm, CompilerFlags::NO_RUNTIME);
+    SemanticVisitor *sv = new SemanticVisitor(stm, pm, 0);
     sv->visitCompilationUnit(tree);
 
     REQUIRE_FALSE(sv->hasErrors(0));
 
-    CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll", CompilerFlags::NO_RUNTIME);
+    CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll", 0);
     cv->visitCompilationUnit(tree);
 
     REQUIRE_FALSE(cv->hasErrors(0));
 
-    REQUIRE(llvmIrToSHA256(cv->getModule()) == "e1e33543132cb39593a2b3bac2192c7b657c38c7c6c1f3c708c5b2a7bb7aa2bc");
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "fd2a506796e162de9e1a00a12e154827fa25a34833b68c68aa83750e3c4ab657");
 }
 
 TEST_CASE("programs/test-runtime - Basic runtime tests", "[codegen]")
@@ -799,18 +799,18 @@ TEST_CASE("programs/test-shortcircuit - Basic Short Circuit (and)", "[codegen]")
     REQUIRE(tree != NULL);
     STManager *stm = new STManager();
     PropertyManager *pm = new PropertyManager();
-    SemanticVisitor *sv = new SemanticVisitor(stm, pm, CompilerFlags::NO_RUNTIME);
+    SemanticVisitor *sv = new SemanticVisitor(stm, pm, 0);
     sv->visitCompilationUnit(tree);
 
 
     REQUIRE_FALSE(sv->hasErrors(0));
 
-    CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll", CompilerFlags::NO_RUNTIME);
+    CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll", 0);
     cv->visitCompilationUnit(tree);
 
     REQUIRE_FALSE(cv->hasErrors(0));
 
-    REQUIRE(llvmIrToSHA256(cv->getModule()) == "875789f4dd74cb624ba74d21d3079a6fd89076028f5c8065875aa170cf94f785");
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "e664f3cf5af34edd6f3fecb5248e4c6390565443c942e01f5652c7b5b3c3d4ba");
 }
 
 TEST_CASE("programs/test-shortcircuit-rt - Basic Short Circuit (and + or) w/ Runtime", "[codegen]")
@@ -837,7 +837,7 @@ TEST_CASE("programs/test-shortcircuit-rt - Basic Short Circuit (and + or) w/ Run
 
     REQUIRE_FALSE(cv->hasErrors(0));
 
-    REQUIRE(llvmIrToSHA256(cv->getModule()) == "759cb24b5efa3fa2fc27b00fc36c7b7863b312f156c6489e5cb802926a5bcd24");
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "2309d18c37760ca695b7acd1fe81c7bf428ea5e44764f35e6c993780a3815459");
 }
 
 
@@ -902,7 +902,7 @@ TEST_CASE("programs/externProc - Declaring an external proc", "[codegen]")
 
 TEST_CASE("programs/test14a - Test nested/more complex shorting", "[codegen]")
 {
-    //TODO: MANY OF THE SHORT CIRCUITING CASES COULD BE OPTIMIZED!!!
+    //TODO: MANY OF THE SHORT CIRCUITING CASES COULD BE OPTIMIZED!!! -> Done?
     std::fstream *inStream = new std::fstream("/home/shared/programs/test14a.wpl");
     antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
 
@@ -926,7 +926,7 @@ TEST_CASE("programs/test14a - Test nested/more complex shorting", "[codegen]")
 
     REQUIRE_FALSE(cv->hasErrors(0));
 
-    REQUIRE(llvmIrToSHA256(cv->getModule()) == "e6a2a65891ddb6fdc968fea7091c96cbceefca2f243e18c3f1aceb5776e04dfe");
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "a4ac4a3664f5835bc88328e2dd925472074de7b0f9977106f0685508130628f8");
 }
 
 TEST_CASE("programs/test18 - Parody", "[codegen]")
