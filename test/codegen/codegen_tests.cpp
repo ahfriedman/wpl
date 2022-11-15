@@ -902,7 +902,7 @@ TEST_CASE("programs/externProc - Declaring an external proc", "[codegen]")
 
 TEST_CASE("programs/test14a - Test nested/more complex shorting", "[codegen]")
 {
-    //TODO: MANY OF THE SHORT CIRCUITING CASES COULD BE OPTIMIZED!!!
+    //TODO: MANY OF THE SHORT CIRCUITING CASES COULD BE OPTIMIZED!!! -> Done?
     std::fstream *inStream = new std::fstream("/home/shared/programs/test14a.wpl");
     antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
 
@@ -926,7 +926,7 @@ TEST_CASE("programs/test14a - Test nested/more complex shorting", "[codegen]")
 
     REQUIRE_FALSE(cv->hasErrors(0));
 
-    REQUIRE(llvmIrToSHA256(cv->getModule()) == "e6a2a65891ddb6fdc968fea7091c96cbceefca2f243e18c3f1aceb5776e04dfe");
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "a4ac4a3664f5835bc88328e2dd925472074de7b0f9977106f0685508130628f8");
 }
 
 TEST_CASE("programs/test18 - Parody", "[codegen]")

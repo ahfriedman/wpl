@@ -411,21 +411,16 @@ const Type *SemanticVisitor::visitCtx(WPLParser::EqExprContext *ctx)
  */
 const Type *SemanticVisitor::visitCtx(WPLParser::LogAndExprContext *ctx)
 {
-    // Based on starter
     bool valid = true;
 
-    auto left = std::any_cast<const Type *>(ctx->left->accept(this));
-    if (left->isNotSubtype(Types::BOOL))
+    for(auto e : ctx->exprs)
     {
-        errorHandler.addSemanticError(ctx->getStart(), "BOOL left expression expected, but was " + left->toString());
-        valid = false;
-    }
-
-    auto right = std::any_cast<const Type *>(ctx->right->accept(this));
-    if (right->isNotSubtype(Types::BOOL))
-    {
-        errorHandler.addSemanticError(ctx->getStart(), "BOOL right expression expected, but was " + right->toString());
-        valid = false;
+        const Type* type = std::any_cast<const Type *>(e->accept(this));
+        if(type->isNotSubtype(Types::BOOL))
+        {
+            errorHandler.addSemanticError(e->getStart(), "BOOL expression expected, but was " + type->toString());
+            valid = false; 
+        }
     }
 
     return (valid) ? Types::BOOL : Types::UNDEFINED;
@@ -439,24 +434,19 @@ const Type *SemanticVisitor::visitCtx(WPLParser::LogAndExprContext *ctx)
  */
 const Type *SemanticVisitor::visitCtx(WPLParser::LogOrExprContext *ctx)
 {
-    // Based on starter
     bool valid = true;
 
-    auto left = std::any_cast<const Type *>(ctx->left->accept(this));
-    if (left->isNotSubtype(Types::BOOL))
+    for(auto e : ctx->exprs)
     {
-        errorHandler.addSemanticError(ctx->getStart(), "BOOL left expression expected, but was " + left->toString());
-        valid = false;
+        const Type* type = std::any_cast<const Type *>(e->accept(this));
+        if(type->isNotSubtype(Types::BOOL))
+        {
+            errorHandler.addSemanticError(e->getStart(), "BOOL expression expected, but was " + type->toString());
+            valid = false; 
+        }
     }
 
-    auto right = std::any_cast<const Type *>(ctx->right->accept(this));
-    if (right->isNotSubtype(Types::BOOL))
-    {
-        errorHandler.addSemanticError(ctx->getStart(), "BOOL right expression expected, but was " + right->toString());
-        valid = false;
-    }
-
-    return valid ? Types::BOOL : Types::UNDEFINED;
+    return (valid) ? Types::BOOL : Types::UNDEFINED;
 }
 
 // Passthrough to visitInvocation

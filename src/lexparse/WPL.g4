@@ -7,12 +7,12 @@ grammar WPL;
 // Parser rules
 compilationUnit   :  (stmts+=statement | extens+=externStatement | defs+=defineType)* EOF ; 
 
-defineType        : 'define' 'enum' name=VARIABLE '{' cases+=type (',' cases+=type)+ '}' # DefineEnum
+defineType        : 'define' 'enum' name=VARIABLE LSQB cases+=type (',' cases+=type)+ '}' # DefineEnum
                   ; 
 
-externStatement : EXTERN (ty=type FUNC | PROC) name=VARIABLE '(' ((paramList=parameterList variadic=VariadicParam?)? | ELLIPSIS) ')' ';';
+externStatement : EXTERN (ty=type FUNC | PROC) name=VARIABLE LPAR ((paramList=parameterList variadic=VariadicParam?)? | ELLIPSIS) RPAR ';';
 
-invocation          :  var=VARIABLE '(' (args+=expression (',' args+=expression)* )? ')' ;
+invocation          :  var=VARIABLE LPAR (args+=expression (',' args+=expression)* )? RPAR ;
 
 //Helps allow us to use VARIABLE or arrayAccess and not other expressions (such as for assignments)
 arrayAccess         : var=VARIABLE '[' index=expression ']'; 
@@ -39,22 +39,22 @@ arrayOrVar          : var=VARIABLE | array=arrayAccess  ;
  *              the use of variables instead of expressions for array access
  *      11-14. Typical boolean and variable constants. 
  */
-expression          : '(' ex=expression ')'                         # ParenExpr
-                    | ex=VARIABLE '.' field=VARIABLE       # FieldAccessExpr 
+expression          : LPAR ex=expression RPAR                         # ParenExpr
+                    | ex=VARIABLE '.' field=VARIABLE                # FieldAccessExpr 
                     | <assoc=right> op=(MINUS | NOT) ex=expression  # UnaryExpr 
                     | left=expression op=(MULTIPLY | DIVIDE) right=expression # BinaryArithExpr
                     | left=expression op=(PLUS | MINUS) right=expression      # BinaryArithExpr
                     | left=expression op=(LESS | LESS_EQ | GREATER | GREATER_EQ) right=expression # BinaryRelExpr 
                     | <assoc=right> left=expression op=(EQUAL | NOT_EQUAL) right=expression # EqExpr
-                    | left=expression AND right=expression   # LogAndExpr 
-                    | left=expression OR  right=expression   # LogOrExpr
-                    | call=invocation                        # CallExpr
+                    | exprs+=expression (AND exprs+=expression)+     # LogAndExpr 
+                    | exprs+=expression (OR  exprs+=expression)+     # LogOrExpr
+                    | call=invocation                               # CallExpr
                     | arrayAccess  # ArrayAccessExpr
                     | booleanConst # BConstExpr 
                     | v=VARIABLE   # VariableExpr
                     | i=INTEGER    # IConstExpr
                     | s=STRING     # SConstExpr 
-                    | '(' parameterList ')' ':' ret=type block  # LambdaConstExpr
+                    | LPAR parameterList RPAR ':' ret=type block  # LambdaConstExpr
                     ;
 
 /* 
@@ -62,11 +62,11 @@ expression          : '(' ex=expression ')'                         # ParenExpr
  * its own statement as well as as parts of functions, procedures, 
  * conditions, loops, etc. 
  */
-block      : '{' (stmts+=statement)* '}' ;
+block      : LSQB (stmts+=statement)* '}' ;
 
 
 // Parenthesis are optional around a condition
-condition           : ('(' ex=expression ')') | ex=expression ; 
+condition           : (LPAR ex=expression RPAR) | ex=expression ; 
 
 //Used to model each alternative in a selection 
 selectAlternative   : check=expression ':' eval=statement ; 
@@ -111,13 +111,13 @@ assignment : v+=VARIABLE (',' v+=VARIABLE)* (ASSIGN ex=expression)? ;
  * 10. Return statements
  * 11. Block statements. 
  */
-statement           : ((ty=type FUNC) | PROC) name=VARIABLE '(' (paramList=parameterList)? ')' block   # FuncDef 
+statement           : ((ty=type FUNC) | PROC) name=VARIABLE LPAR (paramList=parameterList)? RPAR block   # FuncDef 
                     | <assoc=right> to=arrayOrVar ASSIGN ex=expression ';'                  # AssignStatement 
                     | <assoc=right> ty=typeOrVar assignments+=assignment (',' assignments+=assignment)* ';'   # VarDeclStatement
                     | WHILE check=condition DO block                                    # LoopStatement 
                     | IF check=condition IF_THEN? trueBlk=block (ELSE falseBlk=block)?  # ConditionalStatement
-                    | SELECT '{' (cases+=selectAlternative)* '}'                        # SelectStatement  
-                    | MATCH check=condition '{' (cases+=matchAlternative)* '}'          # MatchStatement
+                    | SELECT LSQB (cases+=selectAlternative)* '}'                        # SelectStatement  
+                    | MATCH check=condition LSQB (cases+=matchAlternative)* '}'          # MatchStatement
                     | call=invocation  ';'?     # CallStatement 
                     | RETURN expression? ';'    # ReturnStatement 
                     | block                     # BlockStatement
@@ -146,6 +146,8 @@ LPAR      :     '('     ;
 RPAR      :     ')'     ;
 LBRC      :     '['     ;
 RBRC      :     ']'     ;
+LSQB      :     '{'     ;
+RSQB      :     '}'     ;
 SEMICOLON :     ';'     ;
 COLON     :     ':'     ;
 QUOTE     :     '"'     ;
@@ -162,7 +164,7 @@ typeOrVar       : type | 'var'  ;
 //Allows us to have a type of ints, bools, or strings with the option for them to become 1d arrays. 
 type            :    ty=(TYPE_INT | TYPE_BOOL | TYPE_STR) (LBRC len=INTEGER RBRC)?  # BaseType
                 |    paramTypes+=type (',' paramTypes+=type)* '->' returnType=type  # LambdaType
-                |    '(' type ('+' type)+ ')'                                       # SumType 
+                |    LPAR type ('+' type)+ RPAR                                     # SumType 
                 |    VARIABLE                                                       # CustomType
                 ;
 
