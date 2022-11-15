@@ -18,7 +18,7 @@ std::optional<Value *> CodegenVisitor::TvisitCompilationUnit(WPLParser::Compilat
     {
         if (WPLParser::FuncDefContext *fnCtx = dynamic_cast<WPLParser::FuncDefContext *>(e))
         {
-            //FIXME: VERIFY SWITCH OVER TO PROC AND REM EXTERN, METHODIZE, ALSO, EDIT INVOKE GEN ELSEWHERE TO REFLECT THIS
+            // FIXME: VERIFY SWITCH OVER TO PROC AND REM EXTERN, METHODIZE, ALSO, EDIT INVOKE GEN ELSEWHERE TO REFLECT THIS
             std::optional<Symbol *> optSym = props->getBinding(fnCtx);
 
             if (!optSym)
@@ -707,7 +707,17 @@ std::optional<Value *> CodegenVisitor::TvisitVariableExpr(WPLParser::VariableExp
     if (!sym->val)
     {
         // If the symbol is a global var
-        if (sym->isGlobal)
+        if (dynamic_cast<const TypeInvoke *>(sym->type))
+        {
+            // FIXME: METHODIZE!!!
+            Function *fn = module->getFunction(id);
+
+            // FIXME: COPY IN STUB GEN!
+            // Value *val = builder->CreateLoad(fn);
+            // return val;
+            return fn;
+        }
+        else if (sym->isGlobal)
         {
             // Lookup the global var for the symbol
             llvm::GlobalVariable *glob = module->getNamedGlobal(sym->identifier);
@@ -722,16 +732,6 @@ std::optional<Value *> CodegenVisitor::TvisitVariableExpr(WPLParser::VariableExp
             // Create and return a load for the global var
             Value *val = builder->CreateLoad(glob);
             return val;
-        }
-        else if (llvm::FunctionType *fnType = static_cast<llvm::FunctionType *>(type)) //FIXME: ALWAYS TRUE?
-        {
-            // FIXME: METHODIZE!!!
-            Function *fn = module->getFunction(id);
-
-            // FIXME: COPY IN STUB GEN!
-            // Value *val = builder->CreateLoad(fn);
-            // return val;
-            return fn;
         }
 
         errorHandler.addCodegenError(ctx->getStart(), "Unable to find allocation for variable: " + ctx->getText());
