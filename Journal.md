@@ -1,10 +1,18 @@
 # 
 
 
-# November 9th, 2022
+# November 9th/10th, 2022
 
 Having realized a potential test case for which I had not yet covered, 
 I added a new test case to WPL. As this case passed, I did not update the submission file but, instead, left it on its own branch for incorporation into main at a later date. This was done, in part, to help keep main as similar to WPL as possible until the assignment was graded or I had a functioning individual project. 
+
+Having added this test, I returned to my branch for implementing nested functions/lambdas. Having implemented basic nested functions, I then moved on to implementing basic lambdas. These were fairly simple to work on; however, they revealed a bug where I was unable to assign lambda variables to other lambda variables. To work around this, I eventually found that I needed to get pointers to the functions when treating them as variables (whereas my function type was treating them as llvm::Function s) as needed for their formal definition in code generation. 
+
+Having completed this, I added a few more lambda tests to confirm my changes were working.
+
+# November 8th, 2022
+
+To fix the issue where functions were able to access variables in the local scope around them, I added two concepts to my language's system for managing symbols. The first was that of a definition: these would be things like functions which are immutable and can be visible within nested functions. The other was the concept of a stop: a way of setting the STManager to only lookup non-definitions below a certain depth (and definitions at all levels). This allows me to keep the STManager's use of a queue for scopes while allowing nested functions to call higher-level functions and keeping local variables at higher scopes invisible. 
 
 # November 7th, 2022
 
