@@ -1,5 +1,17 @@
-# 
+# November 11th, 2022
 
+Having gotten the basics of lambdas working, I wanted to move on to implementing sum types as I was worried that their implementation may require me to change how I manage types in code generation. This was because, I wasn't sure how adding the ability for arbitrarily named types would impact my ability to do semantic analysis. In addition, from my prior research, I knew that sum types would lay the foundation for me to implement structures/product types; however, they would not require me to rework the field access system as that would still be for arrays only. 
+
+When working on this approach, I intially expected to use only pre-defined sum types despite the inherent limitations that these would have. My rational for this was that, anonomyous types would become too challenging to implement due to the fact that multiple types (and multiple permutations of the type) could be equivalent, and I would have to somehow reconcile those steps. Beause of this, I started my sum type system by adding a mechanism for representing a sum type in the grammar as well as a way to formally define them. I then moved on to implementing sum types. For this, I created a new type which was able to store a set of other types and then determine if a given type was within that set. 
+
+Having done this, I then made some basic changes to my semantic visitor to account for the sum types. This ammounted to visiting definitions prior to visiting the rest of the code, generating the type of the definition, then binding that type to the symbol that represented the definition. Then, to account for the new case of custom defined variable names, I made that visitor attempt to lookup the symbol for that name, ensure that that symbol is a definition, and then return that type. 
+
+
+I then moved on to code generation which was a much more challenging process. To start out, I knew that sum types would have to be treated as a product of two types: an integer (to represent the type of data stored in the sum) and a data type large enough to fit the largest type in the sum (which I would then cast back to the proper type based on the tag).
+
+For this, I was able to modify my code for arrays to suit this puropose fairly easily; however, I spent a lot of time attempting to find ways of forcing LLVM to generate the type when presented with the type definition. In addition, I had an incredibly challenging time getting LLVM to allow me to re-use types. 
+
+In my initial approach, for each sum type, I generated the llvm type it required and then had been re-using that. While this approach worked (and seemed to make the most sense as the types themselves did not know their own names), this would only work in llvm some times with many cases resulting in segmentation faults. After many hours attempting to debug the problem, I finally gave up and attempted to make the system work as if each sum had a name. When I did this, I was then able to find an obscure method which let me look up types by their name once they were defined. Using this somehow fixed my problems; however, I had hard coded a single name for every sum to use--something I would have to change for this to be versatile. 
 
 # November 9th/10th, 2022
 

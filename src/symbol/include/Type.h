@@ -763,6 +763,7 @@ public:
 protected:
     bool isSupertypeFor(const Type *other) const override
     {
+        //FIXME: THIS DOES NOT WORK WITH SUBTYPING. 
         if(this->contains(other)) return true; 
 
         if(const TypeSum* oSum = dynamic_cast<const TypeSum*>(other))

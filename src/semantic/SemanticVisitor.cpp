@@ -1057,6 +1057,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::DefineEnumContext *ctx)
 
 const Type *SemanticVisitor::visitCtx(WPLParser::CustomTypeContext *ctx)
 {
+    //FIXME: MAY BE OBSCURED BY VAR NAMES
 
     // FIXME: This is really bad and really broken b/c now any symbol can become var?
 
