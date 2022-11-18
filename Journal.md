@@ -1,3 +1,11 @@
+# November 15th, 2022
+
+With enums seeming mostly functional, I wanted to return to working on fixing the issue with lambdas where defining nested functions with the same name would result in conflicts. In order to do this, I wanted to start making whatever simplifications I could to the code generation around functions and processes. As such, I first combined the definition for FUNC and PROC into one definition. In addition, I wanted to implement automatic forward declarations as they would limit the number of cases that code generation would have to manage. Given that I already had implemented forward declarations with externs and that I already had the ability to generate nested functions, implementing this only required a quick additional pass in the semantic visitor to discover all functions prior to checking the implementations for each function. 
+
+I then started to look at resolving the inital name conflict issue I had with nested functions; however, I found that, in order to make this work, I would have to manually rename the functions to resolve conflicts---otherwise I would not be able to look them up during function calls. Given this, and realizing that such a feature would obscure the use of higher-level functions, I decided to hold off on implementing this for now, and, instead, added a semantic error whenever such a case occurs. 
+
+To wrap up the day, as I had gotten tired of having to manually compile .ll files into executables, I followed the LLVM kaleidoscope for how to implement compiling to objects. This was midly tricky to do as, despite having the llvm dependencies for codegen, I was somehow getting undefined references to the llvm modules required for compiling objects. After much searching, I found an LLVM command for cmake to add more llvm modules to be linked during compiling which appeared to address the issue. 
+
 # November 13th/14th, 2022
 
 On both of these days, I added more test cases for enums. The only real change to the code ended up being due to identifying a bug with functions where I was not properly using their pointer type. 
