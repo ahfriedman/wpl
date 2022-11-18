@@ -134,18 +134,18 @@ TEST_CASE("programs/test2 - Scopes, multiple assignments, equality (non-arrays)"
     REQUIRE(tree != NULL);
     STManager *stm = new STManager();
     PropertyManager *pm = new PropertyManager();
-    SemanticVisitor *sv = new SemanticVisitor(stm, pm, CompilerFlags::NO_RUNTIME);
+    SemanticVisitor *sv = new SemanticVisitor(stm, pm, 0);
     sv->visitCompilationUnit(tree);
 
 
     REQUIRE_FALSE(sv->hasErrors(0));
 
-    CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll", CompilerFlags::NO_RUNTIME);
+    CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll", 0);
     cv->visitCompilationUnit(tree);
 
     REQUIRE_FALSE(cv->hasErrors(0));
 
-    REQUIRE(llvmIrToSHA256(cv->getModule()) == "f4b7fbda0e0f7f25c20056aacce4eed4c1bcfffb1464c6ba525d9f156238b4c9");
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "6fe85492b8cabea3bee19c2fc54a5276861eb992ebdb4a97de10008cefb0832e");
 }
 
 TEST_CASE("programs/test3 - If w/o else", "[codegen]")
@@ -744,17 +744,17 @@ TEST_CASE("programs/test13 - Recursive Fibonacci", "[codegen]")
     REQUIRE(tree != NULL);
     STManager *stm = new STManager();
     PropertyManager *pm = new PropertyManager();
-    SemanticVisitor *sv = new SemanticVisitor(stm, pm, CompilerFlags::NO_RUNTIME);
+    SemanticVisitor *sv = new SemanticVisitor(stm, pm, 0);
     sv->visitCompilationUnit(tree);
 
     REQUIRE_FALSE(sv->hasErrors(0));
 
-    CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll", CompilerFlags::NO_RUNTIME);
+    CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll", 0);
     cv->visitCompilationUnit(tree);
 
     REQUIRE_FALSE(cv->hasErrors(0));
 
-    REQUIRE(llvmIrToSHA256(cv->getModule()) == "e1e33543132cb39593a2b3bac2192c7b657c38c7c6c1f3c708c5b2a7bb7aa2bc");
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "fd2a506796e162de9e1a00a12e154827fa25a34833b68c68aa83750e3c4ab657");
 }
 
 TEST_CASE("programs/test-runtime - Basic runtime tests", "[codegen]")
@@ -799,18 +799,18 @@ TEST_CASE("programs/test-shortcircuit - Basic Short Circuit (and)", "[codegen]")
     REQUIRE(tree != NULL);
     STManager *stm = new STManager();
     PropertyManager *pm = new PropertyManager();
-    SemanticVisitor *sv = new SemanticVisitor(stm, pm, CompilerFlags::NO_RUNTIME);
+    SemanticVisitor *sv = new SemanticVisitor(stm, pm, 0);
     sv->visitCompilationUnit(tree);
 
 
     REQUIRE_FALSE(sv->hasErrors(0));
 
-    CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll", CompilerFlags::NO_RUNTIME);
+    CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll", 0);
     cv->visitCompilationUnit(tree);
 
     REQUIRE_FALSE(cv->hasErrors(0));
 
-    REQUIRE(llvmIrToSHA256(cv->getModule()) == "875789f4dd74cb624ba74d21d3079a6fd89076028f5c8065875aa170cf94f785");
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "e664f3cf5af34edd6f3fecb5248e4c6390565443c942e01f5652c7b5b3c3d4ba");
 }
 
 TEST_CASE("programs/test-shortcircuit-rt - Basic Short Circuit (and + or) w/ Runtime", "[codegen]")
@@ -837,7 +837,7 @@ TEST_CASE("programs/test-shortcircuit-rt - Basic Short Circuit (and + or) w/ Run
 
     REQUIRE_FALSE(cv->hasErrors(0));
 
-    REQUIRE(llvmIrToSHA256(cv->getModule()) == "759cb24b5efa3fa2fc27b00fc36c7b7863b312f156c6489e5cb802926a5bcd24");
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "2309d18c37760ca695b7acd1fe81c7bf428ea5e44764f35e6c993780a3815459");
 }
 
 
@@ -902,7 +902,7 @@ TEST_CASE("programs/externProc - Declaring an external proc", "[codegen]")
 
 TEST_CASE("programs/test14a - Test nested/more complex shorting", "[codegen]")
 {
-    //TODO: MANY OF THE SHORT CIRCUITING CASES COULD BE OPTIMIZED!!!
+    //TODO: MANY OF THE SHORT CIRCUITING CASES COULD BE OPTIMIZED!!! -> Done?
     std::fstream *inStream = new std::fstream("/home/shared/programs/test14a.wpl");
     antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
 
@@ -926,7 +926,7 @@ TEST_CASE("programs/test14a - Test nested/more complex shorting", "[codegen]")
 
     REQUIRE_FALSE(cv->hasErrors(0));
 
-    REQUIRE(llvmIrToSHA256(cv->getModule()) == "e6a2a65891ddb6fdc968fea7091c96cbceefca2f243e18c3f1aceb5776e04dfe");
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "a4ac4a3664f5835bc88328e2dd925472074de7b0f9977106f0685508130628f8");
 }
 
 TEST_CASE("programs/test18 - Parody", "[codegen]")
@@ -1013,34 +1013,6 @@ TEST_CASE("programs/testGlobalAndLocal - Parody", "[codegen]")
     REQUIRE(llvmIrToSHA256(cv->getModule()) == "f9b33450b1f1522122b1dffbf07819f959e08aac6ccdfc112cac7c25690a5c78");
 }
 
-TEST_CASE("programs/testForwardDecl - Forward Declaration", "[codegen]")
-{
-    std::fstream *inStream = new std::fstream("/home/shared/programs/testForwardDecl.wpl");
-    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
-
-    WPLLexer lexer(input);
-    antlr4::CommonTokenStream tokens(&lexer);
-    WPLParser parser(&tokens);
-    parser.removeErrorListeners();
-    WPLParser::CompilationUnitContext *tree = NULL;
-    REQUIRE_NOTHROW(tree = parser.compilationUnit());
-    REQUIRE(tree != NULL);
-    STManager *stm = new STManager();
-    PropertyManager *pm = new PropertyManager();
-    SemanticVisitor *sv = new SemanticVisitor(stm, pm, 0);
-    sv->visitCompilationUnit(tree);
-
-
-    REQUIRE_FALSE(sv->hasErrors(0));
-
-    CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll", 0);
-    cv->visitCompilationUnit(tree);
-
-    REQUIRE_FALSE(cv->hasErrors(0));
-
-    REQUIRE(llvmIrToSHA256(cv->getModule()) == "3412ac53de5141c955eae0f21cc22df848126af700acb8dc2ec84649f2a4ce9f");
-}
-
 TEST_CASE("programs/forwardWrongArg - Forward Declaration w/ wrong arg name", "[codegen]")
 {
     std::fstream *inStream = new std::fstream("/home/shared/programs/forwardWrongArg.wpl");
@@ -1059,6 +1031,34 @@ TEST_CASE("programs/forwardWrongArg - Forward Declaration w/ wrong arg name", "[
     sv->visitCompilationUnit(tree);
 
 
+    REQUIRE(sv->hasErrors(0));
+
+    CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll", 0);
+    cv->visitCompilationUnit(tree);
+
+    REQUIRE(cv->hasErrors(0));
+
+    // REQUIRE(llvmIrToSHA256(cv->getModule()) == "c1698114ebca6c348ee9f7ae41ea95a8d0377d0eda8f21711d3bb5501bee49ba");
+}
+
+TEST_CASE("programs/Lambda1 - Basic lambda Test", "[codegen][lambda]")
+{
+    std::fstream *inStream = new std::fstream("/home/shared/programs/Lambda1.wpl");
+    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+
+    WPLLexer lexer(input);
+    antlr4::CommonTokenStream tokens(&lexer);
+    WPLParser parser(&tokens);
+    parser.removeErrorListeners();
+    WPLParser::CompilationUnitContext *tree = NULL;
+    REQUIRE_NOTHROW(tree = parser.compilationUnit());
+    REQUIRE(tree != NULL);
+    STManager *stm = new STManager();
+    PropertyManager *pm = new PropertyManager();
+    SemanticVisitor *sv = new SemanticVisitor(stm, pm, 0);
+    sv->visitCompilationUnit(tree);
+
+
     REQUIRE_FALSE(sv->hasErrors(0));
 
     CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll", 0);
@@ -1066,7 +1066,220 @@ TEST_CASE("programs/forwardWrongArg - Forward Declaration w/ wrong arg name", "[
 
     REQUIRE_FALSE(cv->hasErrors(0));
 
-    REQUIRE(llvmIrToSHA256(cv->getModule()) == "c1698114ebca6c348ee9f7ae41ea95a8d0377d0eda8f21711d3bb5501bee49ba");
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "6e352285edacc42db930c25774b68b3a8fff977e2e858a61294b1ac14ad8c3a0");
+}
+
+//FIXME: LAMBDAS, ENUMS CAN"T BE ASSIGNED OUTSIDE OF DECL
+
+TEST_CASE("programs/Lambda2 - Basic lambda Test w/ return", "[codegen][lambda]")
+{
+    std::fstream *inStream = new std::fstream("/home/shared/programs/Lambda2.wpl");
+    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+
+    WPLLexer lexer(input);
+    antlr4::CommonTokenStream tokens(&lexer);
+    WPLParser parser(&tokens);
+    parser.removeErrorListeners();
+    WPLParser::CompilationUnitContext *tree = NULL;
+    REQUIRE_NOTHROW(tree = parser.compilationUnit());
+    REQUIRE(tree != NULL);
+    STManager *stm = new STManager();
+    PropertyManager *pm = new PropertyManager();
+    SemanticVisitor *sv = new SemanticVisitor(stm, pm, 0);
+    sv->visitCompilationUnit(tree);
+
+
+    REQUIRE_FALSE(sv->hasErrors(0));
+
+    CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll", 0);
+    cv->visitCompilationUnit(tree);
+
+    REQUIRE_FALSE(cv->hasErrors(0));
+
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "ee35f7c8a82e6dece344d8a245c48982d894ea3e4db0f2ba939e0bea65e9e1e8");
+}
+
+TEST_CASE("programs/Lambda3 - Basic lambda Test w/ return and same name", "[codegen][lambda]")
+{
+    std::fstream *inStream = new std::fstream("/home/shared/programs/Lambda3.wpl");
+    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+
+    WPLLexer lexer(input);
+    antlr4::CommonTokenStream tokens(&lexer);
+    WPLParser parser(&tokens);
+    parser.removeErrorListeners();
+    WPLParser::CompilationUnitContext *tree = NULL;
+    REQUIRE_NOTHROW(tree = parser.compilationUnit());
+    REQUIRE(tree != NULL);
+    STManager *stm = new STManager();
+    PropertyManager *pm = new PropertyManager();
+    SemanticVisitor *sv = new SemanticVisitor(stm, pm, 0);
+    sv->visitCompilationUnit(tree);
+
+
+    REQUIRE_FALSE(sv->hasErrors(0));
+
+    CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll", 0);
+    cv->visitCompilationUnit(tree);
+
+    REQUIRE_FALSE(cv->hasErrors(0));
+
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "526b0bc9f9b76dad00ad13676e16a11273b40e928342c848bdb9b7e8dfd75ab9");
+}
+
+TEST_CASE("programs/externLambda", "[codegen][lambda]")
+{
+    std::fstream *inStream = new std::fstream("/home/shared/programs/externLambda.wpl");
+    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+
+    WPLLexer lexer(input);
+    antlr4::CommonTokenStream tokens(&lexer);
+    WPLParser parser(&tokens);
+    parser.removeErrorListeners();
+    WPLParser::CompilationUnitContext *tree = NULL;
+    REQUIRE_NOTHROW(tree = parser.compilationUnit());
+    REQUIRE(tree != NULL);
+    STManager *stm = new STManager();
+    PropertyManager *pm = new PropertyManager();
+    SemanticVisitor *sv = new SemanticVisitor(stm, pm, 0);
+    sv->visitCompilationUnit(tree);
+
+
+    REQUIRE_FALSE(sv->hasErrors(0));
+
+    CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll", 0);
+    cv->visitCompilationUnit(tree);
+
+    REQUIRE_FALSE(cv->hasErrors(0));
+
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "69a65ba7c965baab8ac203f032c7a7e8956f67ebf4699dbf682866de770404cb");
+}
+
+TEST_CASE("programs/enum1 - Basic Enum 1", "[codegen][enum]")
+{
+    std::fstream *inStream = new std::fstream("/home/shared/programs/enum1.wpl");
+    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+
+    WPLLexer lexer(input);
+    antlr4::CommonTokenStream tokens(&lexer);
+    WPLParser parser(&tokens);
+    parser.removeErrorListeners();
+    WPLParser::CompilationUnitContext *tree = NULL;
+    REQUIRE_NOTHROW(tree = parser.compilationUnit());
+    REQUIRE(tree != NULL);
+    STManager *stm = new STManager();
+    PropertyManager *pm = new PropertyManager();
+    SemanticVisitor *sv = new SemanticVisitor(stm, pm, 0);
+    sv->visitCompilationUnit(tree);
+
+
+    REQUIRE_FALSE(sv->hasErrors(0));
+
+    CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll", 0);
+    cv->visitCompilationUnit(tree);
+
+    REQUIRE_FALSE(cv->hasErrors(0));
+
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "cd22af59b9ec9e571878478faa792ddf330fee1eaa78bb5d93546d8923c27152");
+}
+
+TEST_CASE("programs/enum2 - Basic Enum 2", "[codegen][enum]")
+{
+    std::fstream *inStream = new std::fstream("/home/shared/programs/enum2.wpl");
+    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+
+    WPLLexer lexer(input);
+    antlr4::CommonTokenStream tokens(&lexer);
+    WPLParser parser(&tokens);
+    parser.removeErrorListeners();
+    WPLParser::CompilationUnitContext *tree = NULL;
+    REQUIRE_NOTHROW(tree = parser.compilationUnit());
+    REQUIRE(tree != NULL);
+    STManager *stm = new STManager();
+    PropertyManager *pm = new PropertyManager();
+    SemanticVisitor *sv = new SemanticVisitor(stm, pm, 0);
+    sv->visitCompilationUnit(tree);
+
+
+    REQUIRE_FALSE(sv->hasErrors(0));
+
+    CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll", 0);
+    cv->visitCompilationUnit(tree);
+
+    REQUIRE_FALSE(cv->hasErrors(0));
+
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "fa0caefbb970e8b72f4e6c4884ed7524483154d480f42ca957e4f454503f44dd");
+}
+
+TEST_CASE("programs/enumAssign - Same a  Enum 2 but with assignmens outside of decl", "[codegen][enum]")
+{
+    std::fstream *inStream = new std::fstream("/home/shared/programs/enumAssign.wpl");
+    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+
+    WPLLexer lexer(input);
+    antlr4::CommonTokenStream tokens(&lexer);
+    WPLParser parser(&tokens);
+    parser.removeErrorListeners();
+    WPLParser::CompilationUnitContext *tree = NULL;
+    REQUIRE_NOTHROW(tree = parser.compilationUnit());
+    REQUIRE(tree != NULL);
+    STManager *stm = new STManager();
+    PropertyManager *pm = new PropertyManager();
+    SemanticVisitor *sv = new SemanticVisitor(stm, pm, 0);
+    sv->visitCompilationUnit(tree);
+
+
+    REQUIRE_FALSE(sv->hasErrors(0));
+
+    CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll", 0);
+    cv->visitCompilationUnit(tree);
+
+    REQUIRE_FALSE(cv->hasErrors(0));
+
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "18058ade2e459433332e022c54f870e1961d0c1d3e0bf27f57c97cadd9bc7026");
+}
+
+TEST_CASE("Out of order function", "[codegen][program]")
+{
+  antlr4::ANTLRInputStream input(
+      R""""(
+extern int func printf(...);
+
+str a <- "hello";
+
+int func program() {
+    foo(); 
+    return 0;
+}
+
+proc foo() {
+    printf("a = %s\n", a);
+}
+    )"""");
+  WPLLexer lexer(&input);
+  // lexer.removeErrorListeners();
+  // lexer.addErrorListener(new TestErrorListener());
+  antlr4::CommonTokenStream tokens(&lexer);
+  WPLParser parser(&tokens);
+  parser.removeErrorListeners();
+//   parser.addErrorListener(new TestErrorListener()); //FIXME: SHOULD WE TEST THESE HERE?
+
+  WPLParser::CompilationUnitContext *tree = NULL;
+  REQUIRE_NOTHROW(tree = parser.compilationUnit());
+  REQUIRE(tree != NULL);
+  REQUIRE(tree->getText() != "");
+
+  STManager *stmgr = new STManager();
+  PropertyManager *pm = new PropertyManager();
+  SemanticVisitor *sv = new SemanticVisitor(stmgr, pm);
+
+  sv->visitCompilationUnit(tree);
+  REQUIRE_FALSE(sv->hasErrors(ERROR));
+  CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll", 0);
+  cv->visitCompilationUnit(tree);
+  REQUIRE_FALSE(cv->hasErrors(0));
+
+  REQUIRE(llvmIrToSHA256(cv->getModule()) == "c226659bfe066e66d2491aa77e5073a4d512f3ddb376a29a8355cfe7b7022e18");
 }
 
 

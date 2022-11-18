@@ -96,9 +96,6 @@ public:
     T visitCtx(WPLParser::FuncDefContext * ctx); 
     std::any visitFuncDef(WPLParser::FuncDefContext *ctx) override { return visitCtx(ctx); }
 
-    T visitCtx(WPLParser::ProcDefContext * ctx); 
-    std::any visitProcDef(WPLParser::ProcDefContext *ctx) override { return visitCtx(ctx); }
-
     T visitCtx(WPLParser::AssignStatementContext * ctx); 
     std::any visitAssignStatement(WPLParser::AssignStatementContext *ctx) override { return visitCtx(ctx); }
 
@@ -127,8 +124,8 @@ public:
     T visitCtx(WPLParser::TypeOrVarContext * ctx); 
     std::any visitTypeOrVar(WPLParser::TypeOrVarContext *ctx) override { return visitCtx(ctx); }
 
-    T visitCtx(WPLParser::TypeContext * ctx); 
-    std::any visitType(WPLParser::TypeContext *ctx) override { return visitCtx(ctx); }
+    // T visitCtx(WPLParser::TypeContext * ctx); 
+    // std::any visitType(WPLParser::TypeContext *ctx) override { return visitCtx(ctx); }
 
     T visitCtx(WPLParser::BooleanConstContext * ctx); 
     std::any visitBooleanConst(WPLParser::BooleanConstContext *ctx) override { return visitCtx(ctx); }
@@ -164,7 +161,6 @@ class TypeVisitor : public TypedVisitor<const Type*>
     const Type * visitCtx(WPLParser::AssignmentContext *ctx) ;
     const Type *visitCtx(WPLParser::ExternStatementContext *ctx);
     const Type *visitCtx(WPLParser::FuncDefContext *ctx);
-    const Type *visitCtx(WPLParser::ProcDefContext *ctx);
     const Type *visitCtx(WPLParser::AssignStatementContext *ctx);
     const Type *visitCtx(WPLParser::VarDeclStatementContext *ctx);
     const Type *visitCtx(WPLParser::LoopStatementContext *ctx);

@@ -2,11 +2,62 @@
 
 std::optional<Value *> CodegenVisitor::TvisitCompilationUnit(WPLParser::CompilationUnitContext *ctx)
 {
+    for (auto e : ctx->defs)
+    {
+        // FIXME: ENSURE CATCH ALL?
+        e->accept(this);
+    }
+
     for (auto e : ctx->extens)
     {
         e->accept(this);
     }
-    
+
+    // Pre-declare all functions //FIXME: VERIFY
+    for (auto e : ctx->stmts)
+    {
+        if (WPLParser::FuncDefContext *fnCtx = dynamic_cast<WPLParser::FuncDefContext *>(e))
+        {
+            // FIXME: VERIFY SWITCH OVER TO PROC AND REM EXTERN, METHODIZE, ALSO, EDIT INVOKE GEN ELSEWHERE TO REFLECT THIS
+            std::optional<Symbol *> optSym = props->getBinding(fnCtx);
+
+            if (!optSym)
+            {
+                errorHandler.addCodegenError(fnCtx->getStart(), "Incorrectly bound symbol in function definition. Probably a compiler error.");
+                return {};
+            }
+
+            Symbol *symbol = optSym.value();
+
+            if (!symbol->type)
+            {
+                errorHandler.addCodegenError(fnCtx->getStart(), "Type for function not correctly bound! Probably a compiler errror.");
+                return {};
+            }
+
+            const Type *generalType = symbol->type;
+
+            if (const TypeInvoke *type = dynamic_cast<const TypeInvoke *>(generalType))
+            {
+                llvm::Type *genericType = type->getLLVMType(module)->getPointerElementType();
+
+                if (llvm::FunctionType *fnType = static_cast<llvm::FunctionType *>(genericType))
+                {
+                    Function::Create(fnType, GlobalValue::ExternalLinkage, fnCtx->name->getText(), module);
+                }
+                else
+                {
+                    errorHandler.addCodegenError(fnCtx->getStart(), "Could not treat function type as function.");
+                    return {};
+                }
+            }
+            else
+            {
+                errorHandler.addCodegenError(fnCtx->getStart(), "Function bound to: " + generalType->toString() + ". Requires Invokable!");
+            }
+        }
+    }
+
     for (auto e : ctx->stmts)
     {
         // Generate code for statement
@@ -40,6 +91,172 @@ std::optional<Value *> CodegenVisitor::TvisitCompilationUnit(WPLParser::Compilat
     return {};
 }
 
+std::optional<Value *> CodegenVisitor::TvisitDefineEnum(WPLParser::DefineEnumContext *ctx)
+{
+    std::optional<Symbol *> symOpt = props->getBinding(ctx); // FIXME: THIS DOES NOTHING
+    if (!symOpt)
+    {
+        errorHandler.addCodegenError(ctx->getStart(), "Could not locate symbol for enum defintion: " + ctx->name->getText());
+        return {};
+    }
+
+    Symbol *sym = symOpt.value();
+
+    llvm::Type *ty = sym->type->getLLVMType(module);
+
+    return {};
+}
+
+std::optional<Value *> CodegenVisitor::TvisitMatchStatement(WPLParser::MatchStatementContext *ctx)
+{
+    std::optional<Symbol *> symOpt = props->getBinding(ctx->check); // FIXME: THIS DOES NOTHING
+    if (!symOpt)
+    {
+        errorHandler.addCodegenError(ctx->getStart(), "Could not locate symbol for case");
+        return {};
+    }
+
+    if (const TypeSum *sumType = dynamic_cast<const TypeSum *>(symOpt.value()->type))
+    {
+        auto origParent = builder->GetInsertBlock()->getParent();
+        BasicBlock *mergeBlk = BasicBlock::Create(module->getContext(), "matchcont");
+
+        std::any anyCheck = ctx->check->accept(this);
+
+        // Attempt to cast the check; if this fails, then codegen for the check failed //FIXME: VERIFY THESE ARE FINE
+        if (std::optional<Value *> optVal = std::any_cast<std::optional<Value *>>(anyCheck))
+        {
+            // Check that the optional, in fact, has a value. Otherwise, something went wrong.
+            if (!optVal)
+            {
+                errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code for: " + ctx->check->getText());
+                return {};
+            }
+
+            Value *sumVal = optVal.value();
+            llvm::AllocaInst *SumPtr = builder->CreateAlloca(sumVal->getType());
+            builder->CreateStore(sumVal, SumPtr);
+
+            // Value *corrPtr = builder->CreateBitCast(sumVal, sumVal->getType()->getPointerTo()); // FIXME: DO BETTER
+
+            Value *tagPtr = builder->CreateGEP(SumPtr, {Int32Zero, Int32Zero});
+
+            Value *tag = builder->CreateLoad(tagPtr->getType()->getPointerElementType(), tagPtr);
+
+            llvm::SwitchInst *switchInst = builder->CreateSwitch(tag, mergeBlk, sumType->getCases().size());
+
+            for (WPLParser::MatchAlternativeContext *altCtx : ctx->cases)
+            {
+                std::optional<Symbol *> localSymOpt = props->getBinding(altCtx->VARIABLE());
+
+                if (!localSymOpt)
+                {
+                    errorHandler.addCodegenError(altCtx->getStart(), "Failed to lookup type for case");
+                    return {};
+                }
+
+                llvm::Type *toFind = localSymOpt.value()->type->getLLVMType(module); // FIXME: DO THIS ALL BETTER, MORE CHECKS!!
+
+                // FIXME: METHODIZE!!
+                unsigned int index = [sumType, toFind](llvm::Module *M)
+                {
+                    unsigned i = 1;
+
+                    for (auto e : sumType->getCases())
+                    {
+                        if (e->getLLVMType(M) == toFind)
+                        {
+                            return i;
+                        }
+                        i++;
+                    }
+
+                    return (unsigned int)0;
+                }(module);
+
+                if (index == 0)
+                {
+                    errorHandler.addCodegenError(ctx->getStart(), "Unable to find key for type " + localSymOpt.value()->type->toString() + " in sum");
+                    return {}; // FIXME: DO BETTER!
+                }
+
+                BasicBlock *matchBlk = BasicBlock::Create(module->getContext(), "tagBranch" + std::to_string(index));
+
+                builder->SetInsertPoint(matchBlk);
+
+                // FIXME: VERIFY SIGNED VS UNSIGNED
+                switchInst->addCase(ConstantInt::get(Int32Ty, index, true), matchBlk);
+                origParent->getBasicBlockList().push_back(matchBlk);
+
+                // FIME: METHODIZE VAR DECL?
+
+                std::optional<Symbol *> varSymbolOpt = props->getBinding(altCtx->VARIABLE());
+
+                if (!varSymbolOpt)
+                {
+                    errorHandler.addCodegenError(altCtx->getStart(), "Failed to find symbol in match");
+                    return {}; // FIXME: SHOULD WE RETURN OR WOULD THIS BREAK STUFF?
+                }
+
+                Symbol *varSymbol = varSymbolOpt.value();
+
+                // FIXME: test for varSymbol->type?
+                //  Get the type of the symbol
+                llvm::Type *ty = varSymbol->type->getLLVMType(module);
+
+                // if (dynamic_cast<const TypeInvoke *>(varSymbol->type))
+                // {
+                //     ty = ty->getPointerTo();
+                // }
+
+                // Can skip global stuff
+                llvm::AllocaInst *v = builder->CreateAlloca(ty, 0, altCtx->VARIABLE()->getText());
+                varSymbol->val = v;
+                // varSymbol->val = v;
+
+                // Now to store the var
+                Value *valuePtr = builder->CreateGEP(SumPtr, {Int32Zero, Int32One});
+
+                Value *corrected = builder->CreateBitCast(valuePtr, ty->getPointerTo()); // FIXME: DO BETTER
+
+                Value *val = builder->CreateLoad(ty, corrected); // FIXME: WILL THIS WORK WITH NESTED SUMS?
+
+                builder->CreateStore(val, v);
+
+                // FIXME: DEFINE AND BIND THE VAR!!!
+                altCtx->eval->accept(this);
+
+                if (WPLParser::BlockStatementContext *blkStmtCtx = dynamic_cast<WPLParser::BlockStatementContext *>(altCtx->eval))
+                {
+                    WPLParser::BlockContext *blkCtx = blkStmtCtx->block();
+                    if (!CodegenVisitor::blockEndsInReturn(blkCtx))
+                    {
+                        builder->CreateBr(mergeBlk);
+                    }
+                    // if it ends in a return, we're good!
+                }
+                else if (WPLParser::ReturnStatementContext *retCtx = dynamic_cast<WPLParser::ReturnStatementContext *>(altCtx->eval))
+                {
+                    // Similarly, we don't need to generate the branch
+                }
+                else
+                {
+                    builder->CreateBr(mergeBlk);
+                }
+            }
+        }
+
+        origParent->getBasicBlockList().push_back(mergeBlk);
+        builder->SetInsertPoint(mergeBlk);
+
+        return {};
+    }
+
+    errorHandler.addCodegenError(ctx->getStart(), "Failed to lookup type for case");
+
+    return {};
+}
+
 std::optional<Value *> CodegenVisitor::TvisitInvocation(WPLParser::InvocationContext *ctx)
 {
     // Create the argument vector
@@ -64,7 +281,43 @@ std::optional<Value *> CodegenVisitor::TvisitInvocation(WPLParser::InvocationCon
 
     if (!call)
     {
-        errorHandler.addCodegenError(ctx->getStart(), "Could not locate function for invocation: " + ctx->VARIABLE()->getText() + ". Has it been defined in IR yet?");
+        std::optional<Symbol *> symOpt = props->getBinding(ctx);
+        if (!symOpt)
+        {
+            errorHandler.addCodegenError(ctx->getStart(), "Could not locate function for invocation: " + ctx->VARIABLE()->getText() + ". Has it been defined in IR yet?");
+            return {};
+        }
+
+        Symbol *sym = symOpt.value();
+
+        std::optional<llvm::Value *> fnPtrOpt = sym->val;
+
+        // FIXME: WILL NOT WORK FOR GLOBAL
+        if (!fnPtrOpt)
+        {
+            errorHandler.addCodegenError(ctx->getStart(), "Could not find value for function: " + sym->toString());
+            return {};
+        }
+        // FIXME: TEST GLOBAL LAMBDAS!!!
+
+        llvm::Type *ty = sym->type->getLLVMType(module);
+
+        if (dynamic_cast<const TypeInvoke *>(sym->type))
+        {
+            llvm::FunctionType *fnType = static_cast<llvm::FunctionType *>(ty->getPointerElementType());
+            llvm::Value *fnPtr = fnPtrOpt.value();
+
+            llvm::Value *fn = builder->CreateLoad(fnPtr);
+
+            Value *val = builder->CreateCall(fnType, fn, ref);
+            // llvm::FunctionCallee *callee = new llvm::FunctionCallee(fnType, fnPtr);
+
+            // Value *val = builder->CreateCall(*callee, ref); // Needs to be separate line because, C++
+            return val;
+        }
+
+        errorHandler.addCodegenError(ctx->getStart(), "Invoke got non-function type: " + ctx->VARIABLE()->getText() + " : " + sym->type->toString());
+        // errorHandler.addCodegenError(ctx->getStart(), "Could not locate function for invocation: " + ctx->VARIABLE()->getText() + ". Has it been defined in IR yet?");
         return {};
     }
 
@@ -124,6 +377,7 @@ std::optional<Value *> CodegenVisitor::TvisitArrayAccess(WPLParser::ArrayAccessC
         }
     }
 
+    // FIXME: CAN WE BREAK ARRAYS DUE TO THE ACCESS OF THE ALLOC VALUE?
     auto ptr = builder->CreateGEP(arrayPtr.value(), {Int32Zero, index.value()});
     Value *val = builder->CreateLoad(ptr->getType()->getPointerElementType(), ptr);
     return val;
@@ -253,7 +507,7 @@ std::optional<Value *> CodegenVisitor::TvisitBinaryArithExpr(WPLParser::BinaryAr
     if (!lhs || !rhs)
     {
         errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code for: " + ctx->getText());
-        return {}; 
+        return {};
     }
 
     switch (ctx->op->getType())
@@ -314,51 +568,88 @@ std::optional<Value *> CodegenVisitor::TvisitEqExpr(WPLParser::EqExprContext *ct
  */
 std::optional<Value *> CodegenVisitor::TvisitLogAndExpr(WPLParser::LogAndExprContext *ctx)
 {
+     //FIXME: DO BETTER W/ AST 
+    std::vector<WPLParser::ExpressionContext *> toVisit = ctx->exprs; 
+    std::vector<WPLParser::ExpressionContext *> toGen;
 
-    std::optional<Value *> lhs = std::any_cast<std::optional<Value *>>(ctx->left->accept(this));
-
-    if (!lhs)
+    while(toVisit.size() > 0)
     {
-        errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code for: " + ctx->left->getText());
-        return {};
+        WPLParser::ExpressionContext* curr = toVisit.at(0); 
+        toVisit.erase(toVisit.begin());
+
+        if(WPLParser::LogAndExprContext * orCtx = dynamic_cast<WPLParser::LogAndExprContext*>(curr))
+        {
+            toVisit.insert(toVisit.end(), orCtx->exprs.begin(), orCtx->exprs.end());
+        }
+        else 
+        {
+            toGen.push_back(curr); 
+        }
     }
+
 
     // Create the basic block for our conditions
     BasicBlock *current = builder->GetInsertBlock();
-    auto parent = current->getParent();
-    BasicBlock *trueBlk = BasicBlock::Create(module->getContext(), "lhsTrue", parent);
-    BasicBlock *falseBlk = BasicBlock::Create(module->getContext(), "lhsFalse");
-
-    // Branch on the lhs value
-    builder->CreateCondBr(lhs.value(), trueBlk, falseBlk);
+    BasicBlock *mergeBlk = BasicBlock::Create(module->getContext(), "mergeBlkAnd");
 
     /*
-     * LHS True - Need to check RHS
+     * PHI node to merge both sides back together
      */
-    builder->SetInsertPoint(trueBlk);
-    std::optional<Value *> rhs = std::any_cast<std::optional<Value *>>(ctx->right->accept(this));
+    builder->SetInsertPoint(mergeBlk);
+    PHINode *phi = builder->CreatePHI(Int1Ty, toGen.size(), "logAnd");
 
-    if (!rhs)
+    builder->SetInsertPoint(current);
+
+    std::optional<Value *> first = std::any_cast<std::optional<Value *>>(toGen.at(0)->accept(this));
+
+    if (!first)
     {
-        errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code for: " + ctx->right->getText());
+        errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code for: " + toGen.at(0)->getText());
         return {};
     }
 
-    builder->CreateBr(falseBlk);
-    trueBlk = builder->GetInsertBlock();
+    Value *lastValue = first.value();
+
+    auto parent = current->getParent();
+    phi->addIncoming(lastValue, current);
+
+    BasicBlock *falseBlk;
+
+    // Branch on the lhs value
+    for (unsigned int i = 1; i < toGen.size(); i++)
+    {
+        falseBlk = BasicBlock::Create(module->getContext(), "prevTrueAnd", parent);
+        builder->CreateCondBr(lastValue, falseBlk, mergeBlk);
+
+        /*
+         * LHS False - Need to check RHS value
+         */
+        builder->SetInsertPoint(falseBlk);
+
+        std::optional<Value *> rhs = std::any_cast<std::optional<Value *>>(toGen.at(i)->accept(this));
+
+        if (!rhs)
+        {
+            errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code for: " + toGen.at(i)->getText());
+            return {};
+        }
+        lastValue = rhs.value();
+
+        falseBlk = builder->GetInsertBlock();
+        parent = falseBlk->getParent();
+        phi->addIncoming(lastValue, falseBlk);
+    }
+
+    builder->CreateBr(mergeBlk); 
+    // falseBlk = builder->GetInsertBlock();
 
     /*
-     * LHS False - Can short as statement being false
+     * LHS True - Can skip checking RHS and return true
      */
-    parent->getBasicBlockList().push_back(falseBlk);
-    builder->SetInsertPoint(falseBlk);
+    parent->getBasicBlockList().push_back(mergeBlk);
+    builder->SetInsertPoint(mergeBlk);
 
-    /*
-     * Add PHI node to merge things back together
-     */
-    PHINode *phi = builder->CreatePHI(Int1Ty, 2, "logAnd");
-    phi->addIncoming(builder->getFalse(), current);
-    phi->addIncoming(rhs.value(), trueBlk);
+    // phi->addIncoming(rhs.value(), falseBlk);
     return phi;
 }
 
@@ -372,51 +663,88 @@ std::optional<Value *> CodegenVisitor::TvisitLogAndExpr(WPLParser::LogAndExprCon
  */
 std::optional<Value *> CodegenVisitor::TvisitLogOrExpr(WPLParser::LogOrExprContext *ctx)
 {
-    std::optional<Value *> lhs = std::any_cast<std::optional<Value *>>(ctx->left->accept(this));
+    //FIXME: DO BETTER W/ AST 
+    std::vector<WPLParser::ExpressionContext *> toVisit = ctx->exprs; 
+    std::vector<WPLParser::ExpressionContext *> toGen;
 
-    if (!lhs)
+    while(toVisit.size() > 0)
     {
-        errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code for: " + ctx->left->getText());
-        return {};
+        WPLParser::ExpressionContext* curr = toVisit.at(0); 
+        toVisit.erase(toVisit.begin());
+
+        if(WPLParser::LogOrExprContext * orCtx = dynamic_cast<WPLParser::LogOrExprContext*>(curr))
+        {
+            toVisit.insert(toVisit.end(), orCtx->exprs.begin(), orCtx->exprs.end());
+        }
+        else 
+        {
+            toGen.push_back(curr); 
+        }
     }
+
 
     // Create the basic block for our conditions
     BasicBlock *current = builder->GetInsertBlock();
-    auto parent = current->getParent();
-    BasicBlock *falseBlk = BasicBlock::Create(module->getContext(), "lhsFalse", parent);
-    BasicBlock *trueBlk = BasicBlock::Create(module->getContext(), "lhsTrue");
-
-    // Branch on the lhs value
-    builder->CreateCondBr(lhs.value(), trueBlk, falseBlk);
-
-    /*
-     * LHS False - Need to check RHS value
-     */
-    builder->SetInsertPoint(falseBlk);
-
-    std::optional<Value *> rhs = std::any_cast<std::optional<Value *>>(ctx->right->accept(this));
-
-    if (!rhs)
-    {
-        errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code for: " + ctx->right->getText());
-        return {};
-    }
-
-    builder->CreateBr(trueBlk);
-    falseBlk = builder->GetInsertBlock();
-
-    /*
-     * LHS True - Can skip checking RHS and return true
-     */
-    parent->getBasicBlockList().push_back(trueBlk);
-    builder->SetInsertPoint(trueBlk);
+    BasicBlock *mergeBlk = BasicBlock::Create(module->getContext(), "mergeBlkOr");
 
     /*
      * PHI node to merge both sides back together
      */
-    PHINode *phi = builder->CreatePHI(Int1Ty, 2, "logOr");
-    phi->addIncoming(lhs.value(), current);
-    phi->addIncoming(rhs.value(), falseBlk);
+    builder->SetInsertPoint(mergeBlk);
+    PHINode *phi = builder->CreatePHI(Int1Ty, toGen.size(), "logOr");
+
+    builder->SetInsertPoint(current);
+
+    std::optional<Value *> first = std::any_cast<std::optional<Value *>>(toGen.at(0)->accept(this));
+
+    if (!first)
+    {
+        errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code for: " + toGen.at(0)->getText());
+        return {};
+    }
+
+    Value *lastValue = first.value();
+
+    auto parent = current->getParent();
+    phi->addIncoming(lastValue, current);
+
+    BasicBlock *falseBlk;
+
+    // Branch on the lhs value
+    for (unsigned int i = 1; i < toGen.size(); i++)
+    {
+        falseBlk = BasicBlock::Create(module->getContext(), "prevFalseOr", parent);
+        builder->CreateCondBr(lastValue, mergeBlk, falseBlk);
+
+        /*
+         * LHS False - Need to check RHS value
+         */
+        builder->SetInsertPoint(falseBlk);
+
+        std::optional<Value *> rhs = std::any_cast<std::optional<Value *>>(toGen.at(i)->accept(this));
+
+        if (!rhs)
+        {
+            errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code for: " + toGen.at(i)->getText());
+            return {};
+        }
+        lastValue = rhs.value();
+
+        falseBlk = builder->GetInsertBlock();
+        parent = falseBlk->getParent();
+        phi->addIncoming(lastValue, falseBlk);
+    }
+
+    builder->CreateBr(mergeBlk); 
+    
+
+    /*
+     * LHS True - Can skip checking RHS and return true
+     */
+    parent->getBasicBlockList().push_back(mergeBlk);
+    builder->SetInsertPoint(mergeBlk);
+
+    // phi->addIncoming(rhs.value(), falseBlk);
     return phi;
 }
 
@@ -439,18 +767,28 @@ std::optional<Value *> CodegenVisitor::TvisitVariableExpr(WPLParser::VariableExp
     Symbol *sym = symOpt.value();
 
     // Try getting the type for the symbol, raising an error if it could not be determined
-    llvm::Type *type = sym->type->getLLVMType(module->getContext());
+    llvm::Type *type = sym->type->getLLVMType(module);
     if (!type)
     {
         errorHandler.addCodegenError(ctx->getStart(), "Unable to find type for variable: " + ctx->getText());
-        return {}; //FIXME: IS THIS USED? SOMETIMES MAYBE?
+        return {}; // FIXME: IS THIS USED? SOMETIMES MAYBE?
     }
 
     // Make sure the variable has an allocation (or that we can find it due to it being a global var)
     if (!sym->val)
     {
         // If the symbol is a global var
-        if (sym->isGlobal)
+        if (dynamic_cast<const TypeInvoke *>(sym->type))
+        {
+            // FIXME: METHODIZE!!!
+            Function *fn = module->getFunction(id);
+
+            // FIXME: COPY IN STUB GEN!
+            // Value *val = builder->CreateLoad(fn);
+            // return val;
+            return fn;
+        }
+        else if (sym->isGlobal)
         {
             // Lookup the global var for the symbol
             llvm::GlobalVariable *glob = module->getNamedGlobal(sym->identifier);
@@ -470,6 +808,11 @@ std::optional<Value *> CodegenVisitor::TvisitVariableExpr(WPLParser::VariableExp
         errorHandler.addCodegenError(ctx->getStart(), "Unable to find allocation for variable: " + ctx->getText());
         return {};
     }
+
+    // if (dynamic_cast<const TypeSum *>(sym->type)) // FIXME: VERIFY
+    // {
+    //     return sym->val.value();
+    // }
 
     // Otherwise, we are a local variable with an allocation and, thus, can simply load it.
     Value *v = builder->CreateLoad(type, sym->val.value(), id);
@@ -586,7 +929,7 @@ std::optional<Value *> CodegenVisitor::TvisitExternStatement(WPLParser::ExternSt
 
     if (const TypeInvoke *type = dynamic_cast<const TypeInvoke *>(generalType))
     {
-        llvm::Type *genericType = type->getLLVMType(module->getContext());
+        llvm::Type *genericType = type->getLLVMType(module)->getPointerElementType();
 
         if (llvm::FunctionType *fnType = static_cast<llvm::FunctionType *>(genericType))
         {
@@ -607,11 +950,6 @@ std::optional<Value *> CodegenVisitor::TvisitExternStatement(WPLParser::ExternSt
 }
 
 std::optional<Value *> CodegenVisitor::TvisitFuncDef(WPLParser::FuncDefContext *ctx)
-{
-    return CodegenVisitor::visitInvokeable(ctx);
-}
-
-std::optional<Value *> CodegenVisitor::TvisitProcDef(WPLParser::ProcDefContext *ctx)
 {
     return CodegenVisitor::visitInvokeable(ctx);
 }
@@ -684,7 +1022,46 @@ std::optional<Value *> CodegenVisitor::TvisitAssignStatement(WPLParser::AssignSt
     }
 
     // Store the expression's value
-    builder->CreateStore(exprVal.value(), val.value());
+    // FIXME: METHODIZE?
+    Value *v = val.value();
+    Value *stoVal = exprVal.value();
+    if (const TypeSum *sum = dynamic_cast<const TypeSum *>(varSym->type))
+    {
+        // FIXME: METHODIZE!!
+        unsigned int index = [sum, stoVal](llvm::Module *M)
+        {
+            unsigned i = 1;
+            auto toFind = stoVal->getType();
+            for (auto e : sum->getCases())
+            {
+                if (e->getLLVMType(M) == toFind)
+                {
+                    return i;
+                }
+                i++;
+            }
+
+            return (unsigned int)0;
+        }(module);
+
+        if (index == 0)
+        {
+            errorHandler.addCodegenError(ctx->getStart(), "Unable to find key for type in sum");
+            return {}; // FIXME: DO BETTER!
+        }
+
+        Value *tagPtr = builder->CreateGEP(v, {Int32Zero, Int32Zero});
+
+        builder->CreateStore(ConstantInt::get(Int32Ty, index, true), tagPtr);
+        Value *valuePtr = builder->CreateGEP(v, {Int32Zero, Int32One});
+
+        Value *corrected = builder->CreateBitCast(valuePtr, stoVal->getType()->getPointerTo()); // FIXME: DO BETTER
+        builder->CreateStore(stoVal, corrected);
+    }
+    else
+    {
+        builder->CreateStore(stoVal, v);
+    }
 
     return {};
 }
@@ -696,6 +1073,7 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
      */
     for (auto e : ctx->assignments)
     {
+
         std::optional<Value *> exVal = std::nullopt;
 
         // If the declaration has a value, attempt to generate that value
@@ -735,8 +1113,16 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
 
             Symbol *varSymbol = varSymbolOpt.value();
 
-            // Get the type of the symbol
-            llvm::Type *ty = varSymbol->type->getLLVMType(module->getContext());
+            // FIXME: test for varSymbol->type?
+            //  Get the type of the symbol
+            llvm::Type *ty = varSymbol->type->getLLVMType(module);
+
+            ty = varSymbol->type->getLLVMType(module);
+
+            // if (dynamic_cast<const TypeInvoke *>(varSymbol->type))
+            // {
+            //     ty = ty->getPointerTo();
+            // }
 
             // Branch depending on if the var is global or not
             if (varSymbol->isGlobal)
@@ -775,15 +1161,56 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
             {
                 // As this is a local var we can just create an allocation for it
                 llvm::AllocaInst *v = builder->CreateAlloca(ty, 0, var->getText());
+
                 varSymbol->val = v;
 
                 // Similarly, if we have an expression for the local var, we can store it. Otherwise, we can leave it undefined.
                 if (e->ex)
-                    builder->CreateStore(exVal.value(), v);
+                {
+                    Value *stoVal = exVal.value();
+                    // FIXME: NEED TO ADD THIS FOR OTHER ASSIGN TYPE!
+                    if (const TypeSum *sum = dynamic_cast<const TypeSum *>(varSymbol->type))
+                    {
+                        // FIXME: METHODIZE!!
+                        unsigned int index = [sum, stoVal](llvm::Module *M)
+                        {
+                            unsigned i = 1;
+                            auto toFind = stoVal->getType();
+                            for (auto e : sum->getCases())
+                            {
+                                if (e->getLLVMType(M) == toFind)
+                                {
+                                    return i;
+                                }
+                                i++;
+                            }
+
+                            return (unsigned int)0;
+                        }(module);
+
+                        if (index == 0)
+                        {
+                            errorHandler.addCodegenError(ctx->getStart(), "Unable to find key for type in sum");
+                            return {}; // FIXME: DO BETTER!
+                        }
+
+                        // FIXME: SUMS CANT BE GENERATED AT GLOBAL LEVEL?
+                        Value *tagPtr = builder->CreateGEP(v, {Int32Zero, Int32Zero});
+
+                        builder->CreateStore(ConstantInt::get(Int32Ty, index, true), tagPtr);
+                        Value *valuePtr = builder->CreateGEP(v, {Int32Zero, Int32One});
+
+                        Value *corrected = builder->CreateBitCast(valuePtr, stoVal->getType()->getPointerTo()); // FIXME: DO BETTER
+                        builder->CreateStore(stoVal, corrected);
+                    }
+                    else
+                    {
+                        builder->CreateStore(stoVal, v);
+                    }
+                }
             }
         }
     }
-
     return {};
 }
 
@@ -1061,6 +1488,98 @@ std::optional<Value *> CodegenVisitor::TvisitBlock(WPLParser::BlockContext *ctx)
     }
 
     return {};
+}
+
+std::optional<Value *> CodegenVisitor::TvisitLambdaConstExpr(WPLParser::LambdaConstExprContext *ctx)
+{
+    // FIXME: SEE ALL ISSUES W GENERAL INVOKE VISIT
+    // FIXME: SET OTHER LAMBDAS TO BE INTERNAL LINKAGE!!!
+    // FIXME: TEST MULTIPLE LAMBDAS W/ SAME NAME!!
+    // Get the current insertion point
+    BasicBlock *ins = builder->GetInsertBlock();
+
+    // Lookup the binding
+    std::optional<Symbol *> symOpt = props->getBinding(ctx);
+
+    if (!symOpt)
+    {
+        errorHandler.addCodegenError(ctx->getStart(), "Unbound lambda: " + ctx->getText());
+        return {};
+    }
+
+    Symbol *sym = symOpt.value();
+
+    if (!sym->type)
+    {
+        errorHandler.addCodegenError(ctx->getStart(), "Symbol in lambda missing type. Probably compiler error.");
+        return {};
+    }
+
+    const Type *type = sym->type;
+
+    llvm::Type *genericType = type->getLLVMType(module)->getPointerElementType(); // FIXME: CHECK IF SAFE!
+
+    if (llvm::FunctionType *fnType = static_cast<llvm::FunctionType *>(genericType))
+    {
+        Function *fn = Function::Create(fnType, GlobalValue::PrivateLinkage, "LAM", module); // FIXME: VERIFY
+        WPLParser::ParameterListContext *paramList = ctx->parameterList();
+
+        // Create basic block
+        BasicBlock *bBlk = BasicBlock::Create(module->getContext(), "entry", fn);
+        builder->SetInsertPoint(bBlk);
+
+        // Bind all of the arguments
+        for (auto &arg : fn->args())
+        {
+            // Get the argumengt number (just seems easier than making my own counter)
+            int argNumber = arg.getArgNo();
+
+            // Get the argument's type
+            llvm::Type *type = fnType->params()[argNumber];
+
+            // Get the argument name (This even works for arrays!)
+            std::string argName = paramList->params.at(argNumber)->getText();
+
+            // Create an allocation for the argumentr
+            llvm::AllocaInst *v = builder->CreateAlloca(type, 0, argName);
+
+            // Try to find the parameter's bnding to determine what value to bind to it.
+            std::optional<Symbol *> symOpt = props->getBinding(paramList->params.at(argNumber));
+
+            if (!symOpt)
+            {
+                errorHandler.addCodegenError(ctx->getStart(), "Unable to generate parameter for lambda: " + argName);
+            }
+            else
+            {
+                symOpt.value()->val = v;
+
+                builder->CreateStore(&arg, v);
+            }
+        }
+
+        // Generate code for the block
+        for (auto e : ctx->block()->stmts)
+        {
+            e->accept(this);
+        }
+
+        // FIXME: NOTE HOW WE DONT NEED TO CREATE RET VOID EVER BC NO FN!
+
+        // Return to original insert point
+        builder->SetInsertPoint(ins);
+
+        return fn;
+    }
+    else
+    {
+        errorHandler.addCodegenError(ctx->getStart(), "Invocation type could not be cast to function!");
+    }
+
+    // Return to original insert point
+    builder->SetInsertPoint(ins);
+
+    return {}; // FIXME: if we ever get here, LLVM will probs seg fault
 }
 
 /*

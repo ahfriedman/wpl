@@ -5,16 +5,57 @@ const Type *SemanticVisitor::visitCtx(WPLParser::CompilationUnitContext *ctx)
     // Enter initial scope
     stmgr->enterScope();
 
+    for (auto e : ctx->defs)
+    {
+        // this->visitCtx(e);
+        e->accept(this); // FIXME: DO BETTER TO ENSURE WE CATCH ONES THAT WE DONT HAVE CODE FOR
+    }
+
     // Visit externs first; they will report any errors if they have any.
     for (auto e : ctx->extens)
     {
         this->visitCtx(e);
     }
 
+    // Auto forward decl //FIXME: VERIFY
+    for (auto e : ctx->stmts)
+    {
+        if (WPLParser::FuncDefContext *fnCtx = dynamic_cast<WPLParser::FuncDefContext *>(e))
+        {
+            std::string id = fnCtx->name->getText();
+
+            std::optional<Symbol *> opt = stmgr->lookup(id);
+
+            if (opt)
+            {
+                errorHandler.addSemanticError(ctx->getStart(), "Unsupported redeclaration of " + id);
+                // return Types::UNDEFINED;
+            }
+
+            const Type *ty = (fnCtx->paramList) ? this->visitCtx(fnCtx->paramList)
+                                              : new TypeInvoke();
+
+            const TypeInvoke *procType = dynamic_cast<const TypeInvoke *>(ty); // Always true, but needs separate statement to make C happy.
+
+            const Type *retType = fnCtx->ty ? std::any_cast<const Type *>(fnCtx->ty->accept(this)) // this->visitCtx(ctx->ty)
+                                          : Types::UNDEFINED;
+
+            const TypeInvoke *funcType = (fnCtx->ty) ? new TypeInvoke(procType->getParamTypes(), retType, false, false)
+                                                   : new TypeInvoke(procType->getParamTypes(), false, false);
+
+            Symbol *funcSymbol = new Symbol(id, funcType, true, false); // FIXME: WAS N/A, FALSE before -> VERY HACKY
+
+            stmgr->addSymbol(funcSymbol);
+            bindings->bind(ctx, funcSymbol);
+            // errorHandler.addSemanticCritWarning(ctx->getStart(), "Currently, only FUNC, PROC, EXTERN, and variable declarations allowed at top-level. Not: " + e->getText());
+        }
+        // e->accept(this);
+    }
+
     // Visit the statements contained in the unit
     for (auto e : ctx->stmts)
     {
-        if (!(dynamic_cast<WPLParser::FuncDefContext *>(e) || dynamic_cast<WPLParser::ProcDefContext *>(e) || dynamic_cast<WPLParser::VarDeclStatementContext *>(e)))
+        if (!(dynamic_cast<WPLParser::FuncDefContext *>(e) || dynamic_cast<WPLParser::VarDeclStatementContext *>(e)))
         {
             errorHandler.addSemanticCritWarning(ctx->getStart(), "Currently, only FUNC, PROC, EXTERN, and variable declarations allowed at top-level. Not: " + e->getText());
         }
@@ -72,7 +113,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::CompilationUnitContext *ctx)
         }
     }
 
-    std::vector<const Symbol *> uninf = stmgr->getCurrentScope().value()->getUninferred(); //TODO: shouldn't ever be an issue, but still. 
+    std::vector<const Symbol *> uninf = stmgr->getCurrentScope().value()->getUninferred(); // TODO: shouldn't ever be an issue, but still.
 
     // If there are any uninferred symbols, then add it as a compiler error as we won't be able to resolve them
     // due to the var leaving the scope
@@ -370,21 +411,16 @@ const Type *SemanticVisitor::visitCtx(WPLParser::EqExprContext *ctx)
  */
 const Type *SemanticVisitor::visitCtx(WPLParser::LogAndExprContext *ctx)
 {
-    // Based on starter
     bool valid = true;
 
-    auto left = std::any_cast<const Type *>(ctx->left->accept(this));
-    if (left->isNotSubtype(Types::BOOL))
+    for(auto e : ctx->exprs)
     {
-        errorHandler.addSemanticError(ctx->getStart(), "BOOL left expression expected, but was " + left->toString());
-        valid = false;
-    }
-
-    auto right = std::any_cast<const Type *>(ctx->right->accept(this));
-    if (right->isNotSubtype(Types::BOOL))
-    {
-        errorHandler.addSemanticError(ctx->getStart(), "BOOL right expression expected, but was " + right->toString());
-        valid = false;
+        const Type* type = std::any_cast<const Type *>(e->accept(this));
+        if(type->isNotSubtype(Types::BOOL))
+        {
+            errorHandler.addSemanticError(e->getStart(), "BOOL expression expected, but was " + type->toString());
+            valid = false; 
+        }
     }
 
     return (valid) ? Types::BOOL : Types::UNDEFINED;
@@ -398,24 +434,19 @@ const Type *SemanticVisitor::visitCtx(WPLParser::LogAndExprContext *ctx)
  */
 const Type *SemanticVisitor::visitCtx(WPLParser::LogOrExprContext *ctx)
 {
-    // Based on starter
     bool valid = true;
 
-    auto left = std::any_cast<const Type *>(ctx->left->accept(this));
-    if (left->isNotSubtype(Types::BOOL))
+    for(auto e : ctx->exprs)
     {
-        errorHandler.addSemanticError(ctx->getStart(), "BOOL left expression expected, but was " + left->toString());
-        valid = false;
+        const Type* type = std::any_cast<const Type *>(e->accept(this));
+        if(type->isNotSubtype(Types::BOOL))
+        {
+            errorHandler.addSemanticError(e->getStart(), "BOOL expression expected, but was " + type->toString());
+            valid = false; 
+        }
     }
 
-    auto right = std::any_cast<const Type *>(ctx->right->accept(this));
-    if (right->isNotSubtype(Types::BOOL))
-    {
-        errorHandler.addSemanticError(ctx->getStart(), "BOOL right expression expected, but was " + right->toString());
-        valid = false;
-    }
-
-    return valid ? Types::BOOL : Types::UNDEFINED;
+    return (valid) ? Types::BOOL : Types::UNDEFINED;
 }
 
 // Passthrough to visitInvocation
@@ -552,7 +583,6 @@ const Type *SemanticVisitor::visitCtx(WPLParser::SelectAlternativeContext *ctx)
      *  Just make sure that we don't try to define functions and stuff in a select as that doesn't make sense (and would cause codegen issues as it stands).
      */
     if (dynamic_cast<WPLParser::FuncDefContext *>(ctx->eval) ||
-        dynamic_cast<WPLParser::ProcDefContext *>(ctx->eval) ||
         dynamic_cast<WPLParser::VarDeclStatementContext *>(ctx->eval))
     {
         errorHandler.addSemanticError(ctx->getStart(), "Dead code: definition as select alternative.");
@@ -607,7 +637,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::ParameterListContext *ctx)
 }
 
 // Passthrough to visit the inner expression
-const Type *SemanticVisitor::visitCtx(WPLParser::ParameterContext *ctx) { return this->visitCtx(ctx->ty); }
+const Type *SemanticVisitor::visitCtx(WPLParser::ParameterContext *ctx) { return std::any_cast<const Type *>(ctx->ty->accept(this)); }
 
 const Type *SemanticVisitor::visitCtx(WPLParser::AssignmentContext *ctx)
 {
@@ -635,13 +665,13 @@ const Type *SemanticVisitor::visitCtx(WPLParser::ExternStatementContext *ctx)
 
     const TypeInvoke *procType = dynamic_cast<const TypeInvoke *>(ty); // Always true, but needs separate statement to make C happy.
 
-    const Type *retType = ctx->ty ? this->visitCtx(ctx->ty)
+    const Type *retType = ctx->ty ? std::any_cast<const Type *>(ctx->ty->accept(this)) // this->visitCtx(ctx->ty)
                                   : Types::UNDEFINED;
 
-    const TypeInvoke *funcType = (ctx->ty) ? new TypeInvoke(procType->getParamTypes(), retType, variadic, false)
-                                           : new TypeInvoke(procType->getParamTypes(), variadic, false);
+    const TypeInvoke *funcType = (ctx->ty) ? new TypeInvoke(procType->getParamTypes(), retType, variadic, true)
+                                           : new TypeInvoke(procType->getParamTypes(), variadic, true);
 
-    Symbol *funcSymbol = new Symbol(id, funcType);
+    Symbol *funcSymbol = new Symbol(id, funcType, true, true); // FIXME: WAS N/A, FALSE before
 
     stmgr->addSymbol(funcSymbol);
     bindings->bind(ctx, funcSymbol);
@@ -652,11 +682,6 @@ const Type *SemanticVisitor::visitCtx(WPLParser::ExternStatementContext *ctx)
 const Type *SemanticVisitor::visitCtx(WPLParser::FuncDefContext *ctx)
 {
     return this->visitInvokeable(ctx, ctx->name->getText(), ctx->paramList, ctx->ty, ctx->block());
-}
-
-const Type *SemanticVisitor::visitCtx(WPLParser::ProcDefContext *ctx)
-{
-    return visitInvokeable(ctx, ctx->name->getText(), ctx->paramList, nullptr, ctx->block());
 }
 
 const Type *SemanticVisitor::visitCtx(WPLParser::AssignStatementContext *ctx)
@@ -726,9 +751,9 @@ const Type *SemanticVisitor::visitCtx(WPLParser::VarDeclStatementContext *ctx)
             {
                 // Needed to ensure vars get their own inf type
                 const Type *newAssignType = this->visitCtx(ctx->typeOrVar());
-                const Type *newExprType = (e->ex) ? std::any_cast<const Type *>(e->ex->accept(this)) : newAssignType;
-
-                Symbol *symbol = new Symbol(id, newExprType, stmgr->isGlobalScope()); // Done with exprType for later inferencing purposes
+                // const Type *newExprType = (e->ex) ? std::any_cast<const Type *>(e->ex->accept(this)) : newAssignType; //FIXME: VERIFY
+                const Type *newExprType = (dynamic_cast<const TypeInfer *>(newAssignType) && e->ex) ? std::any_cast<const Type *>(e->ex->accept(this)) : newAssignType;
+                Symbol *symbol = new Symbol(id, newExprType, false, stmgr->isGlobalScope()); // Done with exprType for later inferencing purposes
                 stmgr->addSymbol(symbol);
                 bindings->bind(var, symbol);
             }
@@ -736,6 +761,68 @@ const Type *SemanticVisitor::visitCtx(WPLParser::VarDeclStatementContext *ctx)
     }
     // Return UNDEFINED because this is a statement, and UNDEFINED cannot be assigned to anything
     return Types::UNDEFINED;
+}
+
+const Type *SemanticVisitor::visitCtx(WPLParser::MatchStatementContext *ctx)
+{
+    // const Type * condType = this->visitCtx(ctx->check->ex);
+    const Type *condType = std::any_cast<const Type *>(ctx->check->ex->accept(this)); // FIXME: VERIFY?
+
+    // FIXME: ADD ERROR CHAINS TO LIMIT DUPL MSGS
+    // FIXME: ADD OTHER LISTENERS W ERROR MSGS?
+    if (const TypeSum *sumType = dynamic_cast<const TypeSum *>(condType))
+    {
+        std::set<const Type *> foundCaseTypes = {};
+        // FIXME: Maybe make so these can return values?
+
+        for (WPLParser::MatchAlternativeContext *altCtx : ctx->cases)
+        {
+            // FIXME: METHODIZE WITH SelectAlternativeContext?
+            //  Might not be easily able to though bc we need to track types...
+
+            const Type *caseType = std::any_cast<const Type *>(altCtx->type()->accept(this)); // FIXME: VERIFY?
+
+            // FIXME: VERIFY THIS WILL WORK! WILL PROBS BREAK FOR SUMs AND STRUCTS!!
+            if (!sumType->contains(caseType))
+            {
+                errorHandler.addSemanticError(altCtx->type()->getStart(), "Impossible case for " + sumType->toString() + " to act as " + caseType->toString());
+            }
+
+            if (foundCaseTypes.count(caseType)) // FIXME: SAME AS BEFORE, WILL PROBS BREAK W STRUCTS
+            {
+                errorHandler.addSemanticError(altCtx->type()->getStart(), "Duplicate case in match");
+            }
+            else
+            {
+                foundCaseTypes.insert(caseType); // FIXME: DO BETTER TRACKING OF SATISFYING RQMTS. Right now, can pass check for having all cases due to having invalid ones!!
+            }
+
+            stmgr->enterScope();
+            Symbol *local = new Symbol(altCtx->name->getText(), caseType, false, false);
+            stmgr->addSymbol(local);
+            bindings->bind(altCtx->VARIABLE(), local);
+
+            altCtx->eval->accept(this);
+            this->safeExitScope(altCtx);
+
+            if (dynamic_cast<WPLParser::FuncDefContext *>(altCtx->eval) ||
+                dynamic_cast<WPLParser::VarDeclStatementContext *>(altCtx->eval))
+            {
+                errorHandler.addSemanticError(altCtx->getStart(), "Dead code: definition as select alternative.");
+            }
+        }
+
+        if (foundCaseTypes.size() != sumType->getCases().size())
+        {
+            errorHandler.addSemanticError(ctx->getStart(), "Match statement did not cover all cases needed for " + sumType->toString());
+        }
+
+        bindings->bind(ctx->check, new Symbol(ctx->check->ex->getText(), sumType, false, false)); // FIXME: DO BETTER!
+        return {};                                                                                // FIXME: THIS OR UNDEFINED?
+    }
+
+    errorHandler.addSemanticError(ctx->check->getStart(), "Can only case on Sum Types, not " + condType->toString());
+    return {};
 }
 
 /**
@@ -859,10 +946,146 @@ const Type *SemanticVisitor::visitCtx(WPLParser::TypeOrVarContext *ctx)
     }
 
     // If we do have a type, then visit that context.
-    return this->visitCtx(ctx->type());
+    // std::any temp = this->visit(ctx->type());
+
+    const Type *type = std::any_cast<const Type *>(ctx->type()->accept(this));
+    return type;
 }
 
-const Type *SemanticVisitor::visitCtx(WPLParser::TypeContext *ctx)
+const Type *SemanticVisitor::visitCtx(WPLParser::LambdaConstExprContext *ctx)
+{
+    // FIXME: VERIFY THIS IS ALWAYS SAFE!!!
+    const TypeInvoke *paramType = dynamic_cast<const TypeInvoke *>(visitCtx(ctx->parameterList()));
+    const Type *retType = std::any_cast<const Type *>(ctx->ret->accept(this));
+
+    const TypeInvoke *funcType = new TypeInvoke(paramType->getParamTypes(), retType);
+
+    stmgr->enterScope(true);
+    stmgr->addSymbol(new Symbol("@RETURN", retType, false, false)); // FIXME: VERIFY
+
+    for (unsigned int i = 0; i < ctx->parameterList()->params.size(); i++)
+    {
+        const Type *ty = funcType->getParamTypes().at(i);
+        auto param = ctx->parameterList()->params.at(i);
+
+        Symbol *paramSymbol = new Symbol(param->name->getText(), ty, false, false);
+
+        stmgr->addSymbol(paramSymbol);
+
+        bindings->bind(param, paramSymbol);
+    }
+
+    this->safeVisitBlock(ctx->block(), false);
+
+    // If we have a return type, make sure that we return as the last statement in the FUNC. The type of the return is managed when we visited it.
+    if (ctx->block()->stmts.size() == 0 || !dynamic_cast<WPLParser::ReturnStatementContext *>(ctx->block()->stmts.at(ctx->block()->stmts.size() - 1)))
+    {
+        errorHandler.addSemanticError(ctx->getStart(), "Lambda must end in return statement");
+    }
+    safeExitScope(ctx);
+
+    Symbol *funcSymbol = new Symbol("@LAMBDA", funcType, false, false); // FIXME: DO BETTER!
+    bindings->bind(ctx, funcSymbol);                                    // FIXME: NEED TO FIGURE OUT SOME BINDING?
+
+    return funcType;
+}
+
+const Type *SemanticVisitor::visitCtx(WPLParser::LambdaTypeContext *ctx)
+{
+    std::vector<const Type *> params;
+
+    for (auto param : ctx->paramTypes)
+    {
+        // const Type *type = this->visitCtx(param);
+        const Type *type = std::any_cast<const Type *>(param->accept(this));
+        params.push_back(type);
+    }
+
+    const Type *returnType = std::any_cast<const Type *>(ctx->returnType->accept(this));
+
+    const Type *lamType = new TypeInvoke(params, returnType);
+
+    return lamType;
+}
+
+const Type *SemanticVisitor::visitCtx(WPLParser::SumTypeContext *ctx)
+{
+    std::set<const Type *, TypeCompare> cases = {};
+
+    for (auto e : ctx->type())
+    {
+        const Type *caseType = std::any_cast<const Type *>(e->accept(this)); // FIXME: verify if this is safe or not
+        cases.insert(caseType);
+    }
+
+    if (cases.size() != ctx->type().size())
+    {
+        errorHandler.addSemanticError(ctx->getStart(), "Duplicate arguments to enum type, or failed to generate types");
+        return Types::UNDEFINED;
+    }
+
+    const TypeSum *sum = new TypeSum(cases);
+
+    return sum; // FIXME
+}
+
+const Type *SemanticVisitor::visitCtx(WPLParser::DefineEnumContext *ctx)
+{
+
+    std::set<const Type *, TypeCompare> cases = {};
+
+    for (auto e : ctx->cases)
+    {
+        const Type *caseType = std::any_cast<const Type *>(e->accept(this)); // FIXME: verify if this is safe or not
+        cases.insert(caseType);
+    }
+
+    if (cases.size() != ctx->cases.size())
+    {
+        errorHandler.addSemanticError(ctx->getStart(), "Duplicate arguments to enum type, or failed to generate types");
+        return Types::UNDEFINED;
+    }
+
+    const TypeSum *sum = new TypeSum(cases);
+    Symbol *enumSym = new Symbol(ctx->name->getText(), sum, true, true); // FIXME: SCOPES!
+
+    stmgr->addSymbol(enumSym);
+    bindings->bind(ctx, enumSym);
+
+    return Types::UNDEFINED; // FIXME
+}
+
+const Type *SemanticVisitor::visitCtx(WPLParser::CustomTypeContext *ctx)
+{
+    //FIXME: MAY BE OBSCURED BY VAR NAMES
+
+//FIXME: HOW DO SUMS WORK WITH MULTIPLE SUBTYPES? CURRENTLY THEYD BREAK
+    // FIXME: This is really bad and really broken b/c now any symbol can become var?
+
+    std::string name = ctx->VARIABLE()->getText();
+
+    std::optional<Symbol *> opt = stmgr->lookup(name);
+    if (!opt)
+    {
+        errorHandler.addSemanticError(ctx->getStart(), "Undefined type: " + name); // FIXME: WHY IS THIS CALLED TWICE?
+        return Types::UNDEFINED;                                                   // FIXME: DO BETTER
+    }
+
+    Symbol *sym = opt.value();
+
+    if (!sym->type || !sym->isDefinition)
+    {
+        errorHandler.addSemanticError(ctx->getStart(), "Cannot use: " + name + " as a type.");
+        return Types::UNDEFINED;
+    }
+
+    bindings->bind(ctx, sym); // FIXME: DO BETTER
+    return sym->type;         // FIXME: verify
+
+    // std::optional<Symbol *> binding = bindings->getBinding(ctx->z);
+}
+
+const Type *SemanticVisitor::visitCtx(WPLParser::BaseTypeContext *ctx)
 {
 
     const Type *ty = Types::UNDEFINED;
@@ -907,5 +1130,5 @@ const Type *SemanticVisitor::visitCtx(WPLParser::TypeContext *ctx)
     return ty;
 }
 
-// Should never be needed due to how BConstExpr works, but leaving here just in case. 
+// Should never be needed due to how BConstExpr works, but leaving here just in case.
 const Type *SemanticVisitor::visitCtx(WPLParser::BooleanConstContext *ctx) { return Types::BOOL; }

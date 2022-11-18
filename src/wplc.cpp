@@ -22,6 +22,15 @@
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/InitLLVM.h"
+#include "llvm/Support/TargetSelect.h"
+#include "llvm/Support/Host.h"
+#include "llvm/Support/TargetRegistry.h"
+#include "llvm/Target/TargetOptions.h"
+#include "llvm/Target/TargetMachine.h"
+#include "llvm/IR/LegacyPassManager.h"
+
+#include "ExecUtils.h"
+#include <sstream> //String stream
 
 llvm::cl::OptionCategory WPLCOptions("wplc Options");
 static llvm::cl::list<std::string>
@@ -65,6 +74,23 @@ static llvm::cl::opt<bool>
               llvm::cl::desc("If true, compiler will print out status messages; if false (default), compiler will only print errors."),
               llvm::cl::init(false),
               llvm::cl::cat(WPLCOptions));
+
+enum CompileType
+{
+  none,
+  clang,
+  gcc
+};
+
+static llvm::cl::opt<CompileType>
+    compileWith("compile",
+                llvm::cl::desc("If set, will compile to an executable with the specified compiler."),
+                llvm::cl::values(
+                    clEnumVal(none, "Will not generate an executable"),
+                    clEnumVal(clang, "Will generate an executable using clang"),
+                    clEnumVal(gcc, "Will generate an executable using gcc")),
+                llvm::cl::init(none),
+                llvm::cl::cat(WPLCOptions));
 /**
  * @brief Main compiler driver.
  */
@@ -76,6 +102,34 @@ int main(int argc, const char *argv[])
    * ******************************************************************/
   llvm::cl::HideUnrelatedOptions(WPLCOptions);
   llvm::cl::ParseCommandLineOptions(argc, argv);
+
+  // FIXME: ENABLE SEPARATLEY?
+  llvm::InitializeAllTargetInfos();
+  llvm::InitializeAllTargets();
+  llvm::InitializeAllTargetMCs();
+  llvm::InitializeAllAsmParsers();
+  llvm::InitializeAllAsmPrinters();
+
+  auto TargetTriple = llvm::sys::getDefaultTargetTriple();
+
+  std::string Error;
+  auto Target = llvm::TargetRegistry::lookupTarget(TargetTriple, Error);
+
+  // Print an error and exit if we couldn't find the requested target.
+  // This generally occurs if we've forgotten to initialise the
+  // TargetRegistry or we have a bogus target triple.
+  if (!Target)
+  {
+    std::cerr << Error << std::endl;
+    return 1;
+  }
+
+  auto CPU = "generic";
+  auto Features = "";
+
+  llvm::TargetOptions opt;
+  auto RM = llvm::Optional<llvm::Reloc::Model>();
+  auto TheTargetMachine = Target->createTargetMachine(TargetTriple, CPU, Features, opt, RM);
 
   if (inputFileName.empty() && inputString == "-")
   {
@@ -106,19 +160,19 @@ int main(int argc, const char *argv[])
    * we create a vector of input streams/output file pairs.
    *******************************************************************/
   std::vector<std::pair<antlr4::ANTLRInputStream *, std::string>> inputs;
+  
+  bool useOutputFileName = outputFileName != "-.ll";
 
   // Case 1: We were given input files
   if (!inputFileName.empty())
   {
 
-    bool useOutputFileName = outputFileName != "-.ll";
-
     // Used to prevent giving file names when compiling multiple files---just as clang does
-    if (inputFileName.size() > 1 && useOutputFileName)
-    {
-      std::cerr << "Cannot specify output file name when generating multiple files." << std::endl;
-      std::exit(-1);
-    }
+    // if (inputFileName.size() > 1 && useOutputFileName)
+    // {
+    //   std::cerr << "Cannot specify output file name when generating multiple files." << std::endl;
+    //   std::exit(-1); //FIXME: WARN?
+    // }
 
     // For each file name, make sure the file exist. If so, create an input stream to it
     // and set its output filename to be the provided name (if we are compiling just
@@ -136,7 +190,7 @@ int main(int argc, const char *argv[])
 
       // TODO: THIS DOESN'T WORK IF NOT GIVEN A PROPER FILE EXTENSION
       inputs.push_back({new antlr4::ANTLRInputStream(*inStream),
-                        useOutputFileName ? outputFileName : fileName.substr(0, fileName.find_last_of('.')) + ".ll"});
+                        (!(inputFileName.size() > 1) && useOutputFileName) ? outputFileName : fileName.substr(0, fileName.find_last_of('.'))});
     }
   }
   else
@@ -145,6 +199,8 @@ int main(int argc, const char *argv[])
     inputs.push_back({new antlr4::ANTLRInputStream(inputString),
                       outputFileName});
   }
+
+  bool isValid = true;
 
   // For each input...
   for (auto input : inputs)
@@ -177,6 +233,7 @@ int main(int argc, const char *argv[])
     if (syntaxListener->hasErrors(0)) // Want to see all errors.
     {
       std::cerr << syntaxListener->errorList() << std::endl;
+      isValid = false; // Shouldn't be needed
       return -1;
     }
 
@@ -203,7 +260,7 @@ int main(int argc, const char *argv[])
     {
       std::cout << "Semantic analysis completed for " << input.second << " with errors: " << std::endl;
       std::cerr << sv->getErrors() << std::endl;
-      // return -1;
+      isValid = false;
       continue;
     }
 
@@ -223,6 +280,7 @@ int main(int argc, const char *argv[])
     if (cv->hasErrors(0)) // Want to see all errors
     {
       std::cerr << cv->getErrors() << std::endl;
+      isValid = false;
       continue;
     }
 
@@ -236,11 +294,12 @@ int main(int argc, const char *argv[])
       cv->modPrint();
     }
 
+    // std::cout << "276" << std::endl;
     // Dump the code to an output file
     if (!noCode)
     {
-      std::string irFileName = input.second;
-      std::error_code ec;
+      std::string irFileName = input.second + ".ll";
+      std::error_code ec; // FIXME: REPORT ERROR?
       llvm::raw_fd_ostream irFileStream(irFileName, ec);
       module->print(irFileStream, nullptr);
       irFileStream.flush();
@@ -250,13 +309,75 @@ int main(int argc, const char *argv[])
     {
       if (noRuntime)
       {
-        std::cout << "Code generation completed for " << input.second << "; program does NOT support runtime." << std::endl;
+        std::cout << "Code generation completed for " << input.second << ".wpl; program does NOT support runtime." << std::endl;
       }
       else
       {
-        std::cout << "Code generation completed for " << input.second << "; program may require runtime." << std::endl;
+        std::cout << "Code generation completed for " << input.second << ".wpl; program may require runtime." << std::endl;
       }
     }
+
+    if (compileWith != none)
+    {
+      module->setDataLayout(TheTargetMachine->createDataLayout());
+
+      std::string Filename = input.second + ".o";
+      std::cout << "Filename " << Filename << std::endl;
+      std::error_code EC;
+      llvm::raw_fd_ostream dest(Filename, EC, llvm::sys::fs::OF_None);
+
+      if (EC)
+      {
+        std::cerr << "Could not open file: " << EC.message() << std::endl;
+        return 1;
+      }
+
+      llvm::legacy::PassManager pass;
+      auto FileType = llvm::CGFT_ObjectFile;
+
+      if (TheTargetMachine->addPassesToEmitFile(pass, dest, nullptr, FileType))
+      {
+        std::cerr << "TheTargetMachine can't emit a file of this type" << std::endl;
+        return 1;
+      }
+
+      pass.run(*module);
+      dest.flush();
+
+      std::cout << "Wrote " << Filename << std::endl;
+    }
+  }
+
+  if (isValid && compileWith != none)
+  {
+    std::ostringstream cmd;
+
+    switch (compileWith)
+    {
+    case clang:
+      cmd << "clang ";
+      break;
+    case gcc:
+      cmd << "gcc ";
+      break;
+    case none:
+      return -1; // Not even possible
+    }
+
+    for (auto input : inputs) //FIXME: ADD OUTPUT FILE NAME //FIXME: LINKING ISSUES
+    {
+      cmd << input.second << ".o ";
+    }
+
+    // cmd << "./runtime.o -no-pie ";
+    cmd << "./build/bin/runtime/libwpl_runtime_archive.a -no-pie ";
+
+    if(useOutputFileName) 
+    {
+      cmd << "-o " << outputFileName;
+    }
+
+    std::cout << exec(cmd.str()) << std::endl;
   }
 
   return 0;

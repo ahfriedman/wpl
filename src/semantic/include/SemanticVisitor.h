@@ -61,7 +61,6 @@ public:
     const Type *visitCtx(WPLParser::AssignmentContext *ctx);
     const Type *visitCtx(WPLParser::ExternStatementContext *ctx);
     const Type *visitCtx(WPLParser::FuncDefContext *ctx);
-    const Type *visitCtx(WPLParser::ProcDefContext *ctx);
     const Type *visitCtx(WPLParser::AssignStatementContext *ctx);
     const Type *visitCtx(WPLParser::VarDeclStatementContext *ctx);
     const Type *visitCtx(WPLParser::LoopStatementContext *ctx);
@@ -71,8 +70,20 @@ public:
     const Type *visitCtx(WPLParser::ReturnStatementContext *ctx);
     const Type *visitCtx(WPLParser::BlockStatementContext *ctx);
     const Type *visitCtx(WPLParser::TypeOrVarContext *ctx);
-    const Type *visitCtx(WPLParser::TypeContext *ctx);
+    // const Type *visitCtx(WPLParser::TypeContext *ctx);
     const Type *visitCtx(WPLParser::BooleanConstContext *ctx);
+
+    const Type *visitCtx(WPLParser::LambdaTypeContext *ctx);
+    const Type *visitCtx(WPLParser::BaseTypeContext *ctx);
+
+    const Type* visitCtx(WPLParser::LambdaConstExprContext *ctx);
+
+    const Type* visitCtx(WPLParser::SumTypeContext * ctx); //FIXME: NEED TO DO THIS & OTHERS!
+    const Type* visitCtx(WPLParser::CustomTypeContext * ctx);
+    const Type* visitCtx(WPLParser::DefineEnumContext * ctx);
+    const Type* visitCtx(WPLParser::MatchStatementContext * ctx);
+
+
 
     /*
      * Traditional visitor methods all overridden with our typed versions
@@ -103,7 +114,6 @@ public:
     std::any visitAssignment(WPLParser::AssignmentContext *ctx) override { return visitCtx(ctx); }
     std::any visitExternStatement(WPLParser::ExternStatementContext *ctx) override { return visitCtx(ctx); }
     std::any visitFuncDef(WPLParser::FuncDefContext *ctx) override { return visitCtx(ctx); }
-    std::any visitProcDef(WPLParser::ProcDefContext *ctx) override { return visitCtx(ctx); }
     std::any visitAssignStatement(WPLParser::AssignStatementContext *ctx) override { return visitCtx(ctx); }
     std::any visitVarDeclStatement(WPLParser::VarDeclStatementContext *ctx) override { return visitCtx(ctx); }
     std::any visitLoopStatement(WPLParser::LoopStatementContext *ctx) override { return visitCtx(ctx); }
@@ -113,8 +123,18 @@ public:
     std::any visitReturnStatement(WPLParser::ReturnStatementContext *ctx) override { return visitCtx(ctx); }
     std::any visitBlockStatement(WPLParser::BlockStatementContext *ctx) override { return visitCtx(ctx); }
     std::any visitTypeOrVar(WPLParser::TypeOrVarContext *ctx) override { return visitCtx(ctx); }
-    std::any visitType(WPLParser::TypeContext *ctx) override { return visitCtx(ctx); }
+    // std::any visitType(WPLParser::TypeContext *ctx) override { return visitCtx(ctx); }
     std::any visitBooleanConst(WPLParser::BooleanConstContext *ctx) override { return visitCtx(ctx); }
+
+    std::any visitLambdaType(WPLParser::LambdaTypeContext *ctx) override { return visitCtx(ctx); }
+    std::any visitBaseType(WPLParser::BaseTypeContext *ctx) override { return visitCtx(ctx); }
+
+    std::any visitLambdaConstExpr(WPLParser::LambdaConstExprContext *ctx) override { return visitCtx(ctx); }
+
+    std::any visitSumType(WPLParser::SumTypeContext * ctx) override { return visitCtx(ctx); }
+    std::any visitCustomType(WPLParser::CustomTypeContext * ctx) override { return visitCtx(ctx); }
+    std::any visitDefineEnum(WPLParser::DefineEnumContext * ctx) override { return visitCtx(ctx); }
+    std::any visitMatchStatement(WPLParser::MatchStatementContext * ctx) override { return visitCtx(ctx); }
 
     /**
      * @brief Used to safely enter a block. This is used to ensure there aren't FUNC/PROC definitions / code following returns in it.
@@ -147,11 +167,11 @@ public:
             if (dynamic_cast<WPLParser::ReturnStatementContext *>(e))
                 foundReturn = true;
 
-            // Prevent defining a Func or PROC in the block as this is not yet supported.
-            if (dynamic_cast<WPLParser::FuncDefContext *>(e) || dynamic_cast<WPLParser::ProcDefContext *>(e))
-            {
-                errorHandler.addSemanticError(ctx->getStart(), "Currenly, nested PROC/FUNCs are not supported by codegen.");
-            }
+            // Prevent defining a Func or PROC in the block as this is not yet supported. //FIXME: NEED TO DEAL WITH SCOPE ISSUES!
+            // if (dynamic_cast<WPLParser::FuncDefContext *>(e))
+            // {
+            //     errorHandler.addSemanticError(ctx->getStart(), "Currenly, nested PROC/FUNCs are not supported by codegen.");
+            // }
         }
 
         // If we entered a new scope, then we can now safely exit a scope
@@ -178,15 +198,15 @@ public:
         const TypeInvoke *procType = dynamic_cast<const TypeInvoke *>(tmpTy); // Always true, but needs separate statement to make C happy.
 
         // If we have a return type, then visit that contex to determine what it is. Otherwise, set it as Types::UNDEFINED.
-        const Type *retType = ty ? this->visitCtx(ty)
+        const Type *retType = ty ? std::any_cast<const Type *>(ty->accept(this))//this->visitCtx(ty)
                                  : Types::UNDEFINED;
 
         // Create a new func with the return type (or reuse the procType) NOTE: We do NOT need to worry about discarding the variadic here as variadic FUNC/PROC is not supported
-        const TypeInvoke *funcType = ty ? new TypeInvoke(procType->getParamTypes(), retType)
+        const TypeInvoke *funcType = ty ? new TypeInvoke(procType->getParamTypes(), retType) //FIXME: VERIFY THESE ARE DEFS IF THEY SHOULD BE
                                         : procType;
 
         // Create a new symbol for the PROC/FUNC
-        Symbol *funcSymbol = new Symbol(funcId, funcType);
+        Symbol *funcSymbol = new Symbol(funcId, funcType, true, false); //FIXME: DO BETTER!
 
         // If the symbol name is program, do some extra checks to make sure it has no arguments and returns an INT. Otherwise, we will get a link error.
         if (funcId == "program")
@@ -225,10 +245,10 @@ public:
     cont:
         // Add the symbol to the stmgr and enter the scope.
         stmgr->addSymbol(funcSymbol);
-        stmgr->enterScope(); // NOTE: We do NOT duplicate scopes here because we use a saveVisitBlock with newScope=false
+        stmgr->enterScope(true); // NOTE: We do NOT duplicate scopes here because we use a saveVisitBlock with newScope=false
 
         // In the new scope. set our return type. We use @RETURN as it is not a valid symbol the programmer could write in the language
-        stmgr->addSymbol(new Symbol("@RETURN", retType));
+        stmgr->addSymbol(new Symbol("@RETURN", retType, false, false)); //FIXME: VERIFY
 
         // If we have a parameter list, bind each of the parameters.
         // NOTE: if there were a duplicate name, then the initial visit to the paramList wuld have already
@@ -242,7 +262,7 @@ public:
 
                 auto param = paramList->params.at(i);
 
-                Symbol *paramSymbol = new Symbol(param->name->getText(), paramType);
+                Symbol *paramSymbol = new Symbol(param->name->getText(), paramType, false, false);
 
                 stmgr->addSymbol(paramSymbol);
 
