@@ -369,7 +369,8 @@ int main(int argc, const char *argv[])
       cmd << input.second << ".o ";
     }
 
-    cmd << "./runtime.o -no-pie ";
+    // cmd << "./runtime.o -no-pie ";
+    cmd << "./build/bin/runtime/libwpl_runtime_archive.a -no-pie ";
 
     if(useOutputFileName) 
     {
