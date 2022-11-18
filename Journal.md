@@ -1,3 +1,7 @@
+# November 18th, 2022
+
+Today I fixed the bug I introduced last time where wpl would always attempt to generate an executable---even if there were previous compiler errors. In implementing this change, I also used an enum to create a compiler flag option for either no executable (default), to compile the executabel with clang, or to compile the executable with gcc. Finally, I switched from using a manual runtime object I had compiled to an automatically generated archive. 
+
 # November 15th, 2022
 
 With enums seeming mostly functional, I wanted to return to working on fixing the issue with lambdas where defining nested functions with the same name would result in conflicts. In order to do this, I wanted to start making whatever simplifications I could to the code generation around functions and processes. As such, I first combined the definition for FUNC and PROC into one definition. In addition, I wanted to implement automatic forward declarations as they would limit the number of cases that code generation would have to manage. Given that I already had implemented forward declarations with externs and that I already had the ability to generate nested functions, implementing this only required a quick additional pass in the semantic visitor to discover all functions prior to checking the implementations for each function. 
