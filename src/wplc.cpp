@@ -74,6 +74,24 @@ static llvm::cl::opt<bool>
               llvm::cl::desc("If true, compiler will print out status messages; if false (default), compiler will only print errors."),
               llvm::cl::init(false),
               llvm::cl::cat(WPLCOptions));
+
+enum CompileType {
+  none, 
+  clang,
+  gcc
+};
+
+static llvm::cl::opt<CompileType>
+    compileWith("compile",
+              llvm::cl::desc("If set, will compile to an executable with the specified compiler."),
+              llvm::cl::values(
+                clEnumVal(none, "Will not generate an executable"),
+                clEnumVal(clang, "Will generate an executable using clang"),
+                clEnumVal(gcc, "Will generate an executable using gcc")
+              ),
+              llvm::cl::init(none), 
+              llvm::cl::cat(WPLCOptions)
+    );
 /**
  * @brief Main compiler driver.
  */
