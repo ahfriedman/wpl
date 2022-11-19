@@ -162,12 +162,13 @@ protected:
  *
  *******************************************/
 
-struct TypeCompare {
-    bool operator() (const Type *a, const Type *b) const {
+struct TypeCompare
+{
+    bool operator()(const Type *a, const Type *b) const
+    {
         return a->toString() < b->toString();
     }
 };
-
 
 namespace Types
 {
@@ -634,8 +635,6 @@ protected:
     }
 };
 
-
-
 /*******************************************
  *
  * Sum Types
@@ -763,15 +762,131 @@ public:
 protected:
     bool isSupertypeFor(const Type *other) const override
     {
-        //FIXME: THIS DOES NOT WORK WITH SUBTYPING. 
-        if(this->contains(other)) return true; 
+        // FIXME: THIS DOES NOT WORK WITH SUBTYPING.
+        if (this->contains(other))
+            return true;
 
-        if(const TypeSum* oSum = dynamic_cast<const TypeSum*>(other))
+        if (const TypeSum *oSum = dynamic_cast<const TypeSum *>(other))
         {
-            return this->cases == oSum->cases; //FIXME: VERIFY
+            return this->cases == oSum->cases; // FIXME: VERIFY
         }
         // FIXME: DOESNT WORK FOR FUNCTIONS, SUMS, ETC
         // return this->contains(other); // FIXME: ADDRESS SETTING SUM = SUM!
-        return false; 
+        return false;
+    }
+};
+
+/*******************************************
+ *
+ * Struct Types (Product Types w/ Names)
+ *
+ *******************************************/
+class TypeStruct : public Type
+{
+private:
+    /**
+     * @brief The types valid in this sum
+     *
+     */
+    std::map<std::string, const Type *> elements = {};
+
+    /**
+     * @brief LLVM IR Representation of the type
+     *
+     */
+    // llvm::Type * llvmType;
+    std::optional<llvm::StringRef> name = {}; // FIXME: DO BETTER--ESP FOR PRODUCTS!
+
+public:
+    TypeStruct(std::map<std::string, const Type *> e)
+    {
+        elements = e;
+    }
+
+    // auto lexical_compare = [](int a, int b) { return to_string(a) < to_string(b); };
+
+    std::optional<const Type *> get(std::string id) const
+    {
+        auto symbol = elements.find(id);
+
+        if (symbol == elements.end())
+            return {};
+
+        return symbol->second;
+    }
+
+    // std::map<cstd::string, const Type*> getCases() const { return cases; }
+
+    /**
+     * @brief Returns the name of the string in form of <valueType name>[<array length>].
+     *
+     * @return std::string String name representation of this type.
+     */
+    std::string toString() const override
+    {
+        std::ostringstream description;
+
+        description << "(";
+
+        for (auto e : elements)
+        {
+            description << e.second->toString() << " * "; // FIXME: Do better!
+        }
+        description << ")";
+        // description << valueType->toString() << "[\" << length << "]";
+
+        return description.str();
+    }
+
+    /**
+     * @brief Gets the LLVM type for an array of the given valueType and length.
+     *
+     * @param C LLVM Context
+     * @return llvm::Type*
+     */
+    llvm::Type *getLLVMType(llvm::Module *M) const override
+    {
+        llvm::StructType *ty = llvm::StructType::getTypeByName(M->getContext(), toString());
+
+        if (ty)
+            return ty;
+
+        std::vector<llvm::Type *> typeVec; //{llvm::Type::getInt32Ty(M->getContext()), arr}; // FIXME: NEEDS TO BE LARGEST TYPE!
+
+        for (auto ty : elements)
+        {
+            typeVec.push_back(ty.second->getLLVMType(M));
+        }
+
+        // for (const Type *ty : paramTypes)
+        // {
+        //     typeVec.push_back(ty->getLLVMType(M->getContext())); // paramTypes.typeVec); //FIXME: throw error if can't create?
+        // }
+
+        llvm::ArrayRef<llvm::Type *> ref = llvm::ArrayRef(typeVec);
+
+        // Needed to prevent duplicating the type's definition
+        //  TypeSum *mthis = const_cast<TypeSum *>(this);
+        ty = llvm::StructType::create(M->getContext(), ref, toString()); // FIXME: USE STRING REF GET NAME!!!
+
+        // mthis->llvmType = ty
+        return ty; // this->llvmType; //FIXME: WHAT SHOULD THE DEFAULT OF EMPTY ENUMS BE? OR I GUESS WE SHOULDNT ALLOW ANY EMPTYS
+    }
+
+protected:
+    bool isSupertypeFor(const Type *other) const override
+    {
+        // FIXME: How do we get types across files?
+        return this == other; // FIXME: DO BETTER
+        // //FIXME: THIS DOES NOT WORK WITH SUBTYPING.
+        // if(this->contains(other)) return true;
+
+        // if(const TypeSum* oSum = dynamic_cast<const TypeSum*>(other))
+        // {
+        //     return this->cases == oSum->cases; //FIXME: VERIFY
+        // }
+        // // FIXME: DOESNT WORK FOR FUNCTIONS, SUMS, ETC
+        // // return this->contains(other); // FIXME: ADDRESS SETTING SUM = SUM!
+        // return false;
     }
 };

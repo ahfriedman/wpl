@@ -1055,6 +1055,11 @@ const Type *SemanticVisitor::visitCtx(WPLParser::DefineEnumContext *ctx)
     return Types::UNDEFINED; // FIXME
 }
 
+const Type* SemanticVisitor::visitCtx(WPLParser::DefineStructContext * ctx) 
+{
+    //FIXME: TRY USING FUNC DEFS AS TYPES!
+}
+
 const Type *SemanticVisitor::visitCtx(WPLParser::CustomTypeContext *ctx)
 {
     //FIXME: MAY BE OBSCURED BY VAR NAMES
