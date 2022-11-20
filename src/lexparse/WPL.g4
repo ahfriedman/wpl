@@ -7,7 +7,7 @@ grammar WPL;
 // Parser rules
 compilationUnit   :  (stmts+=statement | extens+=externStatement | defs+=defineType)* EOF ; 
 
-structCase        :  (ty=type name=VARIABLE) ;
+structCase        :  (ty=type name=VARIABLE) ';' ;
 
 defineType        : 'define' 'enum' name=VARIABLE LSQB cases+=type (',' cases+=type)+ '}' # DefineEnum
                   | 'define' 'struct' name=VARIABLE LSQB (cases+=structCase)*  RSQB       # DefineStruct

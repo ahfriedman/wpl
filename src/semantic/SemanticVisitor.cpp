@@ -33,15 +33,15 @@ const Type *SemanticVisitor::visitCtx(WPLParser::CompilationUnitContext *ctx)
             }
 
             const Type *ty = (fnCtx->paramList) ? this->visitCtx(fnCtx->paramList)
-                                              : new TypeInvoke();
+                                                : new TypeInvoke();
 
             const TypeInvoke *procType = dynamic_cast<const TypeInvoke *>(ty); // Always true, but needs separate statement to make C happy.
 
             const Type *retType = fnCtx->ty ? std::any_cast<const Type *>(fnCtx->ty->accept(this)) // this->visitCtx(ctx->ty)
-                                          : Types::UNDEFINED;
+                                            : Types::UNDEFINED;
 
             const TypeInvoke *funcType = (fnCtx->ty) ? new TypeInvoke(procType->getParamTypes(), retType, false, false)
-                                                   : new TypeInvoke(procType->getParamTypes(), false, false);
+                                                     : new TypeInvoke(procType->getParamTypes(), false, false);
 
             Symbol *funcSymbol = new Symbol(id, funcType, true, false); // FIXME: WAS N/A, FALSE before -> VERY HACKY
 
@@ -413,13 +413,13 @@ const Type *SemanticVisitor::visitCtx(WPLParser::LogAndExprContext *ctx)
 {
     bool valid = true;
 
-    for(auto e : ctx->exprs)
+    for (auto e : ctx->exprs)
     {
-        const Type* type = std::any_cast<const Type *>(e->accept(this));
-        if(type->isNotSubtype(Types::BOOL))
+        const Type *type = std::any_cast<const Type *>(e->accept(this));
+        if (type->isNotSubtype(Types::BOOL))
         {
             errorHandler.addSemanticError(e->getStart(), "BOOL expression expected, but was " + type->toString());
-            valid = false; 
+            valid = false;
         }
     }
 
@@ -436,13 +436,13 @@ const Type *SemanticVisitor::visitCtx(WPLParser::LogOrExprContext *ctx)
 {
     bool valid = true;
 
-    for(auto e : ctx->exprs)
+    for (auto e : ctx->exprs)
     {
-        const Type* type = std::any_cast<const Type *>(e->accept(this));
-        if(type->isNotSubtype(Types::BOOL))
+        const Type *type = std::any_cast<const Type *>(e->accept(this));
+        if (type->isNotSubtype(Types::BOOL))
         {
             errorHandler.addSemanticError(e->getStart(), "BOOL expression expected, but was " + type->toString());
-            valid = false; 
+            valid = false;
         }
     }
 
@@ -1031,6 +1031,13 @@ const Type *SemanticVisitor::visitCtx(WPLParser::SumTypeContext *ctx)
 
 const Type *SemanticVisitor::visitCtx(WPLParser::DefineEnumContext *ctx)
 {
+    std::string id = ctx->name->getText(); 
+    std::optional<Symbol *> opt = stmgr->lookup(id);
+    if (opt)
+    {
+        errorHandler.addSemanticError(ctx->getStart(), "Unsupported redeclaration of " + id);
+        return Types::UNDEFINED;
+    }
 
     std::set<const Type *, TypeCompare> cases = {};
 
@@ -1047,7 +1054,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::DefineEnumContext *ctx)
     }
 
     const TypeSum *sum = new TypeSum(cases);
-    Symbol *enumSym = new Symbol(ctx->name->getText(), sum, true, true); // FIXME: SCOPES!
+    Symbol *enumSym = new Symbol(id, sum, true, true); // FIXME: SCOPES!
 
     stmgr->addSymbol(enumSym);
     bindings->bind(ctx, enumSym);
@@ -1055,17 +1062,49 @@ const Type *SemanticVisitor::visitCtx(WPLParser::DefineEnumContext *ctx)
     return Types::UNDEFINED; // FIXME
 }
 
-const Type* SemanticVisitor::visitCtx(WPLParser::DefineStructContext * ctx) 
+const Type *SemanticVisitor::visitCtx(WPLParser::DefineStructContext *ctx)
 {
-    //FIXME: TRY USING FUNC DEFS AS TYPES!
+    std::string id = ctx->name->getText(); 
+    std::optional<Symbol *> opt = stmgr->lookup(id);
+    if (opt)
+    {
+        errorHandler.addSemanticError(ctx->getStart(), "Unsupported redeclaration of " + id);
+        return Types::UNDEFINED;
+    }
+
+    std::map<std::string, const Type *> el = {};
+
+    for(WPLParser::StructCaseContext * caseCtx : ctx->cases)
+    {
+        std::string caseName = caseCtx->name->getText(); 
+
+        if(el.count(caseName)) 
+        {
+            errorHandler.addSemanticError(ctx->getStart(), "Unsupported redeclaration of " + caseName); //FIXME: DO BETTER
+            return Types::UNDEFINED;
+        }
+
+        const Type * caseTy = std::any_cast<const Type *>(caseCtx->ty->accept(this)); //FIXME: VERIFY SAFE
+
+        el.insert({caseName, caseTy});
+    }
+
+    const TypeStruct * product = new TypeStruct(el);
+    Symbol *prodSym = new Symbol(id, product, true, true); // FIXME: SCOPES! (No, I don't remember what this means)
+    stmgr->addSymbol(prodSym);
+    bindings->bind(ctx, prodSym);
+
+    return Types::UNDEFINED;
+
+    // FIXME: TRY USING FUNC DEFS AS TYPES!
 }
 
 const Type *SemanticVisitor::visitCtx(WPLParser::CustomTypeContext *ctx)
 {
-    //FIXME: MAY BE OBSCURED BY VAR NAMES
+    // FIXME: MAY BE OBSCURED BY VAR NAMES
 
-//FIXME: HOW DO SUMS WORK WITH MULTIPLE SUBTYPES? CURRENTLY THEYD BREAK
-    // FIXME: This is really bad and really broken b/c now any symbol can become var?
+    // FIXME: HOW DO SUMS WORK WITH MULTIPLE SUBTYPES? CURRENTLY THEYD BREAK
+    //  FIXME: This is really bad and really broken b/c now any symbol can become var?
 
     std::string name = ctx->VARIABLE()->getText();
 
