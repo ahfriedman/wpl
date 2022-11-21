@@ -52,6 +52,7 @@ expression          : LPAR ex=expression RPAR                         # ParenExp
                     | exprs+=expression (AND exprs+=expression)+     # LogAndExpr 
                     | exprs+=expression (OR  exprs+=expression)+     # LogOrExpr
                     | call=invocation                               # CallExpr
+                    | v=VARIABLE '::init' '(' (exprs+=expression (',' exprs+=expression)*)? ')' # InitProduct
                     | arrayAccess  # ArrayAccessExpr
                     | booleanConst # BConstExpr 
                     | v=VARIABLE   # VariableExpr

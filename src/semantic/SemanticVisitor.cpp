@@ -228,6 +228,65 @@ const Type *SemanticVisitor::visitCtx(WPLParser::InvocationContext *ctx)
     return Types::UNDEFINED;
 }
 
+const Type *SemanticVisitor::visitCtx(WPLParser::InitProductContext *ctx)
+{
+    //FIXME: NOT CONVINCED THIS WILL WORK AS MAP MAY HAVE DIFF ORDER THAN LOCAL!
+    std::string name = ctx->v->getText();
+    std::optional<Symbol *> opt = stmgr->lookup(name);
+
+    if (!opt)
+    {
+        errorHandler.addSemanticError(ctx->getStart(), "Cannot initialize undefined product: " + name);
+        return Types::UNDEFINED;
+    }
+
+    Symbol *sym = opt.value();
+
+    // FIXME: METHODIZE WITH INVOKE?
+    bindings->bind(ctx, sym);
+
+    if (const TypeStruct *product = dynamic_cast<const TypeStruct *>(sym->type))
+    {
+        std::map<std::string, const Type *> elements = product->getElements();
+
+        if (elements.size() != ctx->exprs.size())
+        {
+            std::ostringstream errorMsg;
+            errorMsg << "Initialization of " << name << " expected " << elements.size() << " argument(s), but got " << ctx->exprs.size();
+            errorHandler.addSemanticError(ctx->getStart(), errorMsg.str());
+            return Types::UNDEFINED; // TODO: Could change this to the return type to catch more errors?
+        }
+
+        {
+            unsigned int i = 0;
+
+            for (auto eleItr : elements)
+            {
+                const Type *providedType = std::any_cast<const Type *>(ctx->exprs.at(i)->accept(this));
+
+                if (providedType->isNotSubtype(eleItr.second))
+                {
+                    std::ostringstream errorMsg; //FIXME: DO BETTER
+                    errorMsg << "Argument " << i << " provided to " << name << " expected " << eleItr.second->toString() << " but got " << providedType->toString();
+
+                    errorHandler.addSemanticError(ctx->getStart(), errorMsg.str());
+                }
+
+                i++;
+            }
+        }
+
+        return sym->type; 
+        // for(unsigned int i = 0; i < ctx->exprs.size(); i++)
+        // {
+        //     const
+        // }
+    }
+
+    errorHandler.addSemanticError(ctx->getStart(), "Cannot initialize non-product type " + name + " : " + sym->type->toString());
+    return Types::UNDEFINED;
+}
+
 const Type *SemanticVisitor::visitCtx(WPLParser::ArrayAccessContext *ctx)
 {
     /*
@@ -1031,7 +1090,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::SumTypeContext *ctx)
 
 const Type *SemanticVisitor::visitCtx(WPLParser::DefineEnumContext *ctx)
 {
-    std::string id = ctx->name->getText(); 
+    std::string id = ctx->name->getText();
     std::optional<Symbol *> opt = stmgr->lookup(id);
     if (opt)
     {
@@ -1064,7 +1123,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::DefineEnumContext *ctx)
 
 const Type *SemanticVisitor::visitCtx(WPLParser::DefineStructContext *ctx)
 {
-    std::string id = ctx->name->getText(); 
+    std::string id = ctx->name->getText();
     std::optional<Symbol *> opt = stmgr->lookup(id);
     if (opt)
     {
@@ -1074,22 +1133,22 @@ const Type *SemanticVisitor::visitCtx(WPLParser::DefineStructContext *ctx)
 
     std::map<std::string, const Type *> el = {};
 
-    for(WPLParser::StructCaseContext * caseCtx : ctx->cases)
+    for (WPLParser::StructCaseContext *caseCtx : ctx->cases)
     {
-        std::string caseName = caseCtx->name->getText(); 
+        std::string caseName = caseCtx->name->getText();
 
-        if(el.count(caseName)) 
+        if (el.count(caseName))
         {
-            errorHandler.addSemanticError(ctx->getStart(), "Unsupported redeclaration of " + caseName); //FIXME: DO BETTER
+            errorHandler.addSemanticError(ctx->getStart(), "Unsupported redeclaration of " + caseName); // FIXME: DO BETTER
             return Types::UNDEFINED;
         }
 
-        const Type * caseTy = std::any_cast<const Type *>(caseCtx->ty->accept(this)); //FIXME: VERIFY SAFE
+        const Type *caseTy = std::any_cast<const Type *>(caseCtx->ty->accept(this)); // FIXME: VERIFY SAFE
 
         el.insert({caseName, caseTy});
     }
 
-    const TypeStruct * product = new TypeStruct(el);
+    const TypeStruct *product = new TypeStruct(el);
     Symbol *prodSym = new Symbol(id, product, true, true); // FIXME: SCOPES! (No, I don't remember what this means)
     stmgr->addSymbol(prodSym);
     bindings->bind(ctx, prodSym);

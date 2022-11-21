@@ -325,6 +325,65 @@ std::optional<Value *> CodegenVisitor::TvisitInvocation(WPLParser::InvocationCon
     return val;
 }
 
+std::optional<Value *> CodegenVisitor::TvisitInitProduct(WPLParser::InitProductContext *ctx)
+{
+    std::vector<Value *> args;
+
+    for (auto e : ctx->exprs)
+    {
+        std::optional<Value *> valOpt = std::any_cast<std::optional<Value *>>(e->accept(this));
+        if (!valOpt)
+        {
+            errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code");
+            return {};
+        }
+        args.push_back(valOpt.value());
+    }
+
+    std::optional<Symbol *> varSymOpt = props->getBinding(ctx);
+    if (!varSymOpt)
+    {
+        //FIXME: DO BETTER
+        errorHandler.addCodegenError(ctx->getStart(), "Incorrectly processed variable in assignment: " + ctx->getText());
+        return {};
+    }
+
+    Symbol *varSym = varSymOpt.value();
+
+    std::cout << "353" << std::endl; 
+
+    if (const TypeStruct *product = dynamic_cast<const TypeStruct *>(varSym->type))
+    {
+        std::cout << "357" << std::endl; 
+        llvm::Type * ty = varSym->type->getLLVMType(module);
+        std::cout << "359" << std::endl; 
+        llvm::AllocaInst * v = builder->CreateAlloca(ty, 0, ""); //FIXME: VERIFY 
+        std::cout << "361" << std::endl; 
+        {
+            unsigned i = 0; 
+
+            for(Value * a : args) 
+            {
+                std::cout << "367" << std::endl; 
+                // Value*  valIndex = 
+                Value * ptr = builder->CreateGEP(v, {Int32Zero, ConstantInt::get(Int32Ty, i, true)});
+                std::cout << "369" << std::endl; 
+                builder->CreateStore(a, ptr);
+                std::cout << "371" << std::endl; 
+
+                i++; 
+            }
+        }
+
+        std::cout << "370" << std::endl; 
+
+        return v; //FIXME: DO BETTER?
+    }
+
+    errorHandler.addCodegenError(ctx->getStart(), "Failed to gen init"); //FIXME: DO BETTER 
+    return {};
+}
+
 std::optional<Value *> CodegenVisitor::TvisitArrayAccess(WPLParser::ArrayAccessContext *ctx)
 {
     // Attempt to get the index Value
@@ -568,25 +627,24 @@ std::optional<Value *> CodegenVisitor::TvisitEqExpr(WPLParser::EqExprContext *ct
  */
 std::optional<Value *> CodegenVisitor::TvisitLogAndExpr(WPLParser::LogAndExprContext *ctx)
 {
-     //FIXME: DO BETTER W/ AST 
-    std::vector<WPLParser::ExpressionContext *> toVisit = ctx->exprs; 
+    // FIXME: DO BETTER W/ AST
+    std::vector<WPLParser::ExpressionContext *> toVisit = ctx->exprs;
     std::vector<WPLParser::ExpressionContext *> toGen;
 
-    while(toVisit.size() > 0)
+    while (toVisit.size() > 0)
     {
-        WPLParser::ExpressionContext* curr = toVisit.at(0); 
+        WPLParser::ExpressionContext *curr = toVisit.at(0);
         toVisit.erase(toVisit.begin());
 
-        if(WPLParser::LogAndExprContext * orCtx = dynamic_cast<WPLParser::LogAndExprContext*>(curr))
+        if (WPLParser::LogAndExprContext *orCtx = dynamic_cast<WPLParser::LogAndExprContext *>(curr))
         {
             toVisit.insert(toVisit.end(), orCtx->exprs.begin(), orCtx->exprs.end());
         }
-        else 
+        else
         {
-            toGen.push_back(curr); 
+            toGen.push_back(curr);
         }
     }
-
 
     // Create the basic block for our conditions
     BasicBlock *current = builder->GetInsertBlock();
@@ -640,7 +698,7 @@ std::optional<Value *> CodegenVisitor::TvisitLogAndExpr(WPLParser::LogAndExprCon
         phi->addIncoming(lastValue, falseBlk);
     }
 
-    builder->CreateBr(mergeBlk); 
+    builder->CreateBr(mergeBlk);
     // falseBlk = builder->GetInsertBlock();
 
     /*
@@ -663,25 +721,24 @@ std::optional<Value *> CodegenVisitor::TvisitLogAndExpr(WPLParser::LogAndExprCon
  */
 std::optional<Value *> CodegenVisitor::TvisitLogOrExpr(WPLParser::LogOrExprContext *ctx)
 {
-    //FIXME: DO BETTER W/ AST 
-    std::vector<WPLParser::ExpressionContext *> toVisit = ctx->exprs; 
+    // FIXME: DO BETTER W/ AST
+    std::vector<WPLParser::ExpressionContext *> toVisit = ctx->exprs;
     std::vector<WPLParser::ExpressionContext *> toGen;
 
-    while(toVisit.size() > 0)
+    while (toVisit.size() > 0)
     {
-        WPLParser::ExpressionContext* curr = toVisit.at(0); 
+        WPLParser::ExpressionContext *curr = toVisit.at(0);
         toVisit.erase(toVisit.begin());
 
-        if(WPLParser::LogOrExprContext * orCtx = dynamic_cast<WPLParser::LogOrExprContext*>(curr))
+        if (WPLParser::LogOrExprContext *orCtx = dynamic_cast<WPLParser::LogOrExprContext *>(curr))
         {
             toVisit.insert(toVisit.end(), orCtx->exprs.begin(), orCtx->exprs.end());
         }
-        else 
+        else
         {
-            toGen.push_back(curr); 
+            toGen.push_back(curr);
         }
     }
-
 
     // Create the basic block for our conditions
     BasicBlock *current = builder->GetInsertBlock();
@@ -735,8 +792,7 @@ std::optional<Value *> CodegenVisitor::TvisitLogOrExpr(WPLParser::LogOrExprConte
         phi->addIncoming(lastValue, falseBlk);
     }
 
-    builder->CreateBr(mergeBlk); 
-    
+    builder->CreateBr(mergeBlk);
 
     /*
      * LHS True - Can skip checking RHS and return true
@@ -1159,6 +1215,7 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
             }
             else
             {
+                //FIXME: TRY PASSING VAR AS SUM IN ARGUMENT. IE, FUNCTION TAKES SUM AND WE JUST PROVIDE REGULAR TYPE!
                 // As this is a local var we can just create an allocation for it
                 llvm::AllocaInst *v = builder->CreateAlloca(ty, 0, var->getText());
 

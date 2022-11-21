@@ -815,7 +815,7 @@ public:
         return symbol->second;
     }
 
-    // std::map<cstd::string, const Type*> getCases() const { return cases; }
+    std::map<std::string, const Type*> getElements() const { return elements; }
 
     /**
      * @brief Returns the name of the string in form of <valueType name>[<array length>].

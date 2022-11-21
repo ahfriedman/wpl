@@ -83,6 +83,7 @@ public:
     const Type* visitCtx(WPLParser::DefineEnumContext * ctx);
     const Type* visitCtx(WPLParser::MatchStatementContext * ctx);
     const Type* visitCtx(WPLParser::DefineStructContext * ctx);
+    const Type* visitCtx(WPLParser::InitProductContext * ctx);
 
 
 
@@ -137,6 +138,7 @@ public:
     std::any visitDefineEnum(WPLParser::DefineEnumContext * ctx) override { return visitCtx(ctx); }
     std::any visitMatchStatement(WPLParser::MatchStatementContext * ctx) override { return visitCtx(ctx); }
     std::any visitDefineStruct(WPLParser::DefineStructContext * ctx) override { return visitCtx(ctx); }
+    std::any visitInitProduct(WPLParser::InitProductContext * ctx) override { return visitCtx(ctx); }
 
     /**
      * @brief Used to safely enter a block. This is used to ensure there aren't FUNC/PROC definitions / code following returns in it.
