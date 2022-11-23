@@ -12,4 +12,5 @@ include_directories(sym_lib
   ${SYMBOL_INCLUDE}
   ${LLVM_BINARY_DIR}/include
   ${LLVM_INCLUDE_DIR}
+  ${UTILITY_INCLUDE}
 )

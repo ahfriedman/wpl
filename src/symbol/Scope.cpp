@@ -20,7 +20,7 @@ bool Scope::addSymbol(Symbol *symbol)
   if (symbols.find(id) != symbols.end())
   {
     // Symbol already defined
-    delete symbol; // Save the memory
+    delete symbol; // Save the memory FIXME: IS THIS UNSAFE?
     return false;
   }
 
