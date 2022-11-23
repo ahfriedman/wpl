@@ -838,6 +838,9 @@ std::optional<Value *> CodegenVisitor::TvisitFieldAccessExpr(WPLParser::FieldAcc
         return {};
     }
 
+    const Type * ty = sym->type; 
+    
+
     // Check that the type is an array type
     if (const TypeArray *ar = dynamic_cast<const TypeArray *>(sym->type))
     {
@@ -859,7 +862,7 @@ std::optional<Value *> CodegenVisitor::TvisitFieldAccessExpr(WPLParser::FieldAcc
         }
 
 
-        std::string field = ctx->fields.at(0)->getText(); //FIXME: LOOP
+        std::string field = ctx->fields.at(1)->getText(); //FIXME: LOOP
         std::optional<unsigned int> indexOpt = [s, field]() 
         {
             unsigned int i = 0; 
@@ -904,12 +907,6 @@ std::optional<Value *> CodegenVisitor::TvisitFieldAccessExpr(WPLParser::FieldAcc
 
         Value *val = builder->CreateLoad(ansType, valPtr);
         return val; 
-//         llvm::AllocaInst * ans = builder->CreateAlloca(ansType, 0, "");
-//         builder->CreateStore(val, ans);
-// //         // Value* ret = builder->CreateStore(v, valPtr);
-// // // std::cout << "899" << std::endl;
-//         return ans; 
-
     }
 
     // Throw an error as we currently only support array length.

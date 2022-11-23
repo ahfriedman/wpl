@@ -544,7 +544,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::FieldAccessExprContext *ctx)
     std::optional<Symbol *> opt = stmgr->lookup(ctx->VARIABLE().at(0)->getText());
     if (!opt)
     {
-        errorHandler.addSemanticError(ctx->getStart(), "Undefined variable reference: " + ctx->ex->getText());
+        errorHandler.addSemanticError(ctx->getStart(), "Undefined variable reference: " + ctx->VARIABLE().at(0)->getText());
         return Types::UNDEFINED;
     }
 
@@ -553,7 +553,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::FieldAccessExprContext *ctx)
 
     const Type *ty = sym->type;
 
-    for (unsigned int i = 0; i < ctx->fields.size(); i++)
+    for (unsigned int i = 1; i < ctx->fields.size(); i++)
     {
         std::string fieldName = ctx->fields.at(i)->getText();
 
@@ -564,7 +564,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::FieldAccessExprContext *ctx)
             if (eleOpt)
             {
                 ty = eleOpt.value();
-                bindings->bind(ctx->VARIABLE().at(i + 1), new Symbol("", ty, false, false)); //FIXME: DO BETTER
+                bindings->bind(ctx->VARIABLE().at(i), new Symbol("", ty, false, false)); //FIXME: DO BETTER
             }
             else
             {
@@ -574,7 +574,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::FieldAccessExprContext *ctx)
         }
         else if (i + 1 == ctx->fields.size() && dynamic_cast<const TypeArray *>(ty) && ctx->fields.at(i)->getText() == "length")
         {
-            bindings->bind(ctx->VARIABLE().at(i + 1), new Symbol("", Types::INT, false, false)); //FIXME: DO BETTER
+            bindings->bind(ctx->VARIABLE().at(i), new Symbol("", Types::INT, false, false)); //FIXME: DO BETTER
             return Types::INT;
         }
         else
