@@ -790,7 +790,8 @@ private:
      * @brief The types valid in this sum
      *
      */
-    std::map<std::string, const Type *> elements = {};
+    // std::map<std::string, const Type *> elements = {};
+    LinkedMap<std::string, const Type*> elements; 
 
     /**
      * @brief LLVM IR Representation of the type
@@ -800,7 +801,7 @@ private:
     std::optional<llvm::StringRef> name = {}; // FIXME: DO BETTER--ESP FOR PRODUCTS!
 
 public:
-    TypeStruct(std::map<std::string, const Type *> e)
+    TypeStruct(LinkedMap<std::string, const Type*> e)
     {
         elements = e;
     }
@@ -809,16 +810,18 @@ public:
 
     std::optional<const Type *> get(std::string id) const
     {
-        auto symbol = elements.find(id);
+        // auto symbol = elements.find(id);
 
-        if (symbol == elements.end())
-            return {};
+        // if (symbol == elements.end())
+        //     return {};
 
-        return symbol->second;
+        // return symbol->second;
+
+        return elements.lookup(id); 
     }
 
-    std::map<std::string, const Type*> getElements() const { return elements; }
-
+    //std::map<std::string, const Type*> getElements() const { return elements; }
+    vector<pair<std::string, const Type*>> getElements() const { return elements.getElements(); }
     /**
      * @brief Returns the name of the string in form of <valueType name>[<array length>].
      *
@@ -830,7 +833,7 @@ public:
 
         description << "(";
 
-        for (auto e : elements)
+        for (auto e : elements.getElements())
         {
             description << e.second->toString() << " * "; // FIXME: Do better!
         }
@@ -855,7 +858,7 @@ public:
 
         std::vector<llvm::Type *> typeVec; //{llvm::Type::getInt32Ty(M->getContext()), arr}; // FIXME: NEEDS TO BE LARGEST TYPE!
 
-        for (auto ty : elements)
+        for (auto ty : elements.getElements())
         {
             typeVec.push_back(ty.second->getLLVMType(M));
         }

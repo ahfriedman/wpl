@@ -8,6 +8,8 @@
 
 #include "TypeVisitor.h"
 
+#include "LinkedMap.h"
+
 class SemanticVisitor : WPLBaseVisitor
 {
 
