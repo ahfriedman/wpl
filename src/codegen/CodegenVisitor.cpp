@@ -343,46 +343,46 @@ std::optional<Value *> CodegenVisitor::TvisitInitProduct(WPLParser::InitProductC
     std::optional<Symbol *> varSymOpt = props->getBinding(ctx);
     if (!varSymOpt)
     {
-        //FIXME: DO BETTER
+        // FIXME: DO BETTER
         errorHandler.addCodegenError(ctx->getStart(), "Incorrectly processed variable in assignment: " + ctx->getText());
         return {};
     }
 
     Symbol *varSym = varSymOpt.value();
 
-    std::cout << "353" << std::endl; 
+    std::cout << "353" << std::endl;
 
     if (const TypeStruct *product = dynamic_cast<const TypeStruct *>(varSym->type))
     {
-        std::cout << "357" << std::endl; 
-        llvm::Type * ty = varSym->type->getLLVMType(module);
-        std::cout << "359" << std::endl; 
-        llvm::AllocaInst * v = builder->CreateAlloca(ty, 0, ""); //FIXME: VERIFY 
-        std::cout << "361" << std::endl; 
+        std::cout << "357" << std::endl;
+        llvm::Type *ty = varSym->type->getLLVMType(module);
+        std::cout << "359" << std::endl;
+        llvm::AllocaInst *v = builder->CreateAlloca(ty, 0, ""); // FIXME: VERIFY
+        std::cout << "361" << std::endl;
         {
-            unsigned i = 0; 
+            unsigned i = 0;
 
-            for(Value * a : args) 
+            for (Value *a : args)
             {
-                std::cout << "367" << std::endl; 
-                // Value*  valIndex = 
-                Value * ptr = builder->CreateGEP(v, {Int32Zero, ConstantInt::get(Int32Ty, i, true)});
-                std::cout << "369" << std::endl; 
+                std::cout << "367" << std::endl;
+                // Value*  valIndex =
+                Value *ptr = builder->CreateGEP(v, {Int32Zero, ConstantInt::get(Int32Ty, i, true)});
+                std::cout << "369" << std::endl;
                 builder->CreateStore(a, ptr);
-                std::cout << "371" << std::endl; 
+                std::cout << "371" << std::endl;
 
-                i++; 
+                i++;
             }
         }
 
-        std::cout << "370" << std::endl; 
+        std::cout << "370" << std::endl;
 
         // return v; //FIXME: DO BETTER?
         Value *loaded = builder->CreateLoad(v->getType()->getPointerElementType(), v);
-        return loaded; 
+        return loaded;
     }
 
-    errorHandler.addCodegenError(ctx->getStart(), "Failed to gen init"); //FIXME: DO BETTER 
+    errorHandler.addCodegenError(ctx->getStart(), "Failed to gen init"); // FIXME: DO BETTER
     return {};
 }
 
@@ -811,10 +811,10 @@ std::optional<Value *> CodegenVisitor::TvisitCallExpr(WPLParser::CallExprContext
 
 std::optional<Value *> CodegenVisitor::TvisitVariableExpr(WPLParser::VariableExprContext *ctx)
 {
-    std::cout << "821 " << ctx->getText() << std::endl; 
+    std::cout << "821 " << ctx->getText() << std::endl;
     // Get the variable name and look it up
     std::string id = ctx->v->getText();
-    return this->visitVariable(id, props->getBinding(ctx), ctx); 
+    return this->visitVariable(id, props->getBinding(ctx), ctx);
 }
 
 std::optional<Value *> CodegenVisitor::TvisitFieldAccessExpr(WPLParser::FieldAccessExprContext *ctx)
@@ -838,80 +838,96 @@ std::optional<Value *> CodegenVisitor::TvisitFieldAccessExpr(WPLParser::FieldAcc
         return {};
     }
 
-    const Type * ty = sym->type; 
-    
-
-    // Check that the type is an array type
-    if (const TypeArray *ar = dynamic_cast<const TypeArray *>(sym->type))
+    if (ctx->fields.at(ctx->fields.size() - 1)->getText() == "length")
     {
-        // If it is, correctly, an array type, then we can get the array's length (this is the only operation currently, so we can just do thus)
-        Value *v = builder->getInt32(ar->getLength());
+        // std::optional<Symbol *> finalOpt = props->getBinding(ctx->VARIABLE().at(ctx->VARIABLE().size() - 1));
 
-        return v; //FIXME: GOING TO HAVE TO CHANGE THIS, WON'T WORK NOW WITH ITERATIONS!
-    }
-    else if(const TypeStruct * s = dynamic_cast<const TypeStruct *>(sym->type))
-    {
-        std::cout << "849 " << ctx->VARIABLE().at(0)->getText() << std::endl; 
-        std::optional<Value*> baseOpt = visitVariable(ctx->VARIABLE().at(0)->getText(), props->getBinding(ctx->VARIABLE().at(0)), ctx);
-        // std::optional<Value *> baseOpt = std::any_cast<std::optional<Value *>>(ctx->VARIABLE().at(0)->accept(this));
+        // if(finalOpt && finalOpt.value()->type == Types::INT) //FIXME: DO
+        // {
 
-        if(!baseOpt)
+        // }
+        std::optional<Symbol *> modOpt = props->getBinding(ctx->VARIABLE().at(ctx->VARIABLE().size() - 2));
+
+        if (modOpt)
         {
-            errorHandler.addCodegenError(ctx->getStart(), "FIXME");
-            return {};
-        }
-
-
-        std::string field = ctx->fields.at(1)->getText(); //FIXME: LOOP
-        std::optional<unsigned int> indexOpt = [s, field]() 
-        {
-            unsigned int i = 0; 
-            for(auto e : s->getElements())
+            if (const TypeArray *ar = dynamic_cast<const TypeArray *>(modOpt.value()->type))
             {
-                if(e.first == field) //FIXME: DO BETTER CONSIDERING WE HAVE MAPS
-                {
-                    return   std::optional<unsigned int>{i}; 
-                }
-                i++; 
+                // FIXME: VERIFY THIS STILL WORKS WHEN NESTED!
+                // If it is, correctly, an array type, then we can get the array's length (this is the only operation currently, so we can just do thus)
+                Value *v = builder->getInt32(ar->getLength());
+
+                return v; // FIXME: GOING TO HAVE TO CHANGE THIS, WON'T WORK NOW WITH ITERATIONS!
             }
-            std::optional<unsigned int> ret = {};
-            return ret; 
-        }(); 
-
-        if(!indexOpt)
-        {
-            errorHandler.addCodegenError(ctx->getStart(), "Could not lookup " + field);
-            return {};
         }
-
-        unsigned int index = indexOpt.value(); 
-
-        std::optional<Symbol *> fieldOpt = props->getBinding(ctx->VARIABLE().at(1));
-
-        if(!fieldOpt)
-        {
-            errorHandler.addCodegenError(ctx->getStart(), "Could not get binding for " + field);
-            return {};
-        }
-
-        //FIXME: I DON'T KNOW IF WE WILL BE ABLE TO KEEP ARR LEN WORKING
-        Value * baseValue = baseOpt.value(); 
-
-        Symbol * fieldSym = fieldOpt.value(); 
-        // std::cout << "893" << std::endl;
-        llvm::AllocaInst *v = builder->CreateAlloca(baseValue->getType());//(fieldSym->type->getLLVMType(module), 0, "");
-        builder->CreateStore(baseValue, v);
-        Value* valPtr = builder->CreateGEP(v, {Int32Zero, ConstantInt::get(Int32Ty, index, true)});
-
-        llvm::Type * ansType = fieldSym->type->getLLVMType(module);
-
-        Value *val = builder->CreateLoad(ansType, valPtr);
-        return val; 
     }
 
-    // Throw an error as we currently only support array length.
-    errorHandler.addCodegenError(ctx->getStart(), "Given non-array type in TvisitFieldAccessExpr!");
-    return {};
+    const Type *ty = sym->type;
+    std::optional<Value *> baseOpt = visitVariable(ctx->VARIABLE().at(0)->getText(), props->getBinding(ctx->VARIABLE().at(0)), ctx);
+    // std::optional<Value *> val = {};
+
+    for (unsigned int i = 1; i < ctx->fields.size(); i++)
+    {
+        if (const TypeStruct *s = dynamic_cast<const TypeStruct *>(ty))
+        {
+            if (!baseOpt)
+            {
+                errorHandler.addCodegenError(ctx->getStart(), "FIXME");
+                return {};
+            }
+
+            std::string field = ctx->fields.at(i)->getText(); // FIXME: LOOP
+            std::optional<unsigned int> indexOpt = [s, field]()
+            {
+                unsigned int i = 0;
+                for (auto e : s->getElements())
+                {
+                    if (e.first == field) // FIXME: DO BETTER CONSIDERING WE HAVE MAPS
+                    {
+                        return std::optional<unsigned int>{i};
+                    }
+                    i++;
+                }
+                std::optional<unsigned int> ret = {};
+                return ret;
+            }();
+
+            if (!indexOpt)
+            {
+                errorHandler.addCodegenError(ctx->getStart(), "Could not lookup " + field);
+                return {};
+            }
+
+            unsigned int index = indexOpt.value();
+
+            std::optional<Symbol *> fieldOpt = props->getBinding(ctx->VARIABLE().at(1));
+
+            if (!fieldOpt)
+            {
+                errorHandler.addCodegenError(ctx->getStart(), "Could not get binding for " + field);
+                return {};
+            }
+
+            Value *baseValue = baseOpt.value();
+
+            Symbol *fieldSym = fieldOpt.value();
+            // std::cout << "893" << std::endl;
+            llvm::AllocaInst *v = builder->CreateAlloca(baseValue->getType()); //(fieldSym->type->getLLVMType(module), 0, "");
+            builder->CreateStore(baseValue, v);
+            Value *valPtr = builder->CreateGEP(v, {Int32Zero, ConstantInt::get(Int32Ty, index, true)});
+
+            llvm::Type *ansType = fieldSym->type->getLLVMType(module);
+
+            ty = fieldSym->type; 
+            baseOpt = builder->CreateLoad(ansType, valPtr);
+            // return val;
+        }
+    }
+
+    return baseOpt.value(); // FIXME: DO BETTER, VERIFY CORRECT
+
+    // // Throw an error as we currently only support array length.
+    // errorHandler.addCodegenError(ctx->getStart(), "Given non-array type in TvisitFieldAccessExpr!");
+    // return {};
 }
 
 std::optional<Value *> CodegenVisitor::TvisitParenExpr(WPLParser::ParenExprContext *ctx)
@@ -1219,8 +1235,8 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
             }
             else
             {
-                //FIXME: TRY PASSING VAR AS SUM IN ARGUMENT. IE, FUNCTION TAKES SUM AND WE JUST PROVIDE REGULAR TYPE!
-                // As this is a local var we can just create an allocation for it
+                // FIXME: TRY PASSING VAR AS SUM IN ARGUMENT. IE, FUNCTION TAKES SUM AND WE JUST PROVIDE REGULAR TYPE!
+                //  As this is a local var we can just create an allocation for it
                 llvm::AllocaInst *v = builder->CreateAlloca(ty, 0, var->getText());
                 varSymbol->val = v;
 
