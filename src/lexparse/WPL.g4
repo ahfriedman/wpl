@@ -42,8 +42,8 @@ arrayOrVar          : var=VARIABLE | array=arrayAccess  ;
  *              the use of variables instead of expressions for array access
  *      11-14. Typical boolean and variable constants. 
  */
-expression          : LPAR ex=expression RPAR                         # ParenExpr
-                    | ex=VARIABLE '.' field=VARIABLE                # FieldAccessExpr 
+expression          : LPAR ex=expression RPAR                       # ParenExpr
+                    | ex=VARIABLE ('.' fields+=VARIABLE)+           # FieldAccessExpr 
                     | <assoc=right> op=(MINUS | NOT) ex=expression  # UnaryExpr 
                     | left=expression op=(MULTIPLY | DIVIDE) right=expression # BinaryArithExpr
                     | left=expression op=(PLUS | MINUS) right=expression      # BinaryArithExpr

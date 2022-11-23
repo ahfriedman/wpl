@@ -230,7 +230,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::InvocationContext *ctx)
 
 const Type *SemanticVisitor::visitCtx(WPLParser::InitProductContext *ctx)
 {
-    //FIXME: NOT CONVINCED THIS WILL WORK AS MAP MAY HAVE DIFF ORDER THAN LOCAL!
+    // FIXME: NOT CONVINCED THIS WILL WORK AS MAP MAY HAVE DIFF ORDER THAN LOCAL!
     std::string name = ctx->v->getText();
     std::optional<Symbol *> opt = stmgr->lookup(name);
 
@@ -266,7 +266,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::InitProductContext *ctx)
 
                 if (providedType->isNotSubtype(eleItr.second))
                 {
-                    std::ostringstream errorMsg; //FIXME: DO BETTER
+                    std::ostringstream errorMsg; // FIXME: DO BETTER
                     errorMsg << "Argument " << i << " provided to " << name << " expected " << eleItr.second->toString() << " but got " << providedType->toString();
 
                     errorHandler.addSemanticError(ctx->getStart(), errorMsg.str());
@@ -276,7 +276,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::InitProductContext *ctx)
             }
         }
 
-        return sym->type; 
+        return sym->type;
         // for(unsigned int i = 0; i < ctx->exprs.size(); i++)
         // {
         //     const
@@ -551,24 +551,40 @@ const Type *SemanticVisitor::visitCtx(WPLParser::FieldAccessExprContext *ctx)
 
     const Type *ty = sym->type;
 
-    // Currently we only support arrays, so if its not an array, report an error.
-    if (const TypeArray *a = dynamic_cast<const TypeArray *>(ty))
+    for (unsigned int i = 0; i < ctx->fields.size(); i++)
     {
-    }
-    else
-    {
-        errorHandler.addSemanticError(ctx->getStart(), "Cannot perform operation: " + ctx->field->getText() + " on " + ty->toString());
-        return Types::UNDEFINED;
+        std::string fieldName = ctx->fields.at(i)->getText();
+
+        if (const TypeStruct *s = dynamic_cast<const TypeStruct *>(ty))
+        {
+            std::optional<const Type *> eleOpt = s->get(fieldName);
+            //FIXME: DO BETTER BINDS!
+            if (eleOpt)
+            {
+                ty = eleOpt.value();
+                bindings->bind(ctx->VARIABLE().at(i + 1), new Symbol("", ty, false, false)); //FIXME: DO BETTER
+            }
+            else
+            {
+                errorHandler.addSemanticError(ctx->getStart(), "Cannot access " + fieldName + " on " + ty->toString());
+                return Types::UNDEFINED;
+            }
+        }
+        else if (i + 1 == ctx->fields.size() && dynamic_cast<const TypeArray *>(ty) && ctx->fields.at(i)->getText() == "length")
+        {
+            bindings->bind(ctx->VARIABLE().at(i + 1), new Symbol("", Types::INT, false, false)); //FIXME: DO BETTER
+            return Types::INT;
+        }
+        else
+        {
+            errorHandler.addSemanticError(ctx->getStart(), "Cannot access " + fieldName + " on " + ty->toString());
+            return Types::UNDEFINED;
+        }
     }
 
-    // As only supported operation is length, ensure that is the requested operation
-    if (ctx->field->getText() != "length")
-    {
-        errorHandler.addSemanticError(ctx->getStart(), "Unsupported operation on " + ty->toString() + ": " + ctx->field->getText());
-        return Types::UNDEFINED;
-    }
+    // errorHandler.addSemanticError(ctx->getStart(), "Unsupported operation on " + ty->toString());
 
-    return Types::INT;
+    return ty;
 }
 
 // Passthrough to expression

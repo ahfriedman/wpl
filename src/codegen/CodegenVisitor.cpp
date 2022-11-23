@@ -377,7 +377,9 @@ std::optional<Value *> CodegenVisitor::TvisitInitProduct(WPLParser::InitProductC
 
         std::cout << "370" << std::endl; 
 
-        return v; //FIXME: DO BETTER?
+        // return v; //FIXME: DO BETTER?
+        Value *loaded = builder->CreateLoad(v->getType()->getPointerElementType(), v);
+        return loaded; 
     }
 
     errorHandler.addCodegenError(ctx->getStart(), "Failed to gen init"); //FIXME: DO BETTER 
@@ -809,70 +811,10 @@ std::optional<Value *> CodegenVisitor::TvisitCallExpr(WPLParser::CallExprContext
 
 std::optional<Value *> CodegenVisitor::TvisitVariableExpr(WPLParser::VariableExprContext *ctx)
 {
+    std::cout << "821 " << ctx->getText() << std::endl; 
     // Get the variable name and look it up
     std::string id = ctx->v->getText();
-    std::optional<Symbol *> symOpt = props->getBinding(ctx);
-
-    // If the symbol could not be found, raise an error
-    if (!symOpt)
-    {
-        errorHandler.addCodegenError(ctx->getStart(), "Undefined variable access: " + id);
-        return {};
-    }
-
-    Symbol *sym = symOpt.value();
-
-    // Try getting the type for the symbol, raising an error if it could not be determined
-    llvm::Type *type = sym->type->getLLVMType(module);
-    if (!type)
-    {
-        errorHandler.addCodegenError(ctx->getStart(), "Unable to find type for variable: " + ctx->getText());
-        return {}; // FIXME: IS THIS USED? SOMETIMES MAYBE?
-    }
-
-    // Make sure the variable has an allocation (or that we can find it due to it being a global var)
-    if (!sym->val)
-    {
-        // If the symbol is a global var
-        if (dynamic_cast<const TypeInvoke *>(sym->type))
-        {
-            // FIXME: METHODIZE!!!
-            Function *fn = module->getFunction(id);
-
-            // FIXME: COPY IN STUB GEN!
-            // Value *val = builder->CreateLoad(fn);
-            // return val;
-            return fn;
-        }
-        else if (sym->isGlobal)
-        {
-            // Lookup the global var for the symbol
-            llvm::GlobalVariable *glob = module->getNamedGlobal(sym->identifier);
-
-            // Check that we found the variable. If not, throw an error.
-            if (!glob)
-            {
-                errorHandler.addCodegenError(ctx->getStart(), "Unable to find global variable: " + id);
-                return {};
-            }
-
-            // Create and return a load for the global var
-            Value *val = builder->CreateLoad(glob);
-            return val;
-        }
-
-        errorHandler.addCodegenError(ctx->getStart(), "Unable to find allocation for variable: " + ctx->getText());
-        return {};
-    }
-
-    // if (dynamic_cast<const TypeSum *>(sym->type)) // FIXME: VERIFY
-    // {
-    //     return sym->val.value();
-    // }
-
-    // Otherwise, we are a local variable with an allocation and, thus, can simply load it.
-    Value *v = builder->CreateLoad(type, sym->val.value(), id);
-    return v;
+    return this->visitVariable(id, props->getBinding(ctx), ctx); 
 }
 
 std::optional<Value *> CodegenVisitor::TvisitFieldAccessExpr(WPLParser::FieldAccessExprContext *ctx)
@@ -902,7 +844,72 @@ std::optional<Value *> CodegenVisitor::TvisitFieldAccessExpr(WPLParser::FieldAcc
         // If it is, correctly, an array type, then we can get the array's length (this is the only operation currently, so we can just do thus)
         Value *v = builder->getInt32(ar->getLength());
 
-        return v;
+        return v; //FIXME: GOING TO HAVE TO CHANGE THIS, WON'T WORK NOW WITH ITERATIONS!
+    }
+    else if(const TypeStruct * s = dynamic_cast<const TypeStruct *>(sym->type))
+    {
+        std::cout << "849 " << ctx->VARIABLE().at(0)->getText() << std::endl; 
+        std::optional<Value*> baseOpt = visitVariable(ctx->VARIABLE().at(0)->getText(), props->getBinding(ctx->VARIABLE().at(0)), ctx);
+        // std::optional<Value *> baseOpt = std::any_cast<std::optional<Value *>>(ctx->VARIABLE().at(0)->accept(this));
+
+        if(!baseOpt)
+        {
+            errorHandler.addCodegenError(ctx->getStart(), "FIXME");
+            return {};
+        }
+
+
+        std::string field = ctx->fields.at(0)->getText(); //FIXME: LOOP
+        std::optional<unsigned int> indexOpt = [s, field]() 
+        {
+            unsigned int i = 0; 
+            for(auto e : s->getElements())
+            {
+                if(e.first == field) //FIXME: DO BETTER CONSIDERING WE HAVE MAPS
+                {
+                    return   std::optional<unsigned int>{i}; 
+                }
+                i++; 
+            }
+            std::optional<unsigned int> ret = {};
+            return ret; 
+        }(); 
+
+        if(!indexOpt)
+        {
+            errorHandler.addCodegenError(ctx->getStart(), "Could not lookup " + field);
+            return {};
+        }
+
+        unsigned int index = indexOpt.value(); 
+
+        std::optional<Symbol *> fieldOpt = props->getBinding(ctx->VARIABLE().at(1));
+
+        if(!fieldOpt)
+        {
+            errorHandler.addCodegenError(ctx->getStart(), "Could not get binding for " + field);
+            return {};
+        }
+
+        //FIXME: I DON'T KNOW IF WE WILL BE ABLE TO KEEP ARR LEN WORKING
+        Value * baseValue = baseOpt.value(); 
+
+        Symbol * fieldSym = fieldOpt.value(); 
+        // std::cout << "893" << std::endl;
+        llvm::AllocaInst *v = builder->CreateAlloca(baseValue->getType());//(fieldSym->type->getLLVMType(module), 0, "");
+        builder->CreateStore(baseValue, v);
+        Value* valPtr = builder->CreateGEP(v, {Int32Zero, ConstantInt::get(Int32Ty, index, true)});
+
+        llvm::Type * ansType = fieldSym->type->getLLVMType(module);
+
+        Value *val = builder->CreateLoad(ansType, valPtr);
+        return val; 
+//         llvm::AllocaInst * ans = builder->CreateAlloca(ansType, 0, "");
+//         builder->CreateStore(val, ans);
+// //         // Value* ret = builder->CreateStore(v, valPtr);
+// // // std::cout << "899" << std::endl;
+//         return ans; 
+
     }
 
     // Throw an error as we currently only support array length.
@@ -1218,7 +1225,6 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
                 //FIXME: TRY PASSING VAR AS SUM IN ARGUMENT. IE, FUNCTION TAKES SUM AND WE JUST PROVIDE REGULAR TYPE!
                 // As this is a local var we can just create an allocation for it
                 llvm::AllocaInst *v = builder->CreateAlloca(ty, 0, var->getText());
-
                 varSymbol->val = v;
 
                 // Similarly, if we have an expression for the local var, we can store it. Otherwise, we can leave it undefined.
