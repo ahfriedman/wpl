@@ -10,8 +10,8 @@ define enum a {
     int, 
     boolean,
     str,
-    lambdaOp # FIXME: UNRECOGNIZED! -> Maybe not now?
-    # (str, int -> str + str -> str) # FIXME: CAUSES BAS ANYCAST 
+    lambdaOp, # FIXME: UNRECOGNIZED! -> Maybe not now?
+    (str, int -> str + str -> str) # FIXME: CAUSES BAS ANYCAST 
 }
 
 # FIXME: LET FOR () AROUND FN PARAMS IN Grammar?
@@ -32,6 +32,7 @@ int func program() {
     var t2 <- fn; # FIXME: CANNOT DO THIS! -> Fixed now? :D  STILL HAVE TO FIX NAME COLLISIONS ON FUNC DEF THO
 
     lambdaOp op <- fn; 
+    # VS (str, int -> str + str -> str). Now, we need a way to make the two equivalent....
     
     match op {
         str, int -> str fn => fn("Hello", 2);
@@ -45,13 +46,24 @@ int func program() {
         int i => printf("Integer: %u\n", i);
         boolean b => if b then { printf("Boolean: true\n"); } else { printf("Boolean: false\n"); }
         str s => printf("String: %s\n", s);
-        (str, int -> str + str -> str) s => {
+        (str, int -> str + str -> str) s => printf("Got regular sum!\n");
+        lambdaOp s => {
             match s {
                 str, int -> str fn => fn("Repeat 2 times!", 2);
                 str -> str fn => fn("Plain old print!");
             }
         }
     }
+
+    (str, int -> str + str -> str) op2 <- fn; 
+    (str, int -> str + str -> str) op3 <- op2; 
+
+
+    (str + int) AAAA1 <- 10; 
+    (str + int) AAAA2 <- AAAA1; 
+
+
+    op <- op2; 
 
     return 0; 
 }

@@ -1130,7 +1130,9 @@ const Type *SemanticVisitor::visitCtx(WPLParser::DefineEnumContext *ctx)
         return Types::UNDEFINED;
     }
 
-    const TypeSum *sum = new TypeSum(cases);
+    const TypeSum *sum = new TypeSum(cases, id);
+    // const TypeNamed * named = new TypeNamed(id, sum);
+
     Symbol *enumSym = new Symbol(id, sum, true, true); // FIXME: SCOPES!
 
     stmgr->addSymbol(enumSym);
@@ -1169,11 +1171,13 @@ const Type *SemanticVisitor::visitCtx(WPLParser::DefineStructContext *ctx)
     }
 
     std::cout << "1169" << std::endl; 
-    const TypeStruct *product = new TypeStruct(el);
+    const TypeStruct *product = new TypeStruct(el, id);
+    // const TypeNamed * named = new TypeNamed(id, new TypeStruct(el)); 
     Symbol *prodSym = new Symbol(id, product, true, true); // FIXME: SCOPES! (No, I don't remember what this means)
     stmgr->addSymbol(prodSym);
     bindings->bind(ctx, prodSym);
 
+    //FIXME: CANT USE NAMED FUNCTIONS LIKE THIS!!!!
     std::cout << "1175" << std::endl; 
 
     return Types::UNDEFINED;

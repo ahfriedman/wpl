@@ -1122,7 +1122,8 @@ std::optional<Value *> CodegenVisitor::TvisitAssignStatement(WPLParser::AssignSt
 
         if (index == 0)
         {
-            errorHandler.addCodegenError(ctx->getStart(), "Unable to find key for type in sum");
+            builder->CreateStore(stoVal, v);
+            // errorHandler.addCodegenError(ctx->getStart(), "Unable to find key for type in sum");
             return {}; // FIXME: DO BETTER!
         }
 
@@ -1266,7 +1267,8 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
 
                         if (index == 0)
                         {
-                            errorHandler.addCodegenError(ctx->getStart(), "Unable to find key for type in sum");
+                            builder->CreateStore(stoVal, v); //FIXME: VERIFY, THIS ALSO MEANS SOME OF OUR TESTS WONT WORK
+                            // errorHandler.addCodegenError(ctx->getStart(), "Unable to find key for type in sum");
                             return {}; // FIXME: DO BETTER!
                         }
 

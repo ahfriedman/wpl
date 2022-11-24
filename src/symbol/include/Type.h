@@ -168,6 +168,7 @@ struct TypeCompare
 {
     bool operator()(const Type *a, const Type *b) const
     {
+        // std::cout << "171 COMP " << a->toString() << " < " << b->toString() << " = " << (a->toString() < b->toString()) << std::endl;
         return a->toString() < b->toString();
     }
 };
@@ -465,6 +466,15 @@ public:
         mthis->defined = true;
     }
 
+
+    bool operator==(const TypeInvoke& other) const {
+        std::cout << "470 comp with " << other.toString();  
+        return true; 
+    }
+    bool operator<(TypeInvoke const & rhs) const {
+        std::cout << "475 comp with " << rhs.toString();  
+        return true; 
+    }
 protected:
     bool isSupertypeFor(const Type *other) const override
     {
@@ -656,13 +666,13 @@ private:
      *
      */
     // llvm::Type * llvmType;
-    std::optional<llvm::StringRef> name = {};
+    std::optional<std::string> name = {};
 
 public:
-    TypeSum(std::set<const Type *, TypeCompare> c)
+    TypeSum(std::set<const Type *, TypeCompare> c, std::optional<std::string> n = {})
     {
         cases = c;
-        // valueType = v;
+        name = n; 
     }
 
     // auto lexical_compare = [](int a, int b) { return to_string(a) < to_string(b); };
@@ -681,6 +691,8 @@ public:
      */
     std::string toString() const override
     {
+        if(name) return name.value(); 
+
         std::ostringstream description;
 
         description << "(";
@@ -770,7 +782,27 @@ protected:
 
         if (const TypeSum *oSum = dynamic_cast<const TypeSum *>(other))
         {
-            return this->cases == oSum->cases; // FIXME: VERIFY
+            std::cout << "775 " << this->toString() << " vs " << oSum->toString() << std::endl; 
+            if(this->cases.size() != oSum->cases.size()) return false; 
+            
+            for(const Type * t : this->cases)
+            {
+                bool found = false; 
+
+                for(const Type * y : oSum->cases)
+                {
+                    if(t->isSubtype(y)) {
+                        found = true; 
+                        break;
+                    }
+                }
+
+                if(!found) return false; 
+            }
+
+            return true; 
+            //FIXME: NESTED ENUMS - Types won't be noticed correctly.....
+            // return this->cases == oSum->cases; // FIXME: VERIFY
         }
         // FIXME: DOESNT WORK FOR FUNCTIONS, SUMS, ETC
         // return this->contains(other); // FIXME: ADDRESS SETTING SUM = SUM!
@@ -798,12 +830,15 @@ private:
      *
      */
     // llvm::Type * llvmType;
-    std::optional<llvm::StringRef> name = {}; // FIXME: DO BETTER--ESP FOR PRODUCTS!
+    // std::optional<llvm::StringRef> name = {}; // FIXME: DO BETTER--ESP FOR PRODUCTS!
+
+    std::optional<std::string> name; 
 
 public:
-    TypeStruct(LinkedMap<std::string, const Type*> e)
+    TypeStruct(LinkedMap<std::string, const Type*> e, std::optional<std::string> n = {})
     {
         elements = e;
+        name = n; 
     }
 
     // auto lexical_compare = [](int a, int b) { return to_string(a) < to_string(b); };
@@ -829,6 +864,8 @@ public:
      */
     std::string toString() const override
     {
+        if(name) return name.value();
+
         std::ostringstream description;
 
         description << "(";
@@ -893,5 +930,60 @@ protected:
         // // FIXME: DOESNT WORK FOR FUNCTIONS, SUMS, ETC
         // // return this->contains(other); // FIXME: ADDRESS SETTING SUM = SUM!
         // return false;
+    }
+};
+
+
+/*******************************************
+ *
+ * Defined Type
+ *
+ *******************************************/
+class TypeNamed : public Type
+{
+private:
+
+    std::string name; 
+    const Type * equivalency; 
+public:
+    TypeNamed(std::string n, const Type * e)
+    {
+        name = n; 
+        equivalency = e; 
+    }
+
+    /**
+     * @brief Returns the name of the string in form of <valueType name>[<array length>].
+     *
+     * @return std::string String name representation of this type.
+     */
+    std::string toString() const override
+    {
+        return name; 
+    }
+
+    /**
+     * @brief Gets the LLVM type for an array of the given valueType and length.
+     *
+     * @param C LLVM Context
+     * @return llvm::Type*
+     */
+    llvm::Type *getLLVMType(llvm::Module *M) const override
+    {
+        llvm::StructType *ty = llvm::StructType::getTypeByName(M->getContext(), toString());
+        ty = (llvm::StructType*) equivalency->getLLVMType(M);//llvm::StructType::create(M->getContext(), ref, toString()); // FIXME: USE STRING REF GET NAME!!!
+        ty->setName(toString()); //FIXME: VERIFY WORKS WHEN WE HAVE ANOTHER SUB TYPE OF THE SAME!
+
+        // mthis->llvmType = ty
+        return ty; // this->llvmType; //FIXME: WHAT SHOULD THE DEFAULT OF EMPTY ENUMS BE? OR I GUESS WE SHOULDNT ALLOW ANY EMPTYS
+    }
+
+protected:
+    bool isSupertypeFor(const Type *other) const override
+    {
+        // FIXME: How do we get types across files?
+        if(this == other) return true; 
+        return equivalency->isSupertype(other); //FIXME: VERIFY
+        // return this == other; // FIXME: DO BETTER
     }
 };
