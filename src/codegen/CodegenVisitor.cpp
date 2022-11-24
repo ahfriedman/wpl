@@ -357,18 +357,18 @@ std::optional<Value *> CodegenVisitor::TvisitInitProduct(WPLParser::InitProductC
             return {};
         }
 
-        std::optional<Symbol *> optSym = props->getBinding(e);
-        if (!optSym)
-        {
-            errorHandler.addCodegenError(ctx->getStart(), "Failed to get binding");
-            return {};
-        }
+        // std::optional<Symbol *> optSym = props->getBinding(e);
+        // if (!optSym)
+        // {
+        //     errorHandler.addCodegenError(ctx->getStart(), "Failed to get binding");
+        //     return {};
+        // }
 
-        Symbol *varSym = optSym.value();
+        // Symbol *varSym = optSym.value();
         Value *stoVal = valOpt.value();
 
         // FIXME: TRY PASSING GLOBAL ARG INTO FN
-        std::cout << "361" << varSym->type->toString() << std::endl;
+        // std::cout << "361" << varSym->type->toString() << std::endl;
 
         args.push_back(stoVal);
     }
@@ -972,7 +972,7 @@ std::optional<Value *> CodegenVisitor::TvisitFieldAccessExpr(WPLParser::FieldAcc
 
             unsigned int index = indexOpt.value();
 
-            std::optional<Symbol *> fieldOpt = props->getBinding(ctx->VARIABLE().at(1));
+            std::optional<Symbol *> fieldOpt = props->getBinding(ctx->VARIABLE().at(i));
 
             if (!fieldOpt)
             {
@@ -990,6 +990,7 @@ std::optional<Value *> CodegenVisitor::TvisitFieldAccessExpr(WPLParser::FieldAcc
 
             llvm::Type *ansType = fieldSym->type->getLLVMType(module);
 
+            std::cout << "993 " << field << " : " << fieldSym->toString() << " : " << fieldSym->type->toString() << std::endl; 
             ty = fieldSym->type;
             baseOpt = builder->CreateLoad(ansType, valPtr);
             // return val;

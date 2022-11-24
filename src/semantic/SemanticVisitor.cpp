@@ -575,8 +575,11 @@ const Type *SemanticVisitor::visitCtx(WPLParser::FieldAccessExprContext *ctx)
             // FIXME: DO BETTER BINDS!
             if (eleOpt)
             {
+                std::cout << "578" << s->toString() << " << " << fieldName  << " : " << eleOpt.value()->toString() << std::endl;  
                 ty = eleOpt.value();
-                bindings->bind(ctx->VARIABLE().at(i), new Symbol("", ty, false, false)); // FIXME: DO BETTER
+                Symbol * bnd = new Symbol("", ty, false, false); 
+                std::cout << "BND" << bnd->toString() << std::endl; 
+                bindings->bind(ctx->VARIABLE().at(i), bnd); // FIXME: DO BETTER
             }
             else
             {
