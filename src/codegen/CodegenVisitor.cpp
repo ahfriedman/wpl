@@ -276,6 +276,25 @@ std::optional<Value *> CodegenVisitor::TvisitInvocation(WPLParser::InvocationCon
 
     // Convert to an array ref, then find and execute the call.
     ArrayRef<Value *> ref = ArrayRef(args);
+    std::cout << "279" << std::endl; 
+    if (ctx->lam)
+    {
+        std::cout << "282" << std::endl; 
+        std::optional<Value *> callOpt = TvisitLambdaConstExpr(ctx->lam);
+        std::cout << "284" << std::endl; 
+        if (!callOpt)
+        {
+            std::cout << "287" << std::endl; 
+            errorHandler.addCodegenError(ctx->lam->getStart(), "Could not generate code for lambda");
+            return {};
+        }
+        std::cout << "291" << std::endl; 
+        llvm::Function *call = (llvm::Function *)callOpt.value();
+        std::cout << "293" << std::endl; 
+        Value *val = builder->CreateCall(call, ref); // Needs to be separate line because, C++
+        std::cout << "295" << std::endl; 
+        return val;
+    }
 
     llvm::Function *call = module->getFunction(ctx->VARIABLE()->getText());
 
@@ -917,7 +936,7 @@ std::optional<Value *> CodegenVisitor::TvisitFieldAccessExpr(WPLParser::FieldAcc
 
             llvm::Type *ansType = fieldSym->type->getLLVMType(module);
 
-            ty = fieldSym->type; 
+            ty = fieldSym->type;
             baseOpt = builder->CreateLoad(ansType, valPtr);
             // return val;
         }
@@ -1267,7 +1286,7 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
 
                         if (index == 0)
                         {
-                            builder->CreateStore(stoVal, v); //FIXME: VERIFY, THIS ALSO MEANS SOME OF OUR TESTS WONT WORK
+                            builder->CreateStore(stoVal, v); // FIXME: VERIFY, THIS ALSO MEANS SOME OF OUR TESTS WONT WORK
                             // errorHandler.addCodegenError(ctx->getStart(), "Unable to find key for type in sum");
                             return {}; // FIXME: DO BETTER!
                         }

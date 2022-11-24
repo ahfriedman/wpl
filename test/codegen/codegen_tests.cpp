@@ -1180,7 +1180,7 @@ TEST_CASE("programs/enum1 - Basic Enum 1", "[codegen][enum]")
 
     REQUIRE_FALSE(cv->hasErrors(0));
 
-    REQUIRE(llvmIrToSHA256(cv->getModule()) == "cd22af59b9ec9e571878478faa792ddf330fee1eaa78bb5d93546d8923c27152");
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "c8988c284c4ae357ff29cf4e222a3ea2a53e1ce6e641b2098355c4c0c57b5279");
 }
 
 TEST_CASE("programs/enum2 - Basic Enum 2", "[codegen][enum]")
@@ -1236,7 +1236,7 @@ TEST_CASE("programs/enumAssign - Same a  Enum 2 but with assignmens outside of d
 
     REQUIRE_FALSE(cv->hasErrors(0));
 
-    REQUIRE(llvmIrToSHA256(cv->getModule()) == "18058ade2e459433332e022c54f870e1961d0c1d3e0bf27f57c97cadd9bc7026");
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "5fb322db3a1c17135df54896d03d1312116a66754a7504660052950f6390e0df");
 }
 
 TEST_CASE("Out of order function", "[codegen][program]")

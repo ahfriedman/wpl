@@ -134,27 +134,37 @@ const Type *SemanticVisitor::visitCtx(WPLParser::CompilationUnitContext *ctx)
 
 const Type *SemanticVisitor::visitCtx(WPLParser::InvocationContext *ctx)
 {
-    /*
-     * Look up the symbol to make sure that it is defined
-     */
-    std::string name = ctx->VARIABLE()->getText();
-    std::optional<Symbol *> opt = stmgr->lookup(name);
-
-    if (!opt)
+    const Type *type = [this](WPLParser::InvocationContext *ctx) //Huh, interesting how we probably can't get the ctx from this
     {
-        errorHandler.addSemanticError(ctx->getStart(), "Cannot invoke undefined function: " + name);
-        return Types::UNDEFINED;
-    }
+        if (ctx->lam)
+            return visitCtx(ctx->lam);
 
-    /*
-     * Given that the symbol is defined, check that it is a FUNC/PROC (something that we can invoke)
-     */
-    Symbol *sym = opt.value();
+        /*
+         * Look up the symbol to make sure that it is defined
+         */
+        std::string name = ctx->VARIABLE()->getText();
+        std::optional<Symbol *> opt = stmgr->lookup(name);
 
-    // Bind the symbol
-    bindings->bind(ctx, sym);
+        if (!opt)
+        {
+            errorHandler.addSemanticError(ctx->getStart(), "Cannot invoke undefined function: " + name);
+            return Types::UNDEFINED;
+        }
 
-    if (const TypeInvoke *invokeable = dynamic_cast<const TypeInvoke *>(sym->type))
+        /*
+         * Given that the symbol is defined, check that it is a FUNC/PROC (something that we can invoke)
+         */
+        Symbol *sym = opt.value();
+
+        // Bind the symbol
+        bindings->bind(ctx, sym);
+
+        return sym->type; 
+    }(ctx);
+
+    std::string name = (ctx->lam) ? "lambda " : ctx->VARIABLE()->getText();
+
+    if (const TypeInvoke *invokeable = dynamic_cast<const TypeInvoke *>(type))
     {
         /*
          * The symbol is something we can invoke, so check that we provide it with valid parameters
@@ -224,13 +234,13 @@ const Type *SemanticVisitor::visitCtx(WPLParser::InvocationContext *ctx)
     }
 
     // Symbol was not an invokeable type, so report an error & return UNDEFINED.
-    errorHandler.addSemanticError(ctx->getStart(), "Can only invoke PROC and FUNC, not " + name + " : " + sym->type->toString());
+    errorHandler.addSemanticError(ctx->getStart(), "Can only invoke PROC and FUNC, not " + name + " : " + type->toString());
     return Types::UNDEFINED;
 }
 
 const Type *SemanticVisitor::visitCtx(WPLParser::InitProductContext *ctx)
 {
-    std::cout << "233" << std::endl; 
+    std::cout << "233" << std::endl;
     // FIXME: NOT CONVINCED THIS WILL WORK AS MAP MAY HAVE DIFF ORDER THAN LOCAL!
     std::string name = ctx->v->getText();
     std::optional<Symbol *> opt = stmgr->lookup(name);
@@ -248,9 +258,9 @@ const Type *SemanticVisitor::visitCtx(WPLParser::InitProductContext *ctx)
 
     if (const TypeStruct *product = dynamic_cast<const TypeStruct *>(sym->type))
     {
-        std::cout << "251" << std::endl; 
+        std::cout << "251" << std::endl;
         std::vector<std::pair<std::string, const Type *>> elements = product->getElements();
-        std::cout << "253" << std::endl; 
+        std::cout << "253" << std::endl;
         if (elements.size() != ctx->exprs.size())
         {
             std::ostringstream errorMsg;
@@ -258,7 +268,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::InitProductContext *ctx)
             errorHandler.addSemanticError(ctx->getStart(), errorMsg.str());
             return Types::UNDEFINED; // TODO: Could change this to the return type to catch more errors?
         }
-        std::cout << "259" << std::endl; 
+        std::cout << "259" << std::endl;
         {
             unsigned int i = 0;
 
@@ -560,11 +570,11 @@ const Type *SemanticVisitor::visitCtx(WPLParser::FieldAccessExprContext *ctx)
         if (const TypeStruct *s = dynamic_cast<const TypeStruct *>(ty))
         {
             std::optional<const Type *> eleOpt = s->get(fieldName);
-            //FIXME: DO BETTER BINDS!
+            // FIXME: DO BETTER BINDS!
             if (eleOpt)
             {
                 ty = eleOpt.value();
-                bindings->bind(ctx->VARIABLE().at(i), new Symbol("", ty, false, false)); //FIXME: DO BETTER
+                bindings->bind(ctx->VARIABLE().at(i), new Symbol("", ty, false, false)); // FIXME: DO BETTER
             }
             else
             {
@@ -574,7 +584,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::FieldAccessExprContext *ctx)
         }
         else if (i + 1 == ctx->fields.size() && dynamic_cast<const TypeArray *>(ty) && ctx->fields.at(i)->getText() == "length")
         {
-            bindings->bind(ctx->VARIABLE().at(i), new Symbol("", Types::INT, false, false)); //FIXME: DO BETTER
+            bindings->bind(ctx->VARIABLE().at(i), new Symbol("", Types::INT, false, false)); // FIXME: DO BETTER
             return Types::INT;
         }
         else
@@ -791,7 +801,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::AssignStatementContext *ctx)
 
 const Type *SemanticVisitor::visitCtx(WPLParser::VarDeclStatementContext *ctx)
 {
-    std::cout << "792" << std::endl; 
+    std::cout << "792" << std::endl;
     for (auto e : ctx->assignments)
     {
         // Needs to happen in case we have vars
@@ -1151,34 +1161,34 @@ const Type *SemanticVisitor::visitCtx(WPLParser::DefineStructContext *ctx)
         return Types::UNDEFINED;
     }
 
-    std::cout << "1150" << std::endl; 
+    std::cout << "1150" << std::endl;
     LinkedMap<std::string, const Type *> el;
 
     for (WPLParser::StructCaseContext *caseCtx : ctx->cases)
     {
         std::string caseName = caseCtx->name->getText();
-        std::cout << "1156" << std::endl; 
+        std::cout << "1156" << std::endl;
         if (el.lookup(caseName))
         {
             errorHandler.addSemanticError(ctx->getStart(), "Unsupported redeclaration of " + caseName); // FIXME: DO BETTER
             return Types::UNDEFINED;
         }
-        std::cout << "1162" << std::endl; 
+        std::cout << "1162" << std::endl;
         const Type *caseTy = std::any_cast<const Type *>(caseCtx->ty->accept(this)); // FIXME: VERIFY SAFE
 
         el.insert({caseName, caseTy});
-        std::cout << "1166" << std::endl; 
+        std::cout << "1166" << std::endl;
     }
 
-    std::cout << "1169" << std::endl; 
+    std::cout << "1169" << std::endl;
     const TypeStruct *product = new TypeStruct(el, id);
-    // const TypeNamed * named = new TypeNamed(id, new TypeStruct(el)); 
+    // const TypeNamed * named = new TypeNamed(id, new TypeStruct(el));
     Symbol *prodSym = new Symbol(id, product, true, true); // FIXME: SCOPES! (No, I don't remember what this means)
     stmgr->addSymbol(prodSym);
     bindings->bind(ctx, prodSym);
 
-    //FIXME: CANT USE NAMED FUNCTIONS LIKE THIS!!!!
-    std::cout << "1175" << std::endl; 
+    // FIXME: CANT USE NAMED FUNCTIONS LIKE THIS!!!!
+    std::cout << "1175" << std::endl;
 
     return Types::UNDEFINED;
 
