@@ -7,12 +7,15 @@ grammar WPL;
 // Parser rules
 compilationUnit   :  (stmts+=statement | extens+=externStatement | defs+=defineType)* EOF ; 
 
+structCase        :  (ty=type name=VARIABLE) ';' ;
+
 defineType        : 'define' 'enum' name=VARIABLE LSQB cases+=type (',' cases+=type)+ '}' # DefineEnum
+                  | 'define' 'struct' name=VARIABLE LSQB (cases+=structCase)*  RSQB       # DefineStruct
                   ; 
 
 externStatement : EXTERN (ty=type FUNC | PROC) name=VARIABLE LPAR ((paramList=parameterList variadic=VariadicParam?)? | ELLIPSIS) RPAR ';';
 
-invocation          :  var=VARIABLE LPAR (args+=expression (',' args+=expression)* )? RPAR ;
+invocation          :  (var=VARIABLE | lam=lambdaConstExpr) LPAR (args+=expression (',' args+=expression)* )? RPAR ;
 
 //Helps allow us to use VARIABLE or arrayAccess and not other expressions (such as for assignments)
 arrayAccess         : var=VARIABLE '[' index=expression ']'; 
@@ -39,8 +42,8 @@ arrayOrVar          : var=VARIABLE | array=arrayAccess  ;
  *              the use of variables instead of expressions for array access
  *      11-14. Typical boolean and variable constants. 
  */
-expression          : LPAR ex=expression RPAR                         # ParenExpr
-                    | ex=VARIABLE '.' field=VARIABLE                # FieldAccessExpr 
+expression          : LPAR ex=expression RPAR                       # ParenExpr
+                    | fields+=VARIABLE ('.' fields+=VARIABLE)+           # FieldAccessExpr 
                     | <assoc=right> op=(MINUS | NOT) ex=expression  # UnaryExpr 
                     | left=expression op=(MULTIPLY | DIVIDE) right=expression # BinaryArithExpr
                     | left=expression op=(PLUS | MINUS) right=expression      # BinaryArithExpr
@@ -49,13 +52,16 @@ expression          : LPAR ex=expression RPAR                         # ParenExp
                     | exprs+=expression (AND exprs+=expression)+     # LogAndExpr 
                     | exprs+=expression (OR  exprs+=expression)+     # LogOrExpr
                     | call=invocation                               # CallExpr
+                    | v=VARIABLE '::init' '(' (exprs+=expression (',' exprs+=expression)*)? ')' # InitProduct
                     | arrayAccess  # ArrayAccessExpr
                     | booleanConst # BConstExpr 
                     | v=VARIABLE   # VariableExpr
                     | i=INTEGER    # IConstExpr
                     | s=STRING     # SConstExpr 
-                    | LPAR parameterList RPAR ':' ret=type block  # LambdaConstExpr
+                    | lambdaConstExpr # LambdaExpr
                     ;
+
+lambdaConstExpr     : LPAR parameterList RPAR ':' ret=type block ;
 
 /* 
  * Keeping block as its own rule so that way we can re-use it as

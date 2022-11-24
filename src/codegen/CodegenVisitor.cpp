@@ -13,7 +13,7 @@ std::optional<Value *> CodegenVisitor::TvisitCompilationUnit(WPLParser::Compilat
         e->accept(this);
     }
 
-    // Pre-declare all functions //FIXME: VERIFY
+    // Pre-declare all functions
     for (auto e : ctx->stmts)
     {
         if (WPLParser::FuncDefContext *fnCtx = dynamic_cast<WPLParser::FuncDefContext *>(e))
@@ -109,7 +109,7 @@ std::optional<Value *> CodegenVisitor::TvisitDefineEnum(WPLParser::DefineEnumCon
 
 std::optional<Value *> CodegenVisitor::TvisitMatchStatement(WPLParser::MatchStatementContext *ctx)
 {
-    std::optional<Symbol *> symOpt = props->getBinding(ctx->check); // FIXME: THIS DOES NOTHING
+    std::optional<Symbol *> symOpt = props->getBinding(ctx->check);
     if (!symOpt)
     {
         errorHandler.addCodegenError(ctx->getStart(), "Could not locate symbol for case");
@@ -136,8 +136,6 @@ std::optional<Value *> CodegenVisitor::TvisitMatchStatement(WPLParser::MatchStat
             Value *sumVal = optVal.value();
             llvm::AllocaInst *SumPtr = builder->CreateAlloca(sumVal->getType());
             builder->CreateStore(sumVal, SumPtr);
-
-            // Value *corrPtr = builder->CreateBitCast(sumVal, sumVal->getType()->getPointerTo()); // FIXME: DO BETTER
 
             Value *tagPtr = builder->CreateGEP(SumPtr, {Int32Zero, Int32Zero});
 
@@ -276,6 +274,18 @@ std::optional<Value *> CodegenVisitor::TvisitInvocation(WPLParser::InvocationCon
 
     // Convert to an array ref, then find and execute the call.
     ArrayRef<Value *> ref = ArrayRef(args);
+    if (ctx->lam)
+    {
+        std::optional<Value *> callOpt = TvisitLambdaConstExpr(ctx->lam);
+        if (!callOpt)
+        {
+            errorHandler.addCodegenError(ctx->lam->getStart(), "Could not generate code for lambda");
+            return {};
+        }
+        llvm::Function *call = (llvm::Function *)callOpt.value();
+        Value *val = builder->CreateCall(call, ref); // Needs to be separate line because, C++
+        return val;
+    }
 
     llvm::Function *call = module->getFunction(ctx->VARIABLE()->getText());
 
@@ -323,6 +333,96 @@ std::optional<Value *> CodegenVisitor::TvisitInvocation(WPLParser::InvocationCon
 
     Value *val = builder->CreateCall(call, ref); // Needs to be separate line because, C++
     return val;
+}
+
+std::optional<Value *> CodegenVisitor::TvisitInitProduct(WPLParser::InitProductContext *ctx)
+{
+    std::vector<Value *> args;
+
+    for (auto e : ctx->exprs)
+    {
+        std::optional<Value *> valOpt = std::any_cast<std::optional<Value *>>(e->accept(this));
+        if (!valOpt)
+        {
+            errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code");
+            return {};
+        }
+
+        Value *stoVal = valOpt.value();
+
+        // FIXME: TRY PASSING GLOBAL ARG INTO FN
+
+        args.push_back(stoVal);
+    }
+
+    std::optional<Symbol *> varSymOpt = props->getBinding(ctx);
+    if (!varSymOpt)
+    {
+        // FIXME: DO BETTER
+        errorHandler.addCodegenError(ctx->getStart(), "Incorrectly processed variable in assignment: " + ctx->getText());
+        return {};
+    }
+
+    Symbol *varSym = varSymOpt.value();
+
+    if (const TypeStruct *product = dynamic_cast<const TypeStruct *>(varSym->type))
+    {
+        llvm::Type *ty = varSym->type->getLLVMType(module);
+        llvm::AllocaInst *v = builder->CreateAlloca(ty, 0, ""); // FIXME: VERIFY
+        {
+            unsigned i = 0;
+            std::vector<std::pair<std::string, const Type *>> elements = product->getElements();
+
+            for (Value *a : args)
+            {
+                if (const TypeSum *sum = dynamic_cast<const TypeSum *>(elements.at(i).second))
+                {
+                    // FIXME: METHODIZE!!
+                    unsigned int index = [sum, a](llvm::Module *M)
+                    {
+                        unsigned i = 1;
+                        auto toFind = a->getType();
+                        for (auto e : sum->getCases())
+                        {
+                            if (e->getLLVMType(M) == toFind)
+                            {
+                                return i;
+                            }
+                            i++;
+                        }
+
+                        return (unsigned int)0;
+                    }(module);
+                    
+                    if (index != 0)
+                    {
+                        llvm::Type * sumTy = sum->getLLVMType(module);
+                        llvm::AllocaInst *alloc = builder->CreateAlloca(sumTy, 0, "XK");
+                        Value *tagPtr = builder->CreateGEP(alloc, {Int32Zero, Int32Zero});
+                        builder->CreateStore(ConstantInt::get(Int32Ty, index, true), tagPtr);
+                        Value *valuePtr = builder->CreateGEP(alloc, {Int32Zero, Int32One});
+                        Value *corrected = builder->CreateBitCast(valuePtr, a->getType()->getPointerTo()); // FIXME: DO BETTER
+                        builder->CreateStore(a, corrected);
+                        a = builder->CreateLoad(sumTy, alloc);
+                        // a = alloc;
+                    }
+                }
+
+                // Value*  valIndex =
+                Value *ptr = builder->CreateGEP(v, {Int32Zero, ConstantInt::get(Int32Ty, i, true)});
+                // Value * corrected = builder->CreateBitCast(ptr, a->getType()->getPointerTo());
+                builder->CreateStore(a, ptr);
+
+                i++;
+            }
+        }
+
+        Value *loaded = builder->CreateLoad(v->getType()->getPointerElementType(), v);
+        return loaded;
+    }
+
+    errorHandler.addCodegenError(ctx->getStart(), "Failed to gen init"); // FIXME: DO BETTER
+    return {};
 }
 
 std::optional<Value *> CodegenVisitor::TvisitArrayAccess(WPLParser::ArrayAccessContext *ctx)
@@ -568,25 +668,24 @@ std::optional<Value *> CodegenVisitor::TvisitEqExpr(WPLParser::EqExprContext *ct
  */
 std::optional<Value *> CodegenVisitor::TvisitLogAndExpr(WPLParser::LogAndExprContext *ctx)
 {
-     //FIXME: DO BETTER W/ AST 
-    std::vector<WPLParser::ExpressionContext *> toVisit = ctx->exprs; 
+    // FIXME: DO BETTER W/ AST
+    std::vector<WPLParser::ExpressionContext *> toVisit = ctx->exprs;
     std::vector<WPLParser::ExpressionContext *> toGen;
 
-    while(toVisit.size() > 0)
+    while (toVisit.size() > 0)
     {
-        WPLParser::ExpressionContext* curr = toVisit.at(0); 
+        WPLParser::ExpressionContext *curr = toVisit.at(0);
         toVisit.erase(toVisit.begin());
 
-        if(WPLParser::LogAndExprContext * orCtx = dynamic_cast<WPLParser::LogAndExprContext*>(curr))
+        if (WPLParser::LogAndExprContext *orCtx = dynamic_cast<WPLParser::LogAndExprContext *>(curr))
         {
             toVisit.insert(toVisit.end(), orCtx->exprs.begin(), orCtx->exprs.end());
         }
-        else 
+        else
         {
-            toGen.push_back(curr); 
+            toGen.push_back(curr);
         }
     }
-
 
     // Create the basic block for our conditions
     BasicBlock *current = builder->GetInsertBlock();
@@ -640,7 +739,7 @@ std::optional<Value *> CodegenVisitor::TvisitLogAndExpr(WPLParser::LogAndExprCon
         phi->addIncoming(lastValue, falseBlk);
     }
 
-    builder->CreateBr(mergeBlk); 
+    builder->CreateBr(mergeBlk);
     // falseBlk = builder->GetInsertBlock();
 
     /*
@@ -663,25 +762,24 @@ std::optional<Value *> CodegenVisitor::TvisitLogAndExpr(WPLParser::LogAndExprCon
  */
 std::optional<Value *> CodegenVisitor::TvisitLogOrExpr(WPLParser::LogOrExprContext *ctx)
 {
-    //FIXME: DO BETTER W/ AST 
-    std::vector<WPLParser::ExpressionContext *> toVisit = ctx->exprs; 
+    // FIXME: DO BETTER W/ AST
+    std::vector<WPLParser::ExpressionContext *> toVisit = ctx->exprs;
     std::vector<WPLParser::ExpressionContext *> toGen;
 
-    while(toVisit.size() > 0)
+    while (toVisit.size() > 0)
     {
-        WPLParser::ExpressionContext* curr = toVisit.at(0); 
+        WPLParser::ExpressionContext *curr = toVisit.at(0);
         toVisit.erase(toVisit.begin());
 
-        if(WPLParser::LogOrExprContext * orCtx = dynamic_cast<WPLParser::LogOrExprContext*>(curr))
+        if (WPLParser::LogOrExprContext *orCtx = dynamic_cast<WPLParser::LogOrExprContext *>(curr))
         {
             toVisit.insert(toVisit.end(), orCtx->exprs.begin(), orCtx->exprs.end());
         }
-        else 
+        else
         {
-            toGen.push_back(curr); 
+            toGen.push_back(curr);
         }
     }
-
 
     // Create the basic block for our conditions
     BasicBlock *current = builder->GetInsertBlock();
@@ -735,8 +833,7 @@ std::optional<Value *> CodegenVisitor::TvisitLogOrExpr(WPLParser::LogOrExprConte
         phi->addIncoming(lastValue, falseBlk);
     }
 
-    builder->CreateBr(mergeBlk); 
-    
+    builder->CreateBr(mergeBlk);
 
     /*
      * LHS True - Can skip checking RHS and return true
@@ -755,68 +852,7 @@ std::optional<Value *> CodegenVisitor::TvisitVariableExpr(WPLParser::VariableExp
 {
     // Get the variable name and look it up
     std::string id = ctx->v->getText();
-    std::optional<Symbol *> symOpt = props->getBinding(ctx);
-
-    // If the symbol could not be found, raise an error
-    if (!symOpt)
-    {
-        errorHandler.addCodegenError(ctx->getStart(), "Undefined variable access: " + id);
-        return {};
-    }
-
-    Symbol *sym = symOpt.value();
-
-    // Try getting the type for the symbol, raising an error if it could not be determined
-    llvm::Type *type = sym->type->getLLVMType(module);
-    if (!type)
-    {
-        errorHandler.addCodegenError(ctx->getStart(), "Unable to find type for variable: " + ctx->getText());
-        return {}; // FIXME: IS THIS USED? SOMETIMES MAYBE?
-    }
-
-    // Make sure the variable has an allocation (or that we can find it due to it being a global var)
-    if (!sym->val)
-    {
-        // If the symbol is a global var
-        if (dynamic_cast<const TypeInvoke *>(sym->type))
-        {
-            // FIXME: METHODIZE!!!
-            Function *fn = module->getFunction(id);
-
-            // FIXME: COPY IN STUB GEN!
-            // Value *val = builder->CreateLoad(fn);
-            // return val;
-            return fn;
-        }
-        else if (sym->isGlobal)
-        {
-            // Lookup the global var for the symbol
-            llvm::GlobalVariable *glob = module->getNamedGlobal(sym->identifier);
-
-            // Check that we found the variable. If not, throw an error.
-            if (!glob)
-            {
-                errorHandler.addCodegenError(ctx->getStart(), "Unable to find global variable: " + id);
-                return {};
-            }
-
-            // Create and return a load for the global var
-            Value *val = builder->CreateLoad(glob);
-            return val;
-        }
-
-        errorHandler.addCodegenError(ctx->getStart(), "Unable to find allocation for variable: " + ctx->getText());
-        return {};
-    }
-
-    // if (dynamic_cast<const TypeSum *>(sym->type)) // FIXME: VERIFY
-    // {
-    //     return sym->val.value();
-    // }
-
-    // Otherwise, we are a local variable with an allocation and, thus, can simply load it.
-    Value *v = builder->CreateLoad(type, sym->val.value(), id);
-    return v;
+    return this->visitVariable(id, props->getBinding(ctx), ctx);
 }
 
 std::optional<Value *> CodegenVisitor::TvisitFieldAccessExpr(WPLParser::FieldAccessExprContext *ctx)
@@ -840,18 +876,89 @@ std::optional<Value *> CodegenVisitor::TvisitFieldAccessExpr(WPLParser::FieldAcc
         return {};
     }
 
-    // Check that the type is an array type
-    if (const TypeArray *ar = dynamic_cast<const TypeArray *>(sym->type))
+    if (ctx->fields.at(ctx->fields.size() - 1)->getText() == "length")
     {
-        // If it is, correctly, an array type, then we can get the array's length (this is the only operation currently, so we can just do thus)
-        Value *v = builder->getInt32(ar->getLength());
+        std::optional<Symbol *> modOpt = props->getBinding(ctx->VARIABLE().at(ctx->VARIABLE().size() - 2));
 
-        return v;
+        if (modOpt)
+        {
+            if (const TypeArray *ar = dynamic_cast<const TypeArray *>(modOpt.value()->type))
+            {
+                // FIXME: VERIFY THIS STILL WORKS WHEN NESTED!
+                // If it is, correctly, an array type, then we can get the array's length (this is the only operation currently, so we can just do thus)
+                Value *v = builder->getInt32(ar->getLength());
+
+                return v;
+            }
+        }
     }
 
-    // Throw an error as we currently only support array length.
-    errorHandler.addCodegenError(ctx->getStart(), "Given non-array type in TvisitFieldAccessExpr!");
-    return {};
+    const Type *ty = sym->type;
+    std::optional<Value *> baseOpt = visitVariable(ctx->VARIABLE().at(0)->getText(), props->getBinding(ctx->VARIABLE().at(0)), ctx);
+    // std::optional<Value *> val = {};
+
+    for (unsigned int i = 1; i < ctx->fields.size(); i++)
+    {
+        if (const TypeStruct *s = dynamic_cast<const TypeStruct *>(ty))
+        {
+            if (!baseOpt)
+            {
+                errorHandler.addCodegenError(ctx->getStart(), "FIXME");
+                return {};
+            }
+
+            std::string field = ctx->fields.at(i)->getText();
+            std::optional<unsigned int> indexOpt = [s, field]()
+            {
+                unsigned int i = 0;
+                for (auto e : s->getElements())
+                {
+                    if (e.first == field) // FIXME: DO BETTER CONSIDERING WE HAVE MAPS
+                    {
+                        return std::optional<unsigned int>{i};
+                    }
+                    i++;
+                }
+                std::optional<unsigned int> ret = {};
+                return ret;
+            }();
+
+            if (!indexOpt)
+            {
+                errorHandler.addCodegenError(ctx->getStart(), "Could not lookup " + field);
+                return {};
+            }
+
+            unsigned int index = indexOpt.value();
+
+            std::optional<Symbol *> fieldOpt = props->getBinding(ctx->VARIABLE().at(i));
+
+            if (!fieldOpt)
+            {
+                errorHandler.addCodegenError(ctx->getStart(), "Could not get binding for " + field);
+                return {};
+            }
+
+            Value *baseValue = baseOpt.value();
+
+            Symbol *fieldSym = fieldOpt.value();
+            llvm::AllocaInst *v = builder->CreateAlloca(baseValue->getType()); //(fieldSym->type->getLLVMType(module), 0, "");
+            builder->CreateStore(baseValue, v);
+            Value *valPtr = builder->CreateGEP(v, {Int32Zero, ConstantInt::get(Int32Ty, index, true)});
+
+            llvm::Type *ansType = fieldSym->type->getLLVMType(module);
+
+            ty = fieldSym->type;
+            baseOpt = builder->CreateLoad(ansType, valPtr);
+            // return val;
+        }
+    }
+
+    return baseOpt.value(); // FIXME: DO BETTER, VERIFY CORRECT
+
+    // // Throw an error as we currently only support array length.
+    // errorHandler.addCodegenError(ctx->getStart(), "Given non-array type in TvisitFieldAccessExpr!");
+    // return {};
 }
 
 std::optional<Value *> CodegenVisitor::TvisitParenExpr(WPLParser::ParenExprContext *ctx)
@@ -1046,7 +1153,9 @@ std::optional<Value *> CodegenVisitor::TvisitAssignStatement(WPLParser::AssignSt
 
         if (index == 0)
         {
-            errorHandler.addCodegenError(ctx->getStart(), "Unable to find key for type in sum");
+            Value *corrected = builder->CreateBitCast(stoVal, varSym->type->getLLVMType(module));
+            builder->CreateStore(corrected, v);
+            // errorHandler.addCodegenError(ctx->getStart(), "Unable to find key for type in sum");
             return {}; // FIXME: DO BETTER!
         }
 
@@ -1113,16 +1222,10 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
 
             Symbol *varSymbol = varSymbolOpt.value();
 
-            // FIXME: test for varSymbol->type?
             //  Get the type of the symbol
             llvm::Type *ty = varSymbol->type->getLLVMType(module);
 
             ty = varSymbol->type->getLLVMType(module);
-
-            // if (dynamic_cast<const TypeInvoke *>(varSymbol->type))
-            // {
-            //     ty = ty->getPointerTo();
-            // }
 
             // Branch depending on if the var is global or not
             if (varSymbol->isGlobal)
@@ -1159,9 +1262,9 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
             }
             else
             {
-                // As this is a local var we can just create an allocation for it
+                // FIXME: TRY PASSING VAR AS SUM IN ARGUMENT. IE, FUNCTION TAKES SUM AND WE JUST PROVIDE REGULAR TYPE!
+                //  As this is a local var we can just create an allocation for it
                 llvm::AllocaInst *v = builder->CreateAlloca(ty, 0, var->getText());
-
                 varSymbol->val = v;
 
                 // Similarly, if we have an expression for the local var, we can store it. Otherwise, we can leave it undefined.
@@ -1190,10 +1293,12 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
 
                         if (index == 0)
                         {
-                            errorHandler.addCodegenError(ctx->getStart(), "Unable to find key for type in sum");
+                            Value *corrected = builder->CreateBitCast(stoVal, varSymbol->type->getLLVMType(module));
+                            builder->CreateStore(corrected, v);
                             return {}; // FIXME: DO BETTER!
                         }
 
+                        // llvm::AllocaInst *inner = builder->CreateAlloca(ty, 0, var->getText());
                         // FIXME: SUMS CANT BE GENERATED AT GLOBAL LEVEL?
                         Value *tagPtr = builder->CreateGEP(v, {Int32Zero, Int32Zero});
 
@@ -1202,6 +1307,9 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
 
                         Value *corrected = builder->CreateBitCast(valuePtr, stoVal->getType()->getPointerTo()); // FIXME: DO BETTER
                         builder->CreateStore(stoVal, corrected);
+
+                        // Value *loaded = builder->CreateLoad(inner->getType()->getPointerElementType(), inner);
+                        // builder->CreateStore(loaded, v);
                     }
                     else
                     {
@@ -1493,7 +1601,6 @@ std::optional<Value *> CodegenVisitor::TvisitBlock(WPLParser::BlockContext *ctx)
 std::optional<Value *> CodegenVisitor::TvisitLambdaConstExpr(WPLParser::LambdaConstExprContext *ctx)
 {
     // FIXME: SEE ALL ISSUES W GENERAL INVOKE VISIT
-    // FIXME: SET OTHER LAMBDAS TO BE INTERNAL LINKAGE!!!
     // FIXME: TEST MULTIPLE LAMBDAS W/ SAME NAME!!
     // Get the current insertion point
     BasicBlock *ins = builder->GetInsertBlock();
@@ -1521,7 +1628,7 @@ std::optional<Value *> CodegenVisitor::TvisitLambdaConstExpr(WPLParser::LambdaCo
 
     if (llvm::FunctionType *fnType = static_cast<llvm::FunctionType *>(genericType))
     {
-        Function *fn = Function::Create(fnType, GlobalValue::PrivateLinkage, "LAM", module); // FIXME: VERIFY
+        Function *fn = Function::Create(fnType, GlobalValue::PrivateLinkage, "LAM", module);
         WPLParser::ParameterListContext *paramList = ctx->parameterList();
 
         // Create basic block

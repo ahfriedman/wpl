@@ -10,7 +10,8 @@ define enum a {
     int, 
     boolean,
     str,
-    (str, int -> str + str -> str) 
+    #(str, int -> str + str -> str) 
+    lambdaOp
 }
 
 # FIXME: TRY RETURNING FUNCTIONS/LAMBDAS AND ENUMS!
@@ -29,7 +30,7 @@ int func program() {
 
     t2 <- fn; 
 
-    lambdaOp op;
+    lambdaOp op; # FIXME: I FI CHANGE t2, WILL fn CHANGE?
     op <- fn; 
     
     match op {
@@ -45,7 +46,7 @@ int func program() {
         int i => printf("Integer: %u\n", i);
         boolean b => if b then { printf("Boolean: true\n"); } else { printf("Boolean: false\n"); }
         str s => printf("String: %s\n", s);
-        (str, int -> str + str -> str) s => {
+        lambdaOp s => {
             match s {
                 str, int -> str fn => fn("Repeat 2 times!", 2);
                 str -> str fn => fn("Plain old print!");

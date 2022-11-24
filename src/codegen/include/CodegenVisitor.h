@@ -125,11 +125,11 @@ public:
     std::optional<Value *> TvisitTypeOrVar(WPLParser::TypeOrVarContext *ctx);
     std::optional<Value *> TvisitType(WPLParser::TypeContext *ctx);
     std::optional<Value *> TvisitBooleanConst(WPLParser::BooleanConstContext *ctx);
-    
-    std::optional<Value *> TvisitLambdaConstExpr(WPLParser::LambdaConstExprContext *ctx);
-    std::optional<Value *> TvisitDefineEnum(WPLParser::DefineEnumContext * ctx);
-    std::optional<Value *> TvisitMatchStatement(WPLParser::MatchStatementContext * ctx);
 
+    std::optional<Value *> TvisitLambdaConstExpr(WPLParser::LambdaConstExprContext *ctx);
+    std::optional<Value *> TvisitDefineEnum(WPLParser::DefineEnumContext *ctx);
+    std::optional<Value *> TvisitMatchStatement(WPLParser::MatchStatementContext *ctx);
+    std::optional<Value *> TvisitInitProduct(WPLParser::InitProductContext *ctx);
 
     /******************************************************************
      * Standard visitor methods all defined to use the typed versions
@@ -174,11 +174,12 @@ public:
     // std::any visitType(WPLParser::TypeContext *ctx) override { return TvisitType(ctx); };
     std::any visitBooleanConst(WPLParser::BooleanConstContext *ctx) override { return TvisitBooleanConst(ctx); };
 
-    //FIXME: Add Base and LamdaTypes?
+    // FIXME: Add Base and LamdaTypes?
 
     std::any visitLambdaConstExpr(WPLParser::LambdaConstExprContext *ctx) override { return TvisitLambdaConstExpr(ctx); }
-    std::any visitDefineEnum(WPLParser::DefineEnumContext * ctx) override { return TvisitDefineEnum(ctx); }
-    std::any visitMatchStatement(WPLParser::MatchStatementContext * ctx) override { return TvisitMatchStatement(ctx); }
+    std::any visitDefineEnum(WPLParser::DefineEnumContext *ctx) override { return TvisitDefineEnum(ctx); }
+    std::any visitMatchStatement(WPLParser::MatchStatementContext *ctx) override { return TvisitMatchStatement(ctx); }
+    std::any visitInitProduct(WPLParser::InitProductContext *ctx) override { return TvisitInitProduct(ctx); }
 
     bool hasErrors(int flags) { return errorHandler.hasErrors(flags); }
     std::string getErrors() { return errorHandler.errorList(); }
@@ -194,9 +195,9 @@ public:
      * @param sum The FuncDefContext to build the function from
      * @return std::optional<Value *> Empty as this shouldn't be seen as a value
      */
-    std::optional<Value *> visitInvokeable(WPLParser::FuncDefContext * ctx)
+    std::optional<Value *> visitInvokeable(WPLParser::FuncDefContext *ctx)
     {
-        BasicBlock * ins = builder->GetInsertBlock();  //FIXME: DO BETTER PROCESS DISCOVERY ALSO //FIXME: HAVE TO FIX SCOPING ISSUES
+        BasicBlock *ins = builder->GetInsertBlock(); // FIXME: DO BETTER PROCESS DISCOVERY ALSO
 
         // Lookup the symbol from the context
         std::optional<Symbol *> symOpt = props->getBinding(ctx);
@@ -224,13 +225,13 @@ public:
 
         if (llvm::FunctionType *fnType = static_cast<llvm::FunctionType *>(genericType))
         {
-            Function *fn = module->getFunction(funcId); // Lookup the function first //FIXME: DOESNT WORK FOR LOCAL FNS!
+            Function *fn = module->getFunction(funcId); // Lookup the function first
             /*
              * If we couldn't find the function, that means it wasn't pre-declared, and we need to create it here and now.
              */
             if (!fn)
             {
-                fn = Function::Create(fnType, GlobalValue::PrivateLinkage, funcId, module); //FIXME: DO BETTER
+                fn = Function::Create(fnType, GlobalValue::PrivateLinkage, funcId, module); // FIXME: DO BETTER
             }
 
             // Get the parameter list context for the invokable
@@ -289,9 +290,69 @@ public:
             errorHandler.addCodegenError(ctx->getStart(), "Invocation type could not be cast to function!");
         }
 
-
         builder->SetInsertPoint(ins);
         return {};
+    }
+
+    std::optional<Value *> visitVariable(std::string id, std::optional<Symbol *> symOpt, WPLParser::ExpressionContext *ctx)
+    {
+        //  = props->getBinding(ctx);
+
+        // If the symbol could not be found, raise an error
+        if (!symOpt)
+        {
+            errorHandler.addCodegenError(ctx->getStart(), "Undefined variable access: " + id);
+            return {};
+        }
+
+        Symbol *sym = symOpt.value();
+
+        // Try getting the type for the symbol, raising an error if it could not be determined
+        llvm::Type *type = sym->type->getLLVMType(module);
+        if (!type)
+        {
+            errorHandler.addCodegenError(ctx->getStart(), "Unable to find type for variable: " + ctx->getText());
+            return {}; // FIXME: IS THIS USED? SOMETIMES MAYBE?
+        }
+
+        // Make sure the variable has an allocation (or that we can find it due to it being a global var)
+        if (!sym->val)
+        {
+            // If the symbol is a global var
+            if (dynamic_cast<const TypeInvoke *>(sym->type))
+            {
+                // FIXME: METHODIZE!!!
+                Function *fn = module->getFunction(id);
+
+                // FIXME: COPY IN STUB GEN!
+                // Value *val = builder->CreateLoad(fn);
+                // return val;
+                return fn;
+            }
+            else if (sym->isGlobal)
+            {
+                // Lookup the global var for the symbol
+                llvm::GlobalVariable *glob = module->getNamedGlobal(sym->identifier);
+
+                // Check that we found the variable. If not, throw an error.
+                if (!glob)
+                {
+                    errorHandler.addCodegenError(ctx->getStart(), "Unable to find global variable: " + id);
+                    return {};
+                }
+
+                // Create and return a load for the global var
+                Value *val = builder->CreateLoad(glob);
+                return val;
+            }
+
+            errorHandler.addCodegenError(ctx->getStart(), "Unable to find allocation for variable: " + ctx->getText());
+            return {};
+        }
+        
+        // Otherwise, we are a local variable with an allocation and, thus, can simply load it.
+        Value *v = builder->CreateLoad(type, sym->val.value(), id);
+        return v;
     }
 
 protected:

@@ -8,6 +8,8 @@
 
 #include "TypeVisitor.h"
 
+#include "LinkedMap.h"
+
 class SemanticVisitor : WPLBaseVisitor
 {
 
@@ -82,6 +84,8 @@ public:
     const Type* visitCtx(WPLParser::CustomTypeContext * ctx);
     const Type* visitCtx(WPLParser::DefineEnumContext * ctx);
     const Type* visitCtx(WPLParser::MatchStatementContext * ctx);
+    const Type* visitCtx(WPLParser::DefineStructContext * ctx);
+    const Type* visitCtx(WPLParser::InitProductContext * ctx);
 
 
 
@@ -135,6 +139,8 @@ public:
     std::any visitCustomType(WPLParser::CustomTypeContext * ctx) override { return visitCtx(ctx); }
     std::any visitDefineEnum(WPLParser::DefineEnumContext * ctx) override { return visitCtx(ctx); }
     std::any visitMatchStatement(WPLParser::MatchStatementContext * ctx) override { return visitCtx(ctx); }
+    std::any visitDefineStruct(WPLParser::DefineStructContext * ctx) override { return visitCtx(ctx); }
+    std::any visitInitProduct(WPLParser::InitProductContext * ctx) override { return visitCtx(ctx); }
 
     /**
      * @brief Used to safely enter a block. This is used to ensure there aren't FUNC/PROC definitions / code following returns in it.
@@ -166,12 +172,6 @@ public:
             // If the current statement is a return, set foundReturn = true
             if (dynamic_cast<WPLParser::ReturnStatementContext *>(e))
                 foundReturn = true;
-
-            // Prevent defining a Func or PROC in the block as this is not yet supported. //FIXME: NEED TO DEAL WITH SCOPE ISSUES!
-            // if (dynamic_cast<WPLParser::FuncDefContext *>(e))
-            // {
-            //     errorHandler.addSemanticError(ctx->getStart(), "Currenly, nested PROC/FUNCs are not supported by codegen.");
-            // }
         }
 
         // If we entered a new scope, then we can now safely exit a scope

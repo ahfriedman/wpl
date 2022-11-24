@@ -53,8 +53,8 @@ TEST_CASE("Sample Progam one", "[semantic]")
 
   sv->visitCompilationUnit(tree);
 
-  std::cout << stmgr->toString() << std::endl;
-  std::cout << sv->getErrors() << std::endl;
+  // std::cout << stmgr->toString() << std::endl;
+  // std::cout << sv->getErrors() << std::endl;
 
   CHECK_FALSE(sv->hasErrors(0));
 }
@@ -103,8 +103,6 @@ TEST_CASE("Sample Progam one w/ Inf", "[semantic]")
 
   sv->visitCompilationUnit(tree);
 
-  std::cout << stmgr->toString() << std::endl;
-  std::cout << sv->getErrors() << std::endl;
 
   CHECK_FALSE(sv->hasErrors(0));
 }
@@ -152,9 +150,6 @@ TEST_CASE("Block", "[semantic]")
   SemanticVisitor *sv = new SemanticVisitor(stmgr, new PropertyManager());
 
   sv->visitCompilationUnit(tree);
-
-  std::cout << stmgr->toString() << std::endl;
-  std::cout << sv->getErrors() << std::endl;
 
   CHECK_FALSE(sv->hasErrors(0));
 }
@@ -371,9 +366,6 @@ TEST_CASE("Comment EOF", "[semantic]")
   SemanticVisitor *sv = new SemanticVisitor(stmgr, new PropertyManager());
 
   sv->visitCompilationUnit(tree);
-
-  std::cout << stmgr->toString() << std::endl;
-  std::cout << sv->getErrors() << std::endl;
 
   CHECK_FALSE(sv->hasErrors(0));
 }
