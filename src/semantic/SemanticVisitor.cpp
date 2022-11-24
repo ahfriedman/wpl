@@ -240,7 +240,6 @@ const Type *SemanticVisitor::visitCtx(WPLParser::InvocationContext *ctx)
 
 const Type *SemanticVisitor::visitCtx(WPLParser::InitProductContext *ctx)
 {
-    std::cout << "233" << std::endl;
     // FIXME: NOT CONVINCED THIS WILL WORK AS MAP MAY HAVE DIFF ORDER THAN LOCAL!
     std::string name = ctx->v->getText();
     std::optional<Symbol *> opt = stmgr->lookup(name);
@@ -258,9 +257,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::InitProductContext *ctx)
 
     if (const TypeStruct *product = dynamic_cast<const TypeStruct *>(sym->type))
     {
-        std::cout << "251" << std::endl;
         std::vector<std::pair<std::string, const Type *>> elements = product->getElements();
-        std::cout << "253" << std::endl;
         if (elements.size() != ctx->exprs.size())
         {
             std::ostringstream errorMsg;
@@ -268,7 +265,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::InitProductContext *ctx)
             errorHandler.addSemanticError(ctx->getStart(), errorMsg.str());
             return Types::UNDEFINED; // TODO: Could change this to the return type to catch more errors?
         }
-        std::cout << "259" << std::endl;
+
         {
             unsigned int i = 0;
 
@@ -575,10 +572,8 @@ const Type *SemanticVisitor::visitCtx(WPLParser::FieldAccessExprContext *ctx)
             // FIXME: DO BETTER BINDS!
             if (eleOpt)
             {
-                std::cout << "578" << s->toString() << " << " << fieldName  << " : " << eleOpt.value()->toString() << std::endl;  
                 ty = eleOpt.value();
                 Symbol * bnd = new Symbol("", ty, false, false); 
-                std::cout << "BND" << bnd->toString() << std::endl; 
                 bindings->bind(ctx->VARIABLE().at(i), bnd); // FIXME: DO BETTER
             }
             else
@@ -806,7 +801,6 @@ const Type *SemanticVisitor::visitCtx(WPLParser::AssignStatementContext *ctx)
 
 const Type *SemanticVisitor::visitCtx(WPLParser::VarDeclStatementContext *ctx)
 {
-    std::cout << "792" << std::endl;
     for (auto e : ctx->assignments)
     {
         // Needs to happen in case we have vars
@@ -1166,34 +1160,26 @@ const Type *SemanticVisitor::visitCtx(WPLParser::DefineStructContext *ctx)
         return Types::UNDEFINED;
     }
 
-    std::cout << "1150" << std::endl;
     LinkedMap<std::string, const Type *> el;
 
     for (WPLParser::StructCaseContext *caseCtx : ctx->cases)
     {
         std::string caseName = caseCtx->name->getText();
-        std::cout << "1156" << std::endl;
         if (el.lookup(caseName))
         {
             errorHandler.addSemanticError(ctx->getStart(), "Unsupported redeclaration of " + caseName); // FIXME: DO BETTER
             return Types::UNDEFINED;
         }
-        std::cout << "1162" << std::endl;
         const Type *caseTy = std::any_cast<const Type *>(caseCtx->ty->accept(this)); // FIXME: VERIFY SAFE
 
         el.insert({caseName, caseTy});
-        std::cout << "1166" << std::endl;
     }
 
-    std::cout << "1169" << std::endl;
     const TypeStruct *product = new TypeStruct(el, id);
     // const TypeNamed * named = new TypeNamed(id, new TypeStruct(el));
     Symbol *prodSym = new Symbol(id, product, true, true); // FIXME: SCOPES! (No, I don't remember what this means)
     stmgr->addSymbol(prodSym);
     bindings->bind(ctx, prodSym);
-
-    // FIXME: CANT USE NAMED FUNCTIONS LIKE THIS!!!!
-    std::cout << "1175" << std::endl;
 
     return Types::UNDEFINED;
 

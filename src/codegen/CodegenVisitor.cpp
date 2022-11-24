@@ -276,23 +276,16 @@ std::optional<Value *> CodegenVisitor::TvisitInvocation(WPLParser::InvocationCon
 
     // Convert to an array ref, then find and execute the call.
     ArrayRef<Value *> ref = ArrayRef(args);
-    std::cout << "279" << std::endl;
     if (ctx->lam)
     {
-        std::cout << "282" << std::endl;
         std::optional<Value *> callOpt = TvisitLambdaConstExpr(ctx->lam);
-        std::cout << "284" << std::endl;
         if (!callOpt)
         {
-            std::cout << "287" << std::endl;
             errorHandler.addCodegenError(ctx->lam->getStart(), "Could not generate code for lambda");
             return {};
         }
-        std::cout << "291" << std::endl;
         llvm::Function *call = (llvm::Function *)callOpt.value();
-        std::cout << "293" << std::endl;
         Value *val = builder->CreateCall(call, ref); // Needs to be separate line because, C++
-        std::cout << "295" << std::endl;
         return val;
     }
 
@@ -368,7 +361,6 @@ std::optional<Value *> CodegenVisitor::TvisitInitProduct(WPLParser::InitProductC
         Value *stoVal = valOpt.value();
 
         // FIXME: TRY PASSING GLOBAL ARG INTO FN
-        // std::cout << "361" << varSym->type->toString() << std::endl;
 
         args.push_back(stoVal);
     }
@@ -383,23 +375,16 @@ std::optional<Value *> CodegenVisitor::TvisitInitProduct(WPLParser::InitProductC
 
     Symbol *varSym = varSymOpt.value();
 
-    std::cout << "353" << std::endl;
-
     if (const TypeStruct *product = dynamic_cast<const TypeStruct *>(varSym->type))
     {
-        std::cout << "357" << std::endl;
         llvm::Type *ty = varSym->type->getLLVMType(module);
-        std::cout << "359" << std::endl;
         llvm::AllocaInst *v = builder->CreateAlloca(ty, 0, ""); // FIXME: VERIFY
-        std::cout << "361" << std::endl;
         {
             unsigned i = 0;
             std::vector<std::pair<std::string, const Type *>> elements = product->getElements();
 
             for (Value *a : args)
             {
-                std::cout << "367" << std::endl;
-
                 if (const TypeSum *sum = dynamic_cast<const TypeSum *>(elements.at(i).second))
                 {
                     // FIXME: METHODIZE!!
@@ -418,18 +403,14 @@ std::optional<Value *> CodegenVisitor::TvisitInitProduct(WPLParser::InitProductC
 
                         return (unsigned int)0;
                     }(module);
-                    std::cout << "390" << std::endl;
+                    
                     if (index != 0)
                     {
-                        std::cout << "393" << std::endl;
                         llvm::Type * sumTy = sum->getLLVMType(module);
                         llvm::AllocaInst *alloc = builder->CreateAlloca(sumTy, 0, "XK");
-                        std::cout << "426" << std::endl;
                         Value *tagPtr = builder->CreateGEP(alloc, {Int32Zero, Int32Zero});
-std::cout << "428" << std::endl;
                         builder->CreateStore(ConstantInt::get(Int32Ty, index, true), tagPtr);
                         Value *valuePtr = builder->CreateGEP(alloc, {Int32Zero, Int32One});
-std::cout << "431" << std::endl;
                         Value *corrected = builder->CreateBitCast(valuePtr, a->getType()->getPointerTo()); // FIXME: DO BETTER
                         builder->CreateStore(a, corrected);
                         a = builder->CreateLoad(sumTy, alloc);
@@ -440,15 +421,11 @@ std::cout << "431" << std::endl;
                 // Value*  valIndex =
                 Value *ptr = builder->CreateGEP(v, {Int32Zero, ConstantInt::get(Int32Ty, i, true)});
                 // Value * corrected = builder->CreateBitCast(ptr, a->getType()->getPointerTo());
-                std::cout << "369" << std::endl;
                 builder->CreateStore(a, ptr);
-                std::cout << "371" << std::endl;
 
                 i++;
             }
         }
-
-        std::cout << "370" << std::endl;
 
         // return v; //FIXME: DO BETTER?
         Value *loaded = builder->CreateLoad(v->getType()->getPointerElementType(), v);
@@ -884,7 +861,6 @@ std::optional<Value *> CodegenVisitor::TvisitCallExpr(WPLParser::CallExprContext
 
 std::optional<Value *> CodegenVisitor::TvisitVariableExpr(WPLParser::VariableExprContext *ctx)
 {
-    std::cout << "821 " << ctx->getText() << std::endl;
     // Get the variable name and look it up
     std::string id = ctx->v->getText();
     return this->visitVariable(id, props->getBinding(ctx), ctx);
@@ -983,14 +959,12 @@ std::optional<Value *> CodegenVisitor::TvisitFieldAccessExpr(WPLParser::FieldAcc
             Value *baseValue = baseOpt.value();
 
             Symbol *fieldSym = fieldOpt.value();
-            // std::cout << "893" << std::endl;
             llvm::AllocaInst *v = builder->CreateAlloca(baseValue->getType()); //(fieldSym->type->getLLVMType(module), 0, "");
             builder->CreateStore(baseValue, v);
             Value *valPtr = builder->CreateGEP(v, {Int32Zero, ConstantInt::get(Int32Ty, index, true)});
 
             llvm::Type *ansType = fieldSym->type->getLLVMType(module);
 
-            std::cout << "993 " << field << " : " << fieldSym->toString() << " : " << fieldSym->type->toString() << std::endl; 
             ty = fieldSym->type;
             baseOpt = builder->CreateLoad(ansType, valPtr);
             // return val;

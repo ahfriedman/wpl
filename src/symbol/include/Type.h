@@ -168,7 +168,6 @@ struct TypeCompare
 {
     bool operator()(const Type *a, const Type *b) const
     {
-        // std::cout << "171 COMP " << a->toString() << " < " << b->toString() << " = " << (a->toString() < b->toString()) << std::endl;
         return a->toString() < b->toString();
     }
 };
@@ -466,15 +465,6 @@ public:
         mthis->defined = true;
     }
 
-
-    bool operator==(const TypeInvoke& other) const {
-        std::cout << "470 comp with " << other.toString();  
-        return true; 
-    }
-    bool operator<(TypeInvoke const & rhs) const {
-        std::cout << "475 comp with " << rhs.toString();  
-        return true; 
-    }
 protected:
     bool isSupertypeFor(const Type *other) const override
     {
@@ -782,7 +772,6 @@ protected:
 
         if (const TypeSum *oSum = dynamic_cast<const TypeSum *>(other))
         {
-            std::cout << "775 " << this->toString() << " vs " << oSum->toString() << std::endl; 
             if(this->cases.size() != oSum->cases.size()) return false; 
             
             for(const Type * t : this->cases)
