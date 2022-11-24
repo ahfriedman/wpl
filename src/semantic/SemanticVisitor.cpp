@@ -283,6 +283,8 @@ const Type *SemanticVisitor::visitCtx(WPLParser::InitProductContext *ctx)
 
                     errorHandler.addSemanticError(ctx->getStart(), errorMsg.str());
                 }
+                //FIXME: WHAT HAPPENS IF VAR PASSED TO THIS?
+                // bindings->bind(ctx->exprs.at(i), new Symbol("", eleItr.second, false, false)); //FIXME: DO BETTER?
 
                 i++;
             }
