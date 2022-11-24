@@ -70,7 +70,7 @@ Color func getRGBColor(int r, int g, int b)
             (RGBData d) : int { return getChannel(d, 1); },
             (RGBData d) : int { return getChannel(d, 2); }
             # (RGBData d) : int { return d.rgb[0]; },
-            # (RGBData d) : int { return d.rgb[1]; }, #FIXME: ENABLE THESE!
+            # (RGBData d) : int { return d.rgb[1]; },
             # (RGBData d) : int { return d.rgb[2]; }
         ),
         (ColorType c) : str { return "rgb"; }

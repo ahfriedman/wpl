@@ -172,12 +172,6 @@ public:
             // If the current statement is a return, set foundReturn = true
             if (dynamic_cast<WPLParser::ReturnStatementContext *>(e))
                 foundReturn = true;
-
-            // Prevent defining a Func or PROC in the block as this is not yet supported. //FIXME: NEED TO DEAL WITH SCOPE ISSUES!
-            // if (dynamic_cast<WPLParser::FuncDefContext *>(e))
-            // {
-            //     errorHandler.addSemanticError(ctx->getStart(), "Currenly, nested PROC/FUNCs are not supported by codegen.");
-            // }
         }
 
         // If we entered a new scope, then we can now safely exit a scope

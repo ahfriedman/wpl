@@ -197,7 +197,7 @@ public:
      */
     std::optional<Value *> visitInvokeable(WPLParser::FuncDefContext *ctx)
     {
-        BasicBlock *ins = builder->GetInsertBlock(); // FIXME: DO BETTER PROCESS DISCOVERY ALSO //FIXME: HAVE TO FIX SCOPING ISSUES
+        BasicBlock *ins = builder->GetInsertBlock(); // FIXME: DO BETTER PROCESS DISCOVERY ALSO
 
         // Lookup the symbol from the context
         std::optional<Symbol *> symOpt = props->getBinding(ctx);
@@ -225,7 +225,7 @@ public:
 
         if (llvm::FunctionType *fnType = static_cast<llvm::FunctionType *>(genericType))
         {
-            Function *fn = module->getFunction(funcId); // Lookup the function first //FIXME: DOESNT WORK FOR LOCAL FNS!
+            Function *fn = module->getFunction(funcId); // Lookup the function first
             /*
              * If we couldn't find the function, that means it wasn't pre-declared, and we need to create it here and now.
              */
@@ -349,12 +349,7 @@ public:
             errorHandler.addCodegenError(ctx->getStart(), "Unable to find allocation for variable: " + ctx->getText());
             return {};
         }
-
-        // if (dynamic_cast<const TypeSum *>(sym->type)) // FIXME: VERIFY
-        // {
-        //     return sym->val.value();
-        // }
-
+        
         // Otherwise, we are a local variable with an allocation and, thus, can simply load it.
         Value *v = builder->CreateLoad(type, sym->val.value(), id);
         return v;

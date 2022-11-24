@@ -17,7 +17,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::CompilationUnitContext *ctx)
         this->visitCtx(e);
     }
 
-    // Auto forward decl //FIXME: VERIFY
+    // Auto forward decl
     for (auto e : ctx->stmts)
     {
         if (WPLParser::FuncDefContext *fnCtx = dynamic_cast<WPLParser::FuncDefContext *>(e))
@@ -240,7 +240,6 @@ const Type *SemanticVisitor::visitCtx(WPLParser::InvocationContext *ctx)
 
 const Type *SemanticVisitor::visitCtx(WPLParser::InitProductContext *ctx)
 {
-    // FIXME: NOT CONVINCED THIS WILL WORK AS MAP MAY HAVE DIFF ORDER THAN LOCAL!
     std::string name = ctx->v->getText();
     std::optional<Symbol *> opt = stmgr->lookup(name);
 
@@ -281,17 +280,11 @@ const Type *SemanticVisitor::visitCtx(WPLParser::InitProductContext *ctx)
                     errorHandler.addSemanticError(ctx->getStart(), errorMsg.str());
                 }
                 //FIXME: WHAT HAPPENS IF VAR PASSED TO THIS?
-                // bindings->bind(ctx->exprs.at(i), new Symbol("", eleItr.second, false, false)); //FIXME: DO BETTER?
-
                 i++;
             }
         }
 
         return sym->type;
-        // for(unsigned int i = 0; i < ctx->exprs.size(); i++)
-        // {
-        //     const
-        // }
     }
 
     errorHandler.addSemanticError(ctx->getStart(), "Cannot initialize non-product type " + name + " : " + sym->type->toString());
@@ -569,7 +562,6 @@ const Type *SemanticVisitor::visitCtx(WPLParser::FieldAccessExprContext *ctx)
         if (const TypeStruct *s = dynamic_cast<const TypeStruct *>(ty))
         {
             std::optional<const Type *> eleOpt = s->get(fieldName);
-            // FIXME: DO BETTER BINDS!
             if (eleOpt)
             {
                 ty = eleOpt.value();
@@ -837,7 +829,6 @@ const Type *SemanticVisitor::visitCtx(WPLParser::VarDeclStatementContext *ctx)
             {
                 // Needed to ensure vars get their own inf type
                 const Type *newAssignType = this->visitCtx(ctx->typeOrVar());
-                // const Type *newExprType = (e->ex) ? std::any_cast<const Type *>(e->ex->accept(this)) : newAssignType; //FIXME: VERIFY
                 const Type *newExprType = (dynamic_cast<const TypeInfer *>(newAssignType) && e->ex) ? std::any_cast<const Type *>(e->ex->accept(this)) : newAssignType;
                 Symbol *symbol = new Symbol(id, newExprType, false, stmgr->isGlobalScope()); // Done with exprType for later inferencing purposes
                 stmgr->addSymbol(symbol);
@@ -904,11 +895,11 @@ const Type *SemanticVisitor::visitCtx(WPLParser::MatchStatementContext *ctx)
         }
 
         bindings->bind(ctx->check, new Symbol(ctx->check->ex->getText(), sumType, false, false)); // FIXME: DO BETTER!
-        return {};                                                                                // FIXME: THIS OR UNDEFINED?
+        return Types::UNDEFINED;                                                                              
     }
 
     errorHandler.addSemanticError(ctx->check->getStart(), "Can only case on Sum Types, not " + condType->toString());
-    return {};
+    return Types::UNDEFINED;
 }
 
 /**
@@ -1071,7 +1062,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::LambdaConstExprContext *ctx)
     safeExitScope(ctx);
 
     Symbol *funcSymbol = new Symbol("@LAMBDA", funcType, false, false); // FIXME: DO BETTER!
-    bindings->bind(ctx, funcSymbol);                                    // FIXME: NEED TO FIGURE OUT SOME BINDING?
+    bindings->bind(ctx, funcSymbol);                                    
 
     return funcType;
 }
@@ -1112,7 +1103,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::SumTypeContext *ctx)
 
     const TypeSum *sum = new TypeSum(cases);
 
-    return sum; // FIXME
+    return sum;
 }
 
 const Type *SemanticVisitor::visitCtx(WPLParser::DefineEnumContext *ctx)
@@ -1147,7 +1138,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::DefineEnumContext *ctx)
     stmgr->addSymbol(enumSym);
     bindings->bind(ctx, enumSym);
 
-    return Types::UNDEFINED; // FIXME
+    return Types::UNDEFINED;
 }
 
 const Type *SemanticVisitor::visitCtx(WPLParser::DefineStructContext *ctx)
@@ -1199,7 +1190,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::CustomTypeContext *ctx)
     if (!opt)
     {
         errorHandler.addSemanticError(ctx->getStart(), "Undefined type: " + name); // FIXME: WHY IS THIS CALLED TWICE?
-        return Types::UNDEFINED;                                                   // FIXME: DO BETTER
+        return Types::UNDEFINED;                                                   
     }
 
     Symbol *sym = opt.value();
@@ -1211,9 +1202,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::CustomTypeContext *ctx)
     }
 
     bindings->bind(ctx, sym); // FIXME: DO BETTER
-    return sym->type;         // FIXME: verify
-
-    // std::optional<Symbol *> binding = bindings->getBinding(ctx->z);
+    return sym->type;
 }
 
 const Type *SemanticVisitor::visitCtx(WPLParser::BaseTypeContext *ctx)

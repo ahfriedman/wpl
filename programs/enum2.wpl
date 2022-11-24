@@ -10,8 +10,8 @@ define enum a {
     int, 
     boolean,
     str,
-    lambdaOp, # FIXME: UNRECOGNIZED! -> Maybe not now?
-    (str, int -> str + str -> str) # FIXME: CAUSES BAS ANYCAST 
+    lambdaOp,
+    (str, int -> str + str -> str)
 }
 
 # FIXME: LET FOR () AROUND FN PARAMS IN Grammar?
@@ -29,7 +29,7 @@ int func program() {
 
 
 
-    var t2 <- fn; # FIXME: CANNOT DO THIS! -> Fixed now? :D  STILL HAVE TO FIX NAME COLLISIONS ON FUNC DEF THO
+    var t2 <- fn; # FIXME: STILL HAVE TO FIX NAME COLLISIONS ON FUNC DEF THO
 
     lambdaOp op <- fn; 
     # VS (str, int -> str + str -> str). Now, we need a way to make the two equivalent....
