@@ -879,25 +879,18 @@ public:
         if (ty)
             return ty;
 
-        std::vector<llvm::Type *> typeVec; //{llvm::Type::getInt32Ty(M->getContext()), arr}; // FIXME: NEEDS TO BE LARGEST TYPE!
+        std::vector<llvm::Type *> typeVec;
 
         for (auto ty : elements.getElements())
         {
             typeVec.push_back(ty.second->getLLVMType(M));
         }
 
-        // for (const Type *ty : paramTypes)
-        // {
-        //     typeVec.push_back(ty->getLLVMType(M->getContext())); // paramTypes.typeVec); //FIXME: throw error if can't create?
-        // }
-
         llvm::ArrayRef<llvm::Type *> ref = llvm::ArrayRef(typeVec);
 
         // Needed to prevent duplicating the type's definition
-        //  TypeSum *mthis = const_cast<TypeSum *>(this);
         ty = llvm::StructType::create(M->getContext(), ref, toString()); // FIXME: USE STRING REF GET NAME!!!
 
-        // mthis->llvmType = ty
         return ty; // this->llvmType; //FIXME: WHAT SHOULD THE DEFAULT OF EMPTY ENUMS BE? OR I GUESS WE SHOULDNT ALLOW ANY EMPTYS
     }
 
@@ -906,15 +899,5 @@ protected:
     {
         // FIXME: How do we get types across files?
         return this == other; // FIXME: DO BETTER
-        // //FIXME: THIS DOES NOT WORK WITH SUBTYPING.
-        // if(this->contains(other)) return true;
-
-        // if(const TypeSum* oSum = dynamic_cast<const TypeSum*>(other))
-        // {
-        //     return this->cases == oSum->cases; //FIXME: VERIFY
-        // }
-        // // FIXME: DOESNT WORK FOR FUNCTIONS, SUMS, ETC
-        // // return this->contains(other); // FIXME: ADDRESS SETTING SUM = SUM!
-        // return false;
     }
 };
