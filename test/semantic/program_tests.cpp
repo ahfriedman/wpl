@@ -2257,6 +2257,122 @@ TEST_CASE("Nested Local Functions - Disallow Local vars 6", "[semantic][program]
   // REQUIRE(cv->hasErrors(0));
 }
 
+TEST_CASE("Nested Enums - Disallow Local Assign", "[semantic][program][enum]")
+{
+  antlr4::ANTLRInputStream input(
+      R""""(
+    extern int func printf(str s, ...);
+
+define enum Inner {
+    int, 
+    boolean 
+}
+
+define enum Outer {
+    Inner, 
+    str
+}
+
+int func program() {
+    int i <- 5; 
+    Outer o <- i; 
+
+    match o {
+        Inner in => {
+            match in {
+                int i => printf("int: %u\n", i);
+                boolean b => printf("boolean: %s\n", (boolean b) : str { if b then { return "true"; } return "false"; }(b));
+            }
+        }
+        str s => printf("str: %s\n", s);
+    }
+
+    return 0; 
+}
+    )"""");
+  WPLLexer lexer(&input);
+  // lexer.removeErrorListeners();
+  // lexer.addErrorListener(new TestErrorListener());
+  antlr4::CommonTokenStream tokens(&lexer);
+  WPLParser parser(&tokens);
+  parser.removeErrorListeners();
+  parser.addErrorListener(new TestErrorListener());
+
+  WPLParser::CompilationUnitContext *tree = NULL;
+  REQUIRE_NOTHROW(tree = parser.compilationUnit());
+  REQUIRE(tree != NULL);
+  REQUIRE(tree->getText() != "");
+
+  STManager *stmgr = new STManager();
+  PropertyManager *pm = new PropertyManager();
+
+  SemanticVisitor *sv = new SemanticVisitor(stmgr, pm);
+
+  sv->visitCompilationUnit(tree);
+  REQUIRE(sv->hasErrors(ERROR));
+  // CodegenVisitor *cv = new CodegenVisitor(pm, "test", CompilerFlags::NO_RUNTIME);
+  // cv->visitCompilationUnit(tree);
+  // REQUIRE(cv->hasErrors(0));
+}
+
+TEST_CASE("Nested Enums - Disallow Local Assign with mismatch", "[semantic][program][enum]")
+{
+  antlr4::ANTLRInputStream input(
+      R""""(
+    extern int func printf(str s, ...);
+
+define enum Inner {
+    int, 
+    boolean 
+}
+
+define enum Outer {
+    Inner, 
+    str
+}
+
+int func program() {
+    (int + boolean) i <- 5; 
+    Outer o <- i; 
+
+    match o {
+        Inner in => {
+            match in {
+                int i => printf("int: %u\n", i);
+                boolean b => printf("boolean: %s\n", (boolean b) : str { if b then { return "true"; } return "false"; }(b));
+            }
+        }
+        str s => printf("str: %s\n", s);
+    }
+
+    return 0; 
+}
+    )"""");
+  WPLLexer lexer(&input);
+  // lexer.removeErrorListeners();
+  // lexer.addErrorListener(new TestErrorListener());
+  antlr4::CommonTokenStream tokens(&lexer);
+  WPLParser parser(&tokens);
+  parser.removeErrorListeners();
+  parser.addErrorListener(new TestErrorListener());
+
+  WPLParser::CompilationUnitContext *tree = NULL;
+  REQUIRE_NOTHROW(tree = parser.compilationUnit());
+  REQUIRE(tree != NULL);
+  REQUIRE(tree->getText() != "");
+
+  STManager *stmgr = new STManager();
+  PropertyManager *pm = new PropertyManager();
+
+  SemanticVisitor *sv = new SemanticVisitor(stmgr, pm);
+
+  sv->visitCompilationUnit(tree);
+  REQUIRE(sv->hasErrors(ERROR));
+  // CodegenVisitor *cv = new CodegenVisitor(pm, "test", CompilerFlags::NO_RUNTIME);
+  // cv->visitCompilationUnit(tree);
+  // REQUIRE(cv->hasErrors(0));
+}
+
 /*********************************
  * C-Level Example tests
  *********************************/
