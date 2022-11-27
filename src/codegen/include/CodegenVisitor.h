@@ -101,7 +101,7 @@ public:
     std::optional<Value *> TvisitLogAndExpr(WPLParser::LogAndExprContext *ctx);
     std::optional<Value *> TvisitLogOrExpr(WPLParser::LogOrExprContext *ctx);
     std::optional<Value *> TvisitCallExpr(WPLParser::CallExprContext *ctx);
-    std::optional<Value *> TvisitVariableExpr(WPLParser::VariableExprContext *ctx);
+    // std::optional<Value *> TvisitVariableExpr(WPLParser::VariableExprContext *ctx);
     std::optional<Value *> TvisitFieldAccessExpr(WPLParser::FieldAccessExprContext *ctx);
     std::optional<Value *> TvisitParenExpr(WPLParser::ParenExprContext *ctx);
     std::optional<Value *> TvisitBinaryRelExpr(WPLParser::BinaryRelExprContext *ctx);
@@ -149,7 +149,7 @@ public:
     std::any visitLogAndExpr(WPLParser::LogAndExprContext *ctx) override { return TvisitLogAndExpr(ctx); };
     std::any visitLogOrExpr(WPLParser::LogOrExprContext *ctx) override { return TvisitLogOrExpr(ctx); };
     std::any visitCallExpr(WPLParser::CallExprContext *ctx) override { return TvisitCallExpr(ctx); };
-    std::any visitVariableExpr(WPLParser::VariableExprContext *ctx) override { return TvisitVariableExpr(ctx); };
+    // std::any visitVariableExpr(WPLParser::VariableExprContext *ctx) override { return TvisitVariableExpr(ctx); };
     std::any visitFieldAccessExpr(WPLParser::FieldAccessExprContext *ctx) override { return TvisitFieldAccessExpr(ctx); };
     std::any visitParenExpr(WPLParser::ParenExprContext *ctx) override { return TvisitParenExpr(ctx); };
     std::any visitBinaryRelExpr(WPLParser::BinaryRelExprContext *ctx) override { return TvisitBinaryRelExpr(ctx); };
@@ -327,7 +327,7 @@ public:
                 }
 
                 Function *fn = module->getFunction(inv->getLLVMName().value());
-                
+
                 return fn;
             }
             else if (sym->isGlobal)

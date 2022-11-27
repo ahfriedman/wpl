@@ -517,25 +517,6 @@ const Type *SemanticVisitor::visitCtx(WPLParser::LogOrExprContext *ctx)
 // Passthrough to visitInvocation
 const Type *SemanticVisitor::visitCtx(WPLParser::CallExprContext *ctx) { return this->visitCtx(ctx->call); }
 
-const Type *SemanticVisitor::visitCtx(WPLParser::VariableExprContext *ctx)
-{
-    // Based on starter
-    std::string id = ctx->v->getText();
-
-    std::optional<Symbol *> opt = stmgr->lookup(id);
-
-    if (!opt)
-    {
-        errorHandler.addSemanticError(ctx->getStart(), "Undefined variable in expression: " + id);
-        return Types::UNDEFINED;
-    }
-
-    Symbol *symbol = opt.value();
-
-    bindings->bind(ctx, symbol);
-    return symbol->type;
-}
-
 /**
  * @brief Visits a FieldAccessExprContext---Currently limited to array lengths
  *

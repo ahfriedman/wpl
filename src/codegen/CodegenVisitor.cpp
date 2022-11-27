@@ -835,13 +835,6 @@ std::optional<Value *> CodegenVisitor::TvisitLogOrExpr(WPLParser::LogOrExprConte
 // Passthrough to TvisitInvocation
 std::optional<Value *> CodegenVisitor::TvisitCallExpr(WPLParser::CallExprContext *ctx) { return this->TvisitInvocation(ctx->call); }
 
-std::optional<Value *> CodegenVisitor::TvisitVariableExpr(WPLParser::VariableExprContext *ctx)
-{
-    // Get the variable name and look it up
-    std::string id = ctx->v->getText();
-    return this->visitVariable(id, props->getBinding(ctx), ctx);
-}
-
 std::optional<Value *> CodegenVisitor::TvisitFieldAccessExpr(WPLParser::FieldAccessExprContext *ctx)
 {
     // This is ONLY array length for now...

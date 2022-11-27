@@ -50,7 +50,7 @@ public:
     const Type *visitCtx(WPLParser::LogAndExprContext *ctx);
     const Type *visitCtx(WPLParser::LogOrExprContext *ctx);
     const Type *visitCtx(WPLParser::CallExprContext *ctx);
-    const Type *visitCtx(WPLParser::VariableExprContext *ctx);
+    // const Type *visitCtx(WPLParser::VariableExprContext *ctx);
     const Type *visitCtx(WPLParser::FieldAccessExprContext *ctx);
     const Type *visitCtx(WPLParser::ParenExprContext *ctx);
     const Type *visitCtx(WPLParser::BinaryRelExprContext *ctx);
@@ -103,7 +103,7 @@ public:
     std::any visitLogAndExpr(WPLParser::LogAndExprContext *ctx) override { return visitCtx(ctx); }
     std::any visitLogOrExpr(WPLParser::LogOrExprContext *ctx) override { return visitCtx(ctx); }
     std::any visitCallExpr(WPLParser::CallExprContext *ctx) override { return visitCtx(ctx); }
-    std::any visitVariableExpr(WPLParser::VariableExprContext *ctx) override { return visitCtx(ctx); }
+    // std::any visitVariableExpr(WPLParser::VariableExprContext *ctx) override { return visitCtx(ctx); }
     std::any visitFieldAccessExpr(WPLParser::FieldAccessExprContext *ctx) override { return visitCtx(ctx); }
     std::any visitParenExpr(WPLParser::ParenExprContext *ctx) override { return visitCtx(ctx); }
     std::any visitBinaryRelExpr(WPLParser::BinaryRelExprContext *ctx) override { return visitCtx(ctx); }

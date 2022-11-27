@@ -56,7 +56,6 @@ expression          : LPAR ex=expression RPAR                       # ParenExpr
                     | v=VARIABLE '::init' '(' (exprs+=expression (',' exprs+=expression)*)? ')' # InitProduct
                     | arrayAccess  # ArrayAccessExpr
                     | booleanConst # BConstExpr 
-                    | v=VARIABLE   # VariableExpr //FIXME: Remove this? 
                     | i=INTEGER    # IConstExpr
                     | s=STRING     # SConstExpr 
                     | lambdaConstExpr # LambdaExpr
@@ -77,7 +76,7 @@ condition           : (LPAR ex=expression RPAR) | ex=expression ;
 
 //Used to model each alternative in a selection 
 selectAlternative   : check=expression ':' eval=statement ; 
-matchAlternative    : check=type name=VARIABLE '=>' eval=statement ;  //FIXME: DO BETTER
+matchAlternative    : check=type name=VARIABLE '=>' eval=statement ;
 
 
 /*

@@ -57,8 +57,8 @@ public:
     T visitCtx(WPLParser::CallExprContext * ctx); 
     std::any visitCallExpr(WPLParser::CallExprContext *ctx) override { return visitCtx(ctx); }
 
-    T visitCtx(WPLParser::VariableExprContext * ctx); 
-    std::any visitVariableExpr(WPLParser::VariableExprContext *ctx) override { return visitCtx(ctx); }
+    // T visitCtx(WPLParser::VariableExprContext * ctx); 
+    // std::any visitVariableExpr(WPLParser::VariableExprContext *ctx) override { return visitCtx(ctx); }
 
     T visitCtx(WPLParser::FieldAccessExprContext * ctx); 
     std::any visitFieldAccessExpr(WPLParser::FieldAccessExprContext *ctx) override { return visitCtx(ctx); }
