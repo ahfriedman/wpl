@@ -281,6 +281,16 @@ public:
         return funcType;
     }
 
+    const Type* any2Type(std::any any)
+    {
+        // if(!any) return {}; 
+
+        if(const Type * valOpt = std::any_cast<const Type *>(any))
+            return valOpt; 
+        
+        return Types::UNDEFINED; //FIXME: DO BETTER 
+    }
+
 private:
     STManager *stmgr;
     PropertyManager *bindings;
@@ -342,7 +352,7 @@ private:
         const TypeInvoke *procType = dynamic_cast<const TypeInvoke *>(tmpTy); // Always true, but needs separate statement to make C happy.
 
         // If we have a return type, then visit that contex to determine what it is. Otherwise, set it as Types::UNDEFINED.
-        const Type *retType = ty ? std::any_cast<const Type *>(ty->accept(this)) // this->visitCtx(ty)
+        const Type *retType = ty ? any2Type(ty->accept(this)) // this->visitCtx(ty)
                                  : Types::UNDEFINED;
 
         // Create a new func with the return type (or reuse the procType) NOTE: We do NOT need to worry about discarding the variadic here as variadic FUNC/PROC is not supported
