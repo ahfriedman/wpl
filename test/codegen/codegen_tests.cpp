@@ -1446,6 +1446,34 @@ TEST_CASE("programs/dangerLambda - lambdas with dupl function names", "[codegen]
     REQUIRE(llvmIrToSHA256(cv->getModule()) == "19c387e4371170bb078319a7323018c2bd6488f01e8a5a98d0c3ebadf3356048");
 }
 
+TEST_CASE("programs/adv/enumPassing - passing non-enum as enum argument", "[codegen][struct]")
+{
+    std::fstream *inStream = new std::fstream("/home/shared/programs/adv/enumPassing.wpl");
+    antlr4::ANTLRInputStream *input = new antlr4::ANTLRInputStream(*inStream);
+
+    WPLLexer lexer(input);
+    antlr4::CommonTokenStream tokens(&lexer);
+    WPLParser parser(&tokens);
+    parser.removeErrorListeners();
+    WPLParser::CompilationUnitContext *tree = NULL;
+    REQUIRE_NOTHROW(tree = parser.compilationUnit());
+    REQUIRE(tree != NULL);
+    STManager *stm = new STManager();
+    PropertyManager *pm = new PropertyManager();
+    SemanticVisitor *sv = new SemanticVisitor(stm, pm, 0);
+    sv->visitCompilationUnit(tree);
+
+    REQUIRE_FALSE(sv->hasErrors(0));
+
+    CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll", 0);
+    cv->visitCompilationUnit(tree);
+
+    REQUIRE_FALSE(cv->hasErrors(0));
+
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "3a8deea38620a5392962e96679b5c4e6f2e7564d369fa712eb211d5af150ae97");
+}
+
+
 TEST_CASE("Out of order function", "[codegen][program]")
 {
     std::fstream *inStream = new std::fstream("/home/shared/programs/ooof.wpl");

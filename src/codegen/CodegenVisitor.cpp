@@ -215,59 +215,100 @@ std::optional<Value *> CodegenVisitor::TvisitMatchStatement(WPLParser::MatchStat
 
 std::optional<Value *> CodegenVisitor::TvisitInvocation(WPLParser::InvocationContext *ctx)
 {
-    // Create the argument vector
-    std::vector<llvm::Value *> args;
-
-    // Populate the argument vector, breaking out of compilation if any argument fails to generate.
-    for (auto e : ctx->args)
+    std::optional<Symbol *> symOpt = props->getBinding((ctx->lam ? (antlr4::tree::ParseTree *)ctx->lam : (antlr4::tree::ParseTree *)ctx));
+    if (!symOpt)
     {
-        std::optional<Value *> valOpt = any2Value(e->accept(this));
-        if (!valOpt)
-        {
-            errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code");
-            return {};
-        }
-        args.push_back(valOpt.value());
-    }
-
-    // Convert to an array ref, then find and execute the call.
-    ArrayRef<Value *> ref = ArrayRef(args);
-    if (ctx->lam)
-    {
-        std::optional<Value *> callOpt = TvisitLambdaConstExpr(ctx->lam);
-        if (!callOpt)
-        {
-            errorHandler.addCodegenError(ctx->lam->getStart(), "Could not generate code for lambda");
-            return {};
-        }
-        llvm::Function *call = (llvm::Function *)callOpt.value();
-        Value *val = builder->CreateCall(call, ref); // Needs to be separate line because, C++
-        return val;
-    }
-
-    // llvm::Function *call = module->getFunction(ctx->VARIABLE()->getText());
-    std::optional<Value *> fnOpt = any2Value(ctx->field->accept(this));
-    if (!fnOpt)
-    {
-        errorHandler.addCodegenError(ctx->getStart(), "Could not locate function for invocation: " + ctx->field->getText() + ". Has it been defined in IR yet?");
+        errorHandler.addCodegenError(ctx->getStart(), "Failed to lookup binding: " + ctx->getText());
         return {};
     }
 
-    Value *fnVal = fnOpt.value();
-
-    llvm::Type *ty = fnVal->getType();
-
-    if (llvm::isa<llvm::Function>(fnVal))
+    if (const TypeInvoke *inv = dynamic_cast<const TypeInvoke *>(symOpt.value()->type))
     {
-        llvm::Function *call = static_cast<llvm::Function *>(fnVal);
-        Value *val = builder->CreateCall(call, ref); // Needs to be separate line because, C++
+        std::vector<const Type *> paramTypes = inv->getParamTypes();
+
+        // Create the argument vector
+        std::vector<llvm::Value *> args;
+
+        // Populate the argument vector, breaking out of compilation if any argument fails to generate.
+        for (auto e : ctx->args)
+        {
+            std::optional<Value *> valOpt = any2Value(e->accept(this));
+            if (!valOpt)
+            {
+                errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code");
+                return {};
+            }
+
+            Value *val = valOpt.value();
+
+            if (args.size() < paramTypes.size())
+            {
+                //TODO: METHODIZE!
+                if (const TypeSum *sum = dynamic_cast<const TypeSum *>(paramTypes.at(args.size())))
+                {
+                    unsigned int index = sum->getIndex(module, val->getType());
+
+                    if (index != 0)
+                    {
+                        llvm::Type *sumTy = sum->getLLVMType(module);
+                        llvm::AllocaInst *alloc = builder->CreateAlloca(sumTy, 0, "");
+
+                        Value *tagPtr = builder->CreateGEP(alloc, {Int32Zero, Int32Zero});
+                        builder->CreateStore(ConstantInt::get(Int32Ty, index, true), tagPtr);
+                        Value *valuePtr = builder->CreateGEP(alloc, {Int32Zero, Int32One});
+                        Value *corrected = builder->CreateBitCast(valuePtr, val->getType()->getPointerTo());
+                        builder->CreateStore(val, corrected);
+
+                        val = builder->CreateLoad(sumTy, alloc);
+                    }
+                }
+            }
+
+            args.push_back(val);
+        }
+
+        // Convert to an array ref, then find and execute the call.
+        ArrayRef<Value *> ref = ArrayRef(args);
+        if (ctx->lam)
+        {
+            std::optional<Value *> callOpt = TvisitLambdaConstExpr(ctx->lam);
+            if (!callOpt)
+            {
+                errorHandler.addCodegenError(ctx->lam->getStart(), "Could not generate code for lambda");
+                return {};
+            }
+            llvm::Function *call = (llvm::Function *)callOpt.value();
+            Value *val = builder->CreateCall(call, ref); // Needs to be separate line because, C++
+            return val;
+        }
+
+        // llvm::Function *call = module->getFunction(ctx->VARIABLE()->getText());
+        std::optional<Value *> fnOpt = any2Value(ctx->field->accept(this));
+        if (!fnOpt)
+        {
+            errorHandler.addCodegenError(ctx->getStart(), "Could not locate function for invocation: " + ctx->field->getText() + ". Has it been defined in IR yet?");
+            return {};
+        }
+
+        Value *fnVal = fnOpt.value();
+
+        llvm::Type *ty = fnVal->getType();
+
+        if (llvm::isa<llvm::Function>(fnVal))
+        {
+            llvm::Function *call = static_cast<llvm::Function *>(fnVal);
+            Value *val = builder->CreateCall(call, ref); // Needs to be separate line because, C++
+            return val;
+        }
+
+        llvm::FunctionType *fnType = static_cast<llvm::FunctionType *>(ty->getPointerElementType());
+
+        Value *val = builder->CreateCall(fnType, fnVal, ref);
         return val;
     }
 
-    llvm::FunctionType *fnType = static_cast<llvm::FunctionType *>(ty->getPointerElementType());
-
-    Value *val = builder->CreateCall(fnType, fnVal, ref);
-    return val;
+    errorHandler.addCodegenError(ctx->getStart(), "Invocation got non-invokable type!");
+    return {};
 }
 
 std::optional<Value *> CodegenVisitor::TvisitInitProduct(WPLParser::InitProductContext *ctx)
@@ -323,7 +364,7 @@ std::optional<Value *> CodegenVisitor::TvisitInitProduct(WPLParser::InitProductC
                         Value *valuePtr = builder->CreateGEP(alloc, {Int32Zero, Int32One});
                         Value *corrected = builder->CreateBitCast(valuePtr, a->getType()->getPointerTo());
                         builder->CreateStore(a, corrected);
-                        
+
                         a = builder->CreateLoad(sumTy, alloc);
                     }
                 }
@@ -1136,7 +1177,7 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
                             builder->CreateStore(corrected, v);
                             return {};
                         }
-                        
+
                         Value *tagPtr = builder->CreateGEP(v, {Int32Zero, Int32Zero});
 
                         builder->CreateStore(ConstantInt::get(Int32Ty, index, true), tagPtr);
@@ -1518,7 +1559,7 @@ std::optional<Value *> CodegenVisitor::TvisitLambdaConstExpr(WPLParser::LambdaCo
     // Return to original insert point
     builder->SetInsertPoint(ins);
 
-    return {}; 
+    return {};
 }
 
 /*

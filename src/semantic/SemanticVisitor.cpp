@@ -228,8 +228,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::InvocationContext *ctx)
                 errorHandler.addSemanticError(ctx->getStart(), errorMsg.str());
             }
         }
-
-std::cout << "PASSED INV " << ctx->getText() << std::endl; 
+        
         // Return the type of the invokable or BOT if it has none.
         return invokeable->getReturnType(); //.has_value() ? invokeable->getReturnType().value() : Types::UNDEFINED;
     }

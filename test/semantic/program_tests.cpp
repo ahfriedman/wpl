@@ -2580,6 +2580,62 @@ var lam <- (int a, int b) : int {
   // REQUIRE(cv->hasErrors(0));
 }
 
+
+TEST_CASE("Bad Enum pass", "[semantic][program][lambda][enum]")
+{
+  antlr4::ANTLRInputStream input(
+      R""""(
+extern int func printf(str s, ...);
+
+# FIXME: ENUM PASSING IS BROKEN!!!!
+
+proc test ((int + boolean + (str + boolean)) sum)
+{
+    match sum {
+        int i => printf("integer: %u\n", i);
+        boolean b => printf("boolean: %s\n", (boolean b) : str {
+            if b then {
+                return "true";
+            }
+
+            return "false"; 
+        }(b));
+         (str + boolean) n => printf("no!\n");
+    }
+}
+
+
+int func program() 
+{
+    test("hey");
+    return 0; 
+}
+    )"""");
+  WPLLexer lexer(&input);
+  // lexer.removeErrorListeners();
+  // lexer.addErrorListener(new TestErrorListener());
+  antlr4::CommonTokenStream tokens(&lexer);
+  WPLParser parser(&tokens);
+  parser.removeErrorListeners();
+  parser.addErrorListener(new TestErrorListener());
+
+  WPLParser::CompilationUnitContext *tree = NULL;
+  REQUIRE_NOTHROW(tree = parser.compilationUnit());
+  REQUIRE(tree != NULL);
+  REQUIRE(tree->getText() != "");
+
+  STManager *stmgr = new STManager();
+  PropertyManager *pm = new PropertyManager();
+
+  SemanticVisitor *sv = new SemanticVisitor(stmgr, pm);
+
+  sv->visitCompilationUnit(tree);
+  REQUIRE(sv->hasErrors(ERROR));
+  // CodegenVisitor *cv = new CodegenVisitor(pm, "test", CompilerFlags::NO_RUNTIME);
+  // cv->visitCompilationUnit(tree);
+  // REQUIRE(cv->hasErrors(0));
+}
+
 /*********************************
  * C-Level Example tests
  *********************************/
