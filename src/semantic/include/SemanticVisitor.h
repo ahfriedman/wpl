@@ -202,7 +202,7 @@ public:
                                  : Types::UNDEFINED;
 
         // Create a new func with the return type (or reuse the procType) NOTE: We do NOT need to worry about discarding the variadic here as variadic FUNC/PROC is not supported
-        const TypeInvoke *funcType = ty ? new TypeInvoke(procType->getParamTypes(), retType) //FIXME: VERIFY THESE ARE DEFS IF THEY SHOULD BE
+        const TypeInvoke *funcType = ty ? new TypeInvoke(procType->getParamTypes(), retType)
                                         : procType;
 
         // Create a new symbol for the PROC/FUNC
@@ -248,7 +248,7 @@ public:
         stmgr->enterScope(true); // NOTE: We do NOT duplicate scopes here because we use a saveVisitBlock with newScope=false
 
         // In the new scope. set our return type. We use @RETURN as it is not a valid symbol the programmer could write in the language
-        stmgr->addSymbol(new Symbol("@RETURN", retType, false, false)); //FIXME: VERIFY
+        stmgr->addSymbol(new Symbol("@RETURN", retType, false, false));
 
         // If we have a parameter list, bind each of the parameters.
         // NOTE: if there were a duplicate name, then the initial visit to the paramList wuld have already

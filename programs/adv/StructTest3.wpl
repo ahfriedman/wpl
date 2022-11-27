@@ -150,8 +150,6 @@ int func program() {
 
     #printf("Color: %u, %u, %u\n", z.red, z.green, z.blue);
 
-    #FIXME: WHY IS UNDEFINED TYPE RAISED TWICE?
-
     Color col <- getRGBColor(58, 166, 63);
 
     lamePrint(col); 

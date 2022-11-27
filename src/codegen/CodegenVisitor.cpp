@@ -18,7 +18,6 @@ std::optional<Value *> CodegenVisitor::TvisitCompilationUnit(WPLParser::Compilat
     {
         if (WPLParser::FuncDefContext *fnCtx = dynamic_cast<WPLParser::FuncDefContext *>(e))
         {
-            // FIXME: VERIFY SWITCH OVER TO PROC AND REM EXTERN, METHODIZE, ALSO, EDIT INVOKE GEN ELSEWHERE TO REFLECT THIS
             std::optional<Symbol *> optSym = props->getBinding(fnCtx);
 
             if (!optSym)
@@ -87,22 +86,6 @@ std::optional<Value *> CodegenVisitor::TvisitCompilationUnit(WPLParser::Compilat
         llvm::Function *progFn = module->getFunction("program");
         builder->CreateRet(builder->CreateCall(progFn, {}));
     }
-
-    return {};
-}
-
-std::optional<Value *> CodegenVisitor::TvisitDefineEnum(WPLParser::DefineEnumContext *ctx)
-{
-    std::optional<Symbol *> symOpt = props->getBinding(ctx); // FIXME: THIS DOES NOTHING
-    if (!symOpt)
-    {
-        errorHandler.addCodegenError(ctx->getStart(), "Could not locate symbol for enum defintion: " + ctx->name->getText());
-        return {};
-    }
-
-    Symbol *sym = symOpt.value();
-
-    llvm::Type *ty = sym->type->getLLVMType(module);
 
     return {};
 }

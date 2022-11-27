@@ -127,7 +127,7 @@ public:
     std::optional<Value *> TvisitBooleanConst(WPLParser::BooleanConstContext *ctx);
 
     std::optional<Value *> TvisitLambdaConstExpr(WPLParser::LambdaConstExprContext *ctx);
-    std::optional<Value *> TvisitDefineEnum(WPLParser::DefineEnumContext *ctx);
+    // std::optional<Value *> TvisitDefineEnum(WPLParser::DefineEnumContext *ctx);
     std::optional<Value *> TvisitMatchStatement(WPLParser::MatchStatementContext *ctx);
     std::optional<Value *> TvisitInitProduct(WPLParser::InitProductContext *ctx);
 
@@ -177,7 +177,7 @@ public:
     // FIXME: Add Base and LamdaTypes?
 
     std::any visitLambdaConstExpr(WPLParser::LambdaConstExprContext *ctx) override { return TvisitLambdaConstExpr(ctx); }
-    std::any visitDefineEnum(WPLParser::DefineEnumContext *ctx) override { return TvisitDefineEnum(ctx); }
+    // std::any visitDefineEnum(WPLParser::DefineEnumContext *ctx) override { return TvisitDefineEnum(ctx); }
     std::any visitMatchStatement(WPLParser::MatchStatementContext *ctx) override { return TvisitMatchStatement(ctx); }
     std::any visitInitProduct(WPLParser::InitProductContext *ctx) override { return TvisitInitProduct(ctx); }
 

@@ -6,7 +6,6 @@ define enum a {
     boolean,
     str # FIXME: how is this going to work? Or is this a pointer? What about a str array? lol
 }
-# FIXME: B and A Treated the same way?
 
 define enum b {
     boolean, 

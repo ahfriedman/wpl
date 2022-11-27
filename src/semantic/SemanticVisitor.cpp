@@ -274,8 +274,8 @@ const Type *SemanticVisitor::visitCtx(WPLParser::InitProductContext *ctx)
 
                 if (providedType->isNotSubtype(eleItr.second))
                 {
-                    std::ostringstream errorMsg; // FIXME: DO BETTER
-                    errorMsg << "Argument " << i << " provided to " << name << " expected " << eleItr.second->toString() << " but got " << providedType->toString();
+                    std::ostringstream errorMsg;
+                    errorMsg << "Product init. argument " << i << " provided to " << name << " expected " << eleItr.second->toString() << " but got " << providedType->toString();
 
                     errorHandler.addSemanticError(ctx->getStart(), errorMsg.str());
                 }
@@ -1131,9 +1131,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::DefineEnumContext *ctx)
     }
 
     const TypeSum *sum = new TypeSum(cases, id);
-    // const TypeNamed * named = new TypeNamed(id, sum);
-
-    Symbol *enumSym = new Symbol(id, sum, true, true); // FIXME: SCOPES!
+    Symbol *enumSym = new Symbol(id, sum, true, true);
 
     stmgr->addSymbol(enumSym);
     bindings->bind(ctx, enumSym);
@@ -1167,8 +1165,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::DefineStructContext *ctx)
     }
 
     const TypeStruct *product = new TypeStruct(el, id);
-    // const TypeNamed * named = new TypeNamed(id, new TypeStruct(el));
-    Symbol *prodSym = new Symbol(id, product, true, true); // FIXME: SCOPES! (No, I don't remember what this means)
+    Symbol *prodSym = new Symbol(id, product, true, true); 
     stmgr->addSymbol(prodSym);
     bindings->bind(ctx, prodSym);
 
