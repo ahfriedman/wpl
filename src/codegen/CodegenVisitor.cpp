@@ -651,7 +651,7 @@ std::optional<Value *> CodegenVisitor::TvisitEqExpr(WPLParser::EqExprContext *ct
  */
 std::optional<Value *> CodegenVisitor::TvisitLogAndExpr(WPLParser::LogAndExprContext *ctx)
 {
-    // FIXME: DO BETTER W/ AST
+    // TODO: DO BETTER W/ AST
     std::vector<WPLParser::ExpressionContext *> toVisit = ctx->exprs;
     std::vector<WPLParser::ExpressionContext *> toGen;
 
@@ -745,7 +745,7 @@ std::optional<Value *> CodegenVisitor::TvisitLogAndExpr(WPLParser::LogAndExprCon
  */
 std::optional<Value *> CodegenVisitor::TvisitLogOrExpr(WPLParser::LogOrExprContext *ctx)
 {
-    // FIXME: DO BETTER W/ AST
+    // TODO: DO BETTER W/ AST
     std::vector<WPLParser::ExpressionContext *> toVisit = ctx->exprs;
     std::vector<WPLParser::ExpressionContext *> toGen;
 
