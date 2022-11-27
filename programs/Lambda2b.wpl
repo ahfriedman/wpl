@@ -1,7 +1,5 @@
 extern int func printf(...);
 
-# FIXME: THIS IS COMPLETLEY BROKEN!
-
 int func program() {
 
     int func foo(int x) {
