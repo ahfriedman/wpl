@@ -1160,9 +1160,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::DefineStructContext *ctx)
 const Type *SemanticVisitor::visitCtx(WPLParser::CustomTypeContext *ctx)
 {
     // FIXME: MAY BE OBSCURED BY VAR NAMES
-
-    // FIXME: HOW DO SUMS WORK WITH MULTIPLE SUBTYPES? CURRENTLY THEYD BREAK
-    //  FIXME: This is really bad and really broken b/c now any symbol can become var?
+    // FIXME: This is really bad and really broken b/c now any symbol can become var?
 
     std::string name = ctx->VARIABLE()->getText();
 

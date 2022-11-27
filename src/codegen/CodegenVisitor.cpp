@@ -150,11 +150,8 @@ std::optional<Value *> CodegenVisitor::TvisitMatchStatement(WPLParser::MatchStat
 
                 builder->SetInsertPoint(matchBlk);
 
-                // FIXME: VERIFY SIGNED VS UNSIGNED
                 switchInst->addCase(ConstantInt::get(Int32Ty, index, true), matchBlk);
                 origParent->getBasicBlockList().push_back(matchBlk);
-
-                // FIME: METHODIZE VAR DECL?
 
                 std::optional<Symbol *> varSymbolOpt = props->getBinding(altCtx->VARIABLE());
 
