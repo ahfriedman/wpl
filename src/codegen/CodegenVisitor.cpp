@@ -42,7 +42,8 @@ std::optional<Value *> CodegenVisitor::TvisitCompilationUnit(WPLParser::Compilat
 
                 if (llvm::FunctionType *fnType = static_cast<llvm::FunctionType *>(genericType))
                 {
-                    Function::Create(fnType, GlobalValue::ExternalLinkage, fnCtx->name->getText(), module);
+                    Function *fn = Function::Create(fnType, GlobalValue::ExternalLinkage, fnCtx->name->getText(), module);
+                    type->setName(fn->getName().str());
                 }
                 else
                 {
@@ -890,6 +891,7 @@ std::optional<Value *> CodegenVisitor::TvisitFieldAccessExpr(WPLParser::FieldAcc
     }
 
     const Type *ty = sym->type;
+    std::cout << "894 " << ctx->getText() << std::endl;
     std::optional<Value *> baseOpt = visitVariable(ctx->VARIABLE().at(0)->getText(), props->getBinding(ctx->VARIABLE().at(0)), ctx);
     // std::optional<Value *> val = {};
 
@@ -899,7 +901,7 @@ std::optional<Value *> CodegenVisitor::TvisitFieldAccessExpr(WPLParser::FieldAcc
         {
             if (!baseOpt)
             {
-                errorHandler.addCodegenError(ctx->getStart(), "FIXME");
+                errorHandler.addCodegenError(ctx->getStart(), "Failed to generate field access partial: " + ctx->fields.at(i - 1)->getText());
                 return {};
             }
 
@@ -948,6 +950,12 @@ std::optional<Value *> CodegenVisitor::TvisitFieldAccessExpr(WPLParser::FieldAcc
             baseOpt = builder->CreateLoad(ansType, valPtr);
             // return val;
         }
+    }
+
+    if (!baseOpt)
+    {
+        errorHandler.addCodegenError(ctx->getStart(), "Failed to generate field access: " + ctx->getText());
+        return {};
     }
 
     return baseOpt.value(); // FIXME: DO BETTER, VERIFY CORRECT
@@ -1036,7 +1044,8 @@ std::optional<Value *> CodegenVisitor::TvisitExternStatement(WPLParser::ExternSt
 
         if (llvm::FunctionType *fnType = static_cast<llvm::FunctionType *>(genericType))
         {
-            Function::Create(fnType, GlobalValue::ExternalLinkage, ctx->name->getText(), module);
+            Function *fn = Function::Create(fnType, GlobalValue::ExternalLinkage, ctx->name->getText(), module);
+            type->setName(fn->getName().str());
         }
         else
         {

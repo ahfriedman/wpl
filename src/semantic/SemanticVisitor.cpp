@@ -43,8 +43,8 @@ const Type *SemanticVisitor::visitCtx(WPLParser::CompilationUnitContext *ctx)
             const TypeInvoke *funcType = (fnCtx->ty) ? new TypeInvoke(procType->getParamTypes(), retType, false, false)
                                                      : new TypeInvoke(procType->getParamTypes(), false, false);
 
-            Symbol *funcSymbol = new Symbol(id, funcType, true, false); // FIXME: WAS N/A, FALSE before -> VERY HACKY
-
+            Symbol *funcSymbol = new Symbol(id, funcType, true, true); // FIXME: WAS N/A, FALSE before -> VERY HACKY
+            //FIXME: test name collisions with externs
             stmgr->addSymbol(funcSymbol);
             bindings->bind(ctx, funcSymbol);
             // errorHandler.addSemanticCritWarning(ctx->getStart(), "Currently, only FUNC, PROC, EXTERN, and variable declarations allowed at top-level. Not: " + e->getText());
@@ -230,6 +230,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::InvocationContext *ctx)
             }
         }
 
+std::cout << "PASSED INV " << ctx->getText() << std::endl; 
         // Return the type of the invokable or BOT if it has none.
         return invokeable->getReturnType(); //.has_value() ? invokeable->getReturnType().value() : Types::UNDEFINED;
     }

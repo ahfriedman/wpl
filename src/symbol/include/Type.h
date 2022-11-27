@@ -305,6 +305,12 @@ private:
      */
     bool defined = true;
 
+    /**
+     * @brief Name used by llvm to represent this function
+     *
+     */
+    std::optional<std::string> name = {};
+
 public:
     /**
      * @brief Construct a new Type Invoke object that has no return and no arguments
@@ -409,7 +415,7 @@ public:
 
         for (const Type *ty : paramTypes)
         {
-            typeVec.push_back(ty->getLLVMType(M)); //FIXME: throw error if can't create?
+            typeVec.push_back(ty->getLLVMType(M)); // FIXME: throw error if can't create?
         }
 
         llvm::ArrayRef<llvm::Type *> paramRef = llvm::ArrayRef(typeVec);
@@ -422,6 +428,17 @@ public:
             variadic);
 
         return fnType->getPointerTo();
+    }
+
+    std::optional<std::string> getLLVMName() const { return name; }
+    bool setName(std::string n) const
+    {
+        if (name)
+            return false;
+        TypeInvoke *mthis = const_cast<TypeInvoke *>(this);
+        mthis->name = n;
+        // name = n;
+        return true;
     }
 
     /**
@@ -661,7 +678,7 @@ public:
     TypeSum(std::set<const Type *, TypeCompare> c, std::optional<std::string> n = {})
     {
         cases = c;
-        name = n; 
+        name = n;
     }
 
     // auto lexical_compare = [](int a, int b) { return to_string(a) < to_string(b); };
@@ -680,19 +697,20 @@ public:
      */
     std::string toString() const override
     {
-        if(name) return name.value(); 
+        if (name)
+            return name.value();
 
         std::ostringstream description;
 
         description << "(";
-        
-        unsigned int ctr = 0; 
-        unsigned int size = cases.size(); 
+
+        unsigned int ctr = 0;
+        unsigned int size = cases.size();
 
         for (const Type *el : cases)
         {
             description << el->toString();
-            if(++ctr != size) 
+            if (++ctr != size)
                 description << " + ";
         }
         description << ")";
@@ -763,24 +781,27 @@ protected:
 
         if (const TypeSum *oSum = dynamic_cast<const TypeSum *>(other))
         {
-            if(this->cases.size() != oSum->cases.size()) return false; 
-            
-            for(const Type * t : this->cases)
-            {
-                bool found = false; 
+            if (this->cases.size() != oSum->cases.size())
+                return false;
 
-                for(const Type * y : oSum->cases)
+            for (const Type *t : this->cases)
+            {
+                bool found = false;
+
+                for (const Type *y : oSum->cases)
                 {
-                    if(t->isSubtype(y)) {
-                        found = true; 
+                    if (t->isSubtype(y))
+                    {
+                        found = true;
                         break;
                     }
                 }
 
-                if(!found) return false; 
+                if (!found)
+                    return false;
             }
 
-            return true; 
+            return true;
         }
         // FIXME: DOESNT WORK FOR FUNCTIONS, SUMS, ETC
         return false;
@@ -799,28 +820,28 @@ private:
      * @brief The types valid in this sum
      *
      */
-    LinkedMap<std::string, const Type*> elements; 
+    LinkedMap<std::string, const Type *> elements;
 
     /**
      * @brief LLVM IR Representation of the type
      *
      */
-    std::optional<std::string> name; 
+    std::optional<std::string> name;
 
 public:
-    TypeStruct(LinkedMap<std::string, const Type*> e, std::optional<std::string> n = {})
+    TypeStruct(LinkedMap<std::string, const Type *> e, std::optional<std::string> n = {})
     {
         elements = e;
-        name = n; //FIXME: TEST ANON STRUCTS!
+        name = n; // FIXME: TEST ANON STRUCTS!
     }
 
     std::optional<const Type *> get(std::string id) const
     {
-        return elements.lookup(id); 
+        return elements.lookup(id);
     }
 
-    //std::map<std::string, const Type*> getElements() const { return elements; }
-    vector<pair<std::string, const Type*>> getElements() const { return elements.getElements(); }
+    // std::map<std::string, const Type*> getElements() const { return elements; }
+    vector<pair<std::string, const Type *>> getElements() const { return elements.getElements(); }
     /**
      * @brief Returns the name of the string in form of <valueType name>[<array length>].
      *
@@ -828,19 +849,20 @@ public:
      */
     std::string toString() const override
     {
-        if(name) return name.value();
+        if (name)
+            return name.value();
 
         std::ostringstream description;
 
         description << "(";
 
-        unsigned int ctr = 0; 
-        unsigned int size = elements.getElements().size(); 
+        unsigned int ctr = 0;
+        unsigned int size = elements.getElements().size();
 
         for (auto e : elements.getElements())
         {
             description << e.second->toString();
-            if(++ctr != size) 
+            if (++ctr != size)
                 description << " * ";
         }
         description << ")";
