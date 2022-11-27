@@ -415,7 +415,7 @@ public:
 
         for (const Type *ty : paramTypes)
         {
-            typeVec.push_back(ty->getLLVMType(M)); // FIXME: throw error if can't create?
+            typeVec.push_back(ty->getLLVMType(M));
         }
 
         llvm::ArrayRef<llvm::Type *> paramRef = llvm::ArrayRef(typeVec);
@@ -746,8 +746,7 @@ public:
 
         if (ty)
             return ty;
-
-        // FIXME: HANDLE ZERO SIZE OBJS!!
+        
         unsigned int min = std::numeric_limits<unsigned int>::max();
         unsigned int max = std::numeric_limits<unsigned int>::min();
 

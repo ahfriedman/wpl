@@ -317,11 +317,13 @@ std::optional<Value *> CodegenVisitor::TvisitInitProduct(WPLParser::InitProductC
                     {
                         llvm::Type *sumTy = sum->getLLVMType(module);
                         llvm::AllocaInst *alloc = builder->CreateAlloca(sumTy, 0, "");
+
                         Value *tagPtr = builder->CreateGEP(alloc, {Int32Zero, Int32Zero});
                         builder->CreateStore(ConstantInt::get(Int32Ty, index, true), tagPtr);
                         Value *valuePtr = builder->CreateGEP(alloc, {Int32Zero, Int32One});
                         Value *corrected = builder->CreateBitCast(valuePtr, a->getType()->getPointerTo());
                         builder->CreateStore(a, corrected);
+                        
                         a = builder->CreateLoad(sumTy, alloc);
                     }
                 }
@@ -1009,8 +1011,7 @@ std::optional<Value *> CodegenVisitor::TvisitAssignStatement(WPLParser::AssignSt
         {
             Value *corrected = builder->CreateBitCast(stoVal, varSym->type->getLLVMType(module));
             builder->CreateStore(corrected, v);
-            // errorHandler.addCodegenError(ctx->getStart(), "Unable to find key for type in sum");
-            return {}; // FIXME: DO BETTER!
+            return {};
         }
 
         Value *tagPtr = builder->CreateGEP(v, {Int32Zero, Int32Zero});
@@ -1133,10 +1134,9 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
                         {
                             Value *corrected = builder->CreateBitCast(stoVal, varSymbol->type->getLLVMType(module));
                             builder->CreateStore(corrected, v);
-                            return {}; // FIXME: DO BETTER!
+                            return {};
                         }
-
-                        //FIXME: WHAT SHOULD SUMS DO IF NO MATCH CASE?
+                        
                         Value *tagPtr = builder->CreateGEP(v, {Int32Zero, Int32Zero});
 
                         builder->CreateStore(ConstantInt::get(Int32Ty, index, true), tagPtr);

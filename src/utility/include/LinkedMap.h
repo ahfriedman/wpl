@@ -7,7 +7,7 @@
 
 using namespace std;
 
-// FIXME: DO BETTER, MAY NEED DESTRUCTORS
+// TODO: DO BETTER, MAY NEED DESTRUCTORS
 
 template <typename K, typename V>
 class LinkedMap

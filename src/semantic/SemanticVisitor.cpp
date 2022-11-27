@@ -7,8 +7,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::CompilationUnitContext *ctx)
 
     for (auto e : ctx->defs)
     {
-        // this->visitCtx(e);
-        e->accept(this); // FIXME: DO BETTER TO ENSURE WE CATCH ONES THAT WE DONT HAVE CODE FOR
+        e->accept(this);
     }
 
     // Visit externs first; they will report any errors if they have any.
@@ -834,7 +833,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::MatchStatementContext *ctx)
     if (const TypeSum *sumType = dynamic_cast<const TypeSum *>(condType))
     {
         std::set<const Type *> foundCaseTypes = {};
-        // FIXME: Maybe make so these can return values?
+        // TODO: Maybe make so these can return values?
 
         for (WPLParser::MatchAlternativeContext *altCtx : ctx->cases)
         {
@@ -843,13 +842,12 @@ const Type *SemanticVisitor::visitCtx(WPLParser::MatchStatementContext *ctx)
 
             const Type *caseType = any2Type(altCtx->type()->accept(this));
 
-            // FIXME: VERIFY THIS WILL WORK! WILL PROBS BREAK FOR SUMs AND STRUCTS!!
             if (!sumType->contains(caseType))
             {
                 errorHandler.addSemanticError(altCtx->type()->getStart(), "Impossible case for " + sumType->toString() + " to act as " + caseType->toString());
             }
 
-            if (foundCaseTypes.count(caseType)) // FIXME: SAME AS BEFORE, WILL PROBS BREAK W STRUCTS
+            if (foundCaseTypes.count(caseType))
             {
                 errorHandler.addSemanticError(altCtx->type()->getStart(), "Duplicate case in match");
             }
