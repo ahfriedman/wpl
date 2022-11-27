@@ -1168,7 +1168,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::CustomTypeContext *ctx)
     std::optional<Symbol *> opt = stmgr->lookup(name);
     if (!opt)
     {
-        errorHandler.addSemanticError(ctx->getStart(), "Undefined type: " + name); // FIXME: WHY IS THIS CALLED TWICE?
+        errorHandler.addSemanticError(ctx->getStart(), "Undefined type: " + name); // TODO: address inefficiency in var decl where this is called multiple times 
         return Types::UNDEFINED;                                                   
     }
 

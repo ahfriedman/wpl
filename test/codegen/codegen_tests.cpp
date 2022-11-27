@@ -1308,7 +1308,7 @@ TEST_CASE("programs/StructTest3", "[codegen][struct]")
 
     REQUIRE_FALSE(cv->hasErrors(0));
 
-    REQUIRE(llvmIrToSHA256(cv->getModule()) == "38f330db16fdb85c8f8ef7f9f4980beec1f936d4622c19f141436a9b4f102744");
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "21b9ab1ae93492f89f17f6ff8da9bd340b2a71d110463f19499bc9192b10b6cd");
 }
 
 TEST_CASE("programs/StructTest3a - nested fields", "[codegen][struct]")
@@ -1335,7 +1335,7 @@ TEST_CASE("programs/StructTest3a - nested fields", "[codegen][struct]")
 
     REQUIRE_FALSE(cv->hasErrors(0));
 
-    REQUIRE(llvmIrToSHA256(cv->getModule()) == "55d0a09383474d5a92f5f0063076874bbb9688c6712940fa97e93a6e701a3c26");
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "58c43527727e01ae069ff43a95d8d62aed6e850d3f9693c3cb7c74efdab41b13");
 }
 
 TEST_CASE("programs/StructTest3b - nested fields", "[codegen][struct]")
@@ -1362,7 +1362,7 @@ TEST_CASE("programs/StructTest3b - nested fields", "[codegen][struct]")
 
     REQUIRE_FALSE(cv->hasErrors(0));
 
-    REQUIRE(llvmIrToSHA256(cv->getModule()) == "0ad8495bd6951eeff2273025459baa7e6126ed10a2546449fd4604910a225977");
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "f29652970edd86dff1e5cd7e80d41a43fbfe1b47f993eb7f5fb0fb06a2563d41");
 }
 
 TEST_CASE("programs/StructTest4", "[codegen][struct]")
@@ -1389,7 +1389,7 @@ TEST_CASE("programs/StructTest4", "[codegen][struct]")
 
     REQUIRE_FALSE(cv->hasErrors(0));
 
-    REQUIRE(llvmIrToSHA256(cv->getModule()) == "c70f78537551fa7e0c20633aa8dcbdaa3635ffde514d919758dc42dd62e13e25");
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "f84941b2168968d3c991b76e9ed5374a025c1db7200f825476e29a84446f9390");
 }
 
 TEST_CASE("programs/adv/NestedEnum", "[codegen][struct]")

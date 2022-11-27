@@ -136,7 +136,7 @@ std::optional<Value *> CodegenVisitor::TvisitMatchStatement(WPLParser::MatchStat
                     return {};
                 }
 
-                llvm::Type *toFind = localSymOpt.value()->type->getLLVMType(module); // FIXME: DO THIS ALL BETTER, MORE CHECKS!!
+                llvm::Type *toFind = localSymOpt.value()->type->getLLVMType(module);
 
                 unsigned int index = sumType->getIndex(module, toFind);
 
@@ -316,7 +316,7 @@ std::optional<Value *> CodegenVisitor::TvisitInitProduct(WPLParser::InitProductC
                     if (index != 0)
                     {
                         llvm::Type *sumTy = sum->getLLVMType(module);
-                        llvm::AllocaInst *alloc = builder->CreateAlloca(sumTy, 0, "XK");
+                        llvm::AllocaInst *alloc = builder->CreateAlloca(sumTy, 0, "");
                         Value *tagPtr = builder->CreateGEP(alloc, {Int32Zero, Int32Zero});
                         builder->CreateStore(ConstantInt::get(Int32Ty, index, true), tagPtr);
                         Value *valuePtr = builder->CreateGEP(alloc, {Int32Zero, Int32One});
