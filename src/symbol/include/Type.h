@@ -790,11 +790,8 @@ protected:
             }
 
             return true; 
-            //FIXME: NESTED ENUMS - Types won't be noticed correctly.....
-            // return this->cases == oSum->cases; // FIXME: VERIFY
         }
         // FIXME: DOESNT WORK FOR FUNCTIONS, SUMS, ETC
-        // return this->contains(other); // FIXME: ADDRESS SETTING SUM = SUM!
         return false;
     }
 };
