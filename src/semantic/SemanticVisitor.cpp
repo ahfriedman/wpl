@@ -829,7 +829,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::VarDeclStatementContext *ctx)
 
 const Type *SemanticVisitor::visitCtx(WPLParser::MatchStatementContext *ctx)
 {
-    const Type *condType = any2Type(ctx->check->ex->accept(this)); // FIXME: VERIFY?
+    const Type *condType = any2Type(ctx->check->ex->accept(this));
 
     if (const TypeSum *sumType = dynamic_cast<const TypeSum *>(condType))
     {
@@ -841,7 +841,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::MatchStatementContext *ctx)
             // FIXME: METHODIZE WITH SelectAlternativeContext?
             //  Might not be easily able to though bc we need to track types...
 
-            const Type *caseType = any2Type(altCtx->type()->accept(this)); // FIXME: VERIFY?
+            const Type *caseType = any2Type(altCtx->type()->accept(this));
 
             // FIXME: VERIFY THIS WILL WORK! WILL PROBS BREAK FOR SUMs AND STRUCTS!!
             if (!sumType->contains(caseType))
@@ -1045,7 +1045,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::LambdaConstExprContext *ctx)
     }
     safeExitScope(ctx);
 
-    Symbol *funcSymbol = new Symbol("@LAMBDA", funcType, false, false); // FIXME: DO BETTER!
+    Symbol *funcSymbol = new Symbol("@LAMBDA", funcType, false, false);
     bindings->bind(ctx, funcSymbol);                                    
 
     return funcType;
@@ -1143,7 +1143,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::DefineStructContext *ctx)
             errorHandler.addSemanticError(ctx->getStart(), "Unsupported redeclaration of " + caseName);
             return Types::UNDEFINED;
         }
-        const Type *caseTy = any2Type(caseCtx->ty->accept(this)); // FIXME: VERIFY SAFE
+        const Type *caseTy = any2Type(caseCtx->ty->accept(this));
 
         el.insert({caseName, caseTy});
     }
