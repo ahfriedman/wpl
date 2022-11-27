@@ -182,14 +182,8 @@ std::optional<Value *> CodegenVisitor::TvisitMatchStatement(WPLParser::MatchStat
 
                 Symbol *varSymbol = varSymbolOpt.value();
 
-                // FIXME: test for varSymbol->type?
                 //  Get the type of the symbol
                 llvm::Type *ty = varSymbol->type->getLLVMType(module);
-
-                // if (dynamic_cast<const TypeInvoke *>(varSymbol->type))
-                // {
-                //     ty = ty->getPointerTo();
-                // }
 
                 // Can skip global stuff
                 llvm::AllocaInst *v = builder->CreateAlloca(ty, 0, altCtx->VARIABLE()->getText());
@@ -199,7 +193,7 @@ std::optional<Value *> CodegenVisitor::TvisitMatchStatement(WPLParser::MatchStat
                 // Now to store the var
                 Value *valuePtr = builder->CreateGEP(SumPtr, {Int32Zero, Int32One});
 
-                Value *corrected = builder->CreateBitCast(valuePtr, ty->getPointerTo()); // FIXME: DO BETTER
+                Value *corrected = builder->CreateBitCast(valuePtr, ty->getPointerTo());
 
                 Value *val = builder->CreateLoad(ty, corrected); // FIXME: WILL THIS WORK WITH NESTED SUMS?
 
@@ -310,7 +304,6 @@ std::optional<Value *> CodegenVisitor::TvisitInvocation(WPLParser::InvocationCon
 
         std::optional<llvm::Value *> fnPtrOpt = sym->val;
 
-        // FIXME: WILL NOT WORK FOR GLOBAL
         if (!fnPtrOpt)
         {
             errorHandler.addCodegenError(ctx->getStart(), "Could not find value for function: " + sym->toString());
@@ -371,7 +364,7 @@ std::optional<Value *> CodegenVisitor::TvisitInitProduct(WPLParser::InitProductC
     if (const TypeStruct *product = dynamic_cast<const TypeStruct *>(varSym->type))
     {
         llvm::Type *ty = varSym->type->getLLVMType(module);
-        llvm::AllocaInst *v = builder->CreateAlloca(ty, 0, ""); // FIXME: VERIFY
+        llvm::AllocaInst *v = builder->CreateAlloca(ty, 0, "");
         {
             unsigned i = 0;
             std::vector<std::pair<std::string, const Type *>> elements = product->getElements();
@@ -407,13 +400,10 @@ std::optional<Value *> CodegenVisitor::TvisitInitProduct(WPLParser::InitProductC
                         Value *corrected = builder->CreateBitCast(valuePtr, a->getType()->getPointerTo()); // FIXME: DO BETTER
                         builder->CreateStore(a, corrected);
                         a = builder->CreateLoad(sumTy, alloc);
-                        // a = alloc;
                     }
                 }
 
-                // Value*  valIndex =
                 Value *ptr = builder->CreateGEP(v, {Int32Zero, ConstantInt::get(Int32Ty, i, true)});
-                // Value * corrected = builder->CreateBitCast(ptr, a->getType()->getPointerTo());
                 builder->CreateStore(a, ptr);
 
                 i++;
@@ -424,7 +414,7 @@ std::optional<Value *> CodegenVisitor::TvisitInitProduct(WPLParser::InitProductC
         return loaded;
     }
 
-    errorHandler.addCodegenError(ctx->getStart(), "Failed to gen init"); // FIXME: DO BETTER
+    errorHandler.addCodegenError(ctx->getStart(), "Failed to gen init"); 
     return {};
 }
 
@@ -1169,7 +1159,7 @@ std::optional<Value *> CodegenVisitor::TvisitAssignStatement(WPLParser::AssignSt
         builder->CreateStore(ConstantInt::get(Int32Ty, index, true), tagPtr);
         Value *valuePtr = builder->CreateGEP(v, {Int32Zero, Int32One});
 
-        Value *corrected = builder->CreateBitCast(valuePtr, stoVal->getType()->getPointerTo()); // FIXME: DO BETTER
+        Value *corrected = builder->CreateBitCast(valuePtr, stoVal->getType()->getPointerTo());
         builder->CreateStore(stoVal, corrected);
     }
     else
@@ -1276,7 +1266,6 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
                 if (e->ex)
                 {
                     Value *stoVal = exVal.value();
-                    // FIXME: NEED TO ADD THIS FOR OTHER ASSIGN TYPE!
                     if (const TypeSum *sum = dynamic_cast<const TypeSum *>(varSymbol->type))
                     {
                         // FIXME: METHODIZE!!
@@ -1303,7 +1292,6 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
                             return {}; // FIXME: DO BETTER!
                         }
 
-                        // llvm::AllocaInst *inner = builder->CreateAlloca(ty, 0, var->getText());
                         // FIXME: SUMS CANT BE GENERATED AT GLOBAL LEVEL?
                         Value *tagPtr = builder->CreateGEP(v, {Int32Zero, Int32Zero});
 
@@ -1312,9 +1300,6 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
 
                         Value *corrected = builder->CreateBitCast(valuePtr, stoVal->getType()->getPointerTo()); // FIXME: DO BETTER
                         builder->CreateStore(stoVal, corrected);
-
-                        // Value *loaded = builder->CreateLoad(inner->getType()->getPointerElementType(), inner);
-                        // builder->CreateStore(loaded, v);
                     }
                     else
                     {
@@ -1606,7 +1591,6 @@ std::optional<Value *> CodegenVisitor::TvisitBlock(WPLParser::BlockContext *ctx)
 std::optional<Value *> CodegenVisitor::TvisitLambdaConstExpr(WPLParser::LambdaConstExprContext *ctx)
 {
     // FIXME: SEE ALL ISSUES W GENERAL INVOKE VISIT
-    // FIXME: TEST MULTIPLE LAMBDAS W/ SAME NAME!!
     // Get the current insertion point
     BasicBlock *ins = builder->GetInsertBlock();
 
@@ -1676,7 +1660,7 @@ std::optional<Value *> CodegenVisitor::TvisitLambdaConstExpr(WPLParser::LambdaCo
             e->accept(this);
         }
 
-        // FIXME: NOTE HOW WE DONT NEED TO CREATE RET VOID EVER BC NO FN!
+        // NOTE HOW WE DONT NEED TO CREATE RET VOID EVER BC NO FN!
 
         // Return to original insert point
         builder->SetInsertPoint(ins);

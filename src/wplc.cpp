@@ -364,7 +364,7 @@ int main(int argc, const char *argv[])
       return -1; // Not even possible
     }
 
-    for (auto input : inputs) //FIXME: ADD OUTPUT FILE NAME //FIXME: LINKING ISSUES
+    for (auto input : inputs) //FIXME: LINKING ISSUES
     {
       cmd << input.second << ".o ";
     }

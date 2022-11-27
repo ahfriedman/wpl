@@ -35,7 +35,7 @@ a func aFromLambdaOp(lambdaOp op) {
 }
 
 Unit -> int func getMain() {
-    int func main(Unit u) { # FIXME: THESE ARE ALL DANGEROUS B/C I CAN WRITE A SECOND ONE IN A DIFFERENT SCOPE!!!
+    int func main(Unit u) {
         var t2; 
 
         t2 <- getPrintLambda(); 

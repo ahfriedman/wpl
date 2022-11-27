@@ -174,8 +174,6 @@ public:
     // std::any visitType(WPLParser::TypeContext *ctx) override { return TvisitType(ctx); };
     std::any visitBooleanConst(WPLParser::BooleanConstContext *ctx) override { return TvisitBooleanConst(ctx); };
 
-    // FIXME: Add Base and LamdaTypes?
-
     std::any visitLambdaConstExpr(WPLParser::LambdaConstExprContext *ctx) override { return TvisitLambdaConstExpr(ctx); }
     // std::any visitDefineEnum(WPLParser::DefineEnumContext *ctx) override { return TvisitDefineEnum(ctx); }
     std::any visitMatchStatement(WPLParser::MatchStatementContext *ctx) override { return TvisitMatchStatement(ctx); }
@@ -228,21 +226,8 @@ public:
 
             if (llvm::FunctionType *fnType = static_cast<llvm::FunctionType *>(genericType))
             {
-                std::cout << "FN " << funcId << std::endl; 
                 Function *fn = inv->getLLVMName() ? module->getFunction(inv->getLLVMName().value()) : Function::Create(fnType, GlobalValue::PrivateLinkage, funcId, module);; // Lookup the function first
-                /*
-                 * If we couldn't find the function, that means it wasn't pre-declared, and we need to create it here and now.
-                 */
-                // if (!fn || !(sym->isGlobal))
-                // {
-                //     std::cout << "REGEN " << funcId << std::endl; 
-                //     fn = Function::Create(fnType, GlobalValue::PrivateLinkage, funcId, module); // FIXME: DO BETTER
-                // }
-
-                std::cout << "241 " << fn->getName().str() << std::endl; 
                 inv->setName(fn->getName().str());
-                std::cout << "243 " << std::endl; 
-                // std::cout << "NM: " << fn->getName().str() << std::endl; 
 
                 // Get the parameter list context for the invokable
                 WPLParser::ParameterListContext *paramList = ctx->paramList;
@@ -337,18 +322,12 @@ public:
             if (const TypeInvoke* inv = dynamic_cast<const TypeInvoke *>(sym->type))
             {
                 if(!inv->getLLVMName()) {
-                    // std::cout << "Throwing for; " << sym->toString() << std::endl; 
                     errorHandler.addCodegenError(ctx->getStart(), "Could not locate IR name for function " + sym->toString());
                     return {}; 
                 }
 
-                std::cout << "341 " << sym->toString() << std::endl; 
-                // FIXME: METHODIZE!!!
                 Function *fn = module->getFunction(inv->getLLVMName().value());
-
-                // FIXME: COPY IN STUB GEN!
-                // Value *val = builder->CreateLoad(fn);
-                // return val;
+                
                 return fn;
             }
             else if (sym->isGlobal)
