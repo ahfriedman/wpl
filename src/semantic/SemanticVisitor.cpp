@@ -307,12 +307,12 @@ const Type *SemanticVisitor::visitCtx(WPLParser::ArrayAccessContext *ctx)
      * Look up the symbol and check that it is defined.
      */
 
-    std::string name = ctx->var->getText();
-    std::optional<Symbol *> opt = stmgr->lookup(name);
+    const Type* type = std::any_cast<const Type*>(ctx->field->accept(this));
+    std::optional<Symbol *> opt  = bindings->getBinding(ctx->field->VARIABLE().at(ctx->field->VARIABLE().size() - 1));
 
     if (!opt)
     {
-        errorHandler.addSemanticError(ctx->getStart(), "Cannot access value from undefined array: " + name);
+        errorHandler.addSemanticError(ctx->getStart(), "Cannot access value from undefined array: " + ctx->field->getText());
         return Types::UNDEFINED;
     }
 
@@ -321,14 +321,14 @@ const Type *SemanticVisitor::visitCtx(WPLParser::ArrayAccessContext *ctx)
      */
 
     Symbol *sym = opt.value();
-    if (const TypeArray *arr = dynamic_cast<const TypeArray *>(sym->type))
+    if (const TypeArray *arr = dynamic_cast<const TypeArray *>(sym->type)) //FIXME: Verify that the symbol type matches the return type ?
     {
         bindings->bind(ctx, sym);
         return arr->getValueType(); // Return type of array
     }
 
     // Report error
-    errorHandler.addSemanticError(ctx->getStart(), "Cannot use array access on non-array expression " + name + " : " + sym->type->toString());
+    errorHandler.addSemanticError(ctx->getStart(), "Cannot use array access on non-array expression " + ctx->field->getText() + " : " + type->toString());
     return Types::UNDEFINED;
 }
 

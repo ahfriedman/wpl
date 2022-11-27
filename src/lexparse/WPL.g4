@@ -17,9 +17,9 @@ externStatement : EXTERN (ty=type FUNC | PROC) name=VARIABLE LPAR ((paramList=pa
 
 invocation          :  (var=VARIABLE | lam=lambdaConstExpr) LPAR (args+=expression (',' args+=expression)* )? RPAR ;
 
-fieldAccessExpr     : fields+=VARIABLE ('.' fields+=VARIABLE)+  ;
+fieldAccessExpr     : fields+=VARIABLE ('.' fields+=VARIABLE)*  ;
 //Helps allow us to use VARIABLE or arrayAccess and not other expressions (such as for assignments)
-arrayAccess         : var=VARIABLE '[' index=expression ']'; 
+arrayAccess         : field=fieldAccessExpr '[' index=expression ']'; 
 arrayOrVar          : var=VARIABLE | array=arrayAccess  ;
 
 /*
@@ -56,7 +56,7 @@ expression          : LPAR ex=expression RPAR                       # ParenExpr
                     | v=VARIABLE '::init' '(' (exprs+=expression (',' exprs+=expression)*)? ')' # InitProduct
                     | arrayAccess  # ArrayAccessExpr
                     | booleanConst # BConstExpr 
-                    | v=VARIABLE   # VariableExpr
+                    | v=VARIABLE   # VariableExpr //FIXME: Remove this? 
                     | i=INTEGER    # IConstExpr
                     | s=STRING     # SConstExpr 
                     | lambdaConstExpr # LambdaExpr

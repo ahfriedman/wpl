@@ -376,10 +376,10 @@ std::optional<Value *> CodegenVisitor::TvisitInitProduct(WPLParser::InitProductC
 
                         return (unsigned int)0;
                     }(module);
-                    
+
                     if (index != 0)
                     {
-                        llvm::Type * sumTy = sum->getLLVMType(module);
+                        llvm::Type *sumTy = sum->getLLVMType(module);
                         llvm::AllocaInst *alloc = builder->CreateAlloca(sumTy, 0, "XK");
                         Value *tagPtr = builder->CreateGEP(alloc, {Int32Zero, Int32Zero});
                         builder->CreateStore(ConstantInt::get(Int32Ty, index, true), tagPtr);
@@ -410,6 +410,7 @@ std::optional<Value *> CodegenVisitor::TvisitInitProduct(WPLParser::InitProductC
 
 std::optional<Value *> CodegenVisitor::TvisitArrayAccess(WPLParser::ArrayAccessContext *ctx)
 {
+    std::cout << "413" << std::endl;
     // Attempt to get the index Value
     std::optional<Value *> index = std::any_cast<std::optional<Value *>>(ctx->index->accept(this));
 
@@ -418,51 +419,44 @@ std::optional<Value *> CodegenVisitor::TvisitArrayAccess(WPLParser::ArrayAccessC
         errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code in TvisitArrayAccess for index!");
         return {};
     }
-
-    std::optional<Symbol *> symOpt = props->getBinding(ctx);
-
-    // If the symbol could not be found, raise an error
-    if (!symOpt)
-    {
-        errorHandler.addCodegenError(ctx->getStart(), "Undefined symbol in array access");
-        return {};
-    }
-
-    Symbol *sym = symOpt.value();
-
-    // Create the expression pointer
-    std::optional<llvm::Value *> arrayPtr = sym->val;
-
+    std::cout << "422" << std::endl;
+    std::optional<Value *> arrayPtr = std::any_cast<std::optional<Value *>>(ctx->field->accept(this));
+    std::cout << "424" << std::endl;
     if (!arrayPtr)
     {
-        if (sym->isGlobal)
-        {
-            // Lookup the global var for the symbol
-            llvm::GlobalVariable *glob = module->getNamedGlobal(sym->identifier);
+        std::cout << "427" << std::endl;
+        // if (sym->isGlobal)
+        // {
+        //     // Lookup the global var for the symbol
+        //     llvm::GlobalVariable *glob = module->getNamedGlobal(sym->identifier);
 
-            // Check that we found the variable. If not, throw an error.
-            if (!glob)
-            {
-                errorHandler.addCodegenError(ctx->getStart(), "Unable to find global variable: " + sym->identifier);
-                return {};
-            }
+        //     // Check that we found the variable. If not, throw an error.
+        //     if (!glob)
+        //     {
+        //         errorHandler.addCodegenError(ctx->getStart(), "Unable to find global variable: " + sym->identifier);
+        //         return {};
+        //     }
 
-            arrayPtr = builder->CreateLoad(glob)->getPointerOperand();
-
-            // auto ptr = builder->CreateGEP(v, {Int32Zero, index.value()});
-            // Value *val = builder->CreateLoad(ptr->getType()->getPointerElementType(), ptr);
-            // return val;
-        }
-        else
-        {
-            errorHandler.addCodegenError(ctx->getStart(), "Failed to locate array in access");
-            return {};
-        }
+        //     arrayPtr = builder->CreateLoad(glob)->getPointerOperand();
+        // }
+        // else
+        // {
+        errorHandler.addCodegenError(ctx->getStart(), "Failed to locate array in access");
+        return {};
+        // }
     }
 
+    std::cout << "449" << std::endl;
     // FIXME: CAN WE BREAK ARRAYS DUE TO THE ACCESS OF THE ALLOC VALUE?
-    auto ptr = builder->CreateGEP(arrayPtr.value(), {Int32Zero, index.value()});
+    Value * baseValue = arrayPtr.value(); 
+
+    llvm::AllocaInst *v = builder->CreateAlloca(baseValue->getType());
+    builder->CreateStore(baseValue, v);
+
+    auto ptr = builder->CreateGEP(v, {Int32Zero, index.value()});
+    std::cout << "452" << std::endl;
     Value *val = builder->CreateLoad(ptr->getType()->getPointerElementType(), ptr);
+    std::cout << "454" << std::endl;
     return val;
 }
 
@@ -847,19 +841,19 @@ std::optional<Value *> CodegenVisitor::TvisitFieldAccessExpr(WPLParser::FieldAcc
 
     if (!symOpt)
     {
-        errorHandler.addCodegenError(ctx->getStart(), "Improperly initialized array access symbol.");
+        errorHandler.addCodegenError(ctx->getStart(), "Unbound symbol in field access: " + ctx->getText());
         return {};
     }
 
     Symbol *sym = symOpt.value();
 
-    if (!symOpt || !sym->val || !sym->type)
+    if (!sym->type)
     {
-        errorHandler.addCodegenError(ctx->getStart(), "Improperly initialized array access symbol.");
+        errorHandler.addCodegenError(ctx->getStart(), "Improperly initialized symbol in field access: " + ctx->getText());
         return {};
     }
 
-    if (ctx->fields.at(ctx->fields.size() - 1)->getText() == "length")
+    if (ctx->fields.size() > 1 && ctx->fields.at(ctx->fields.size() - 1)->getText() == "length")
     {
         std::optional<Symbol *> modOpt = props->getBinding(ctx->VARIABLE().at(ctx->VARIABLE().size() - 2));
 
@@ -925,7 +919,7 @@ std::optional<Value *> CodegenVisitor::TvisitFieldAccessExpr(WPLParser::FieldAcc
             Value *baseValue = baseOpt.value();
 
             Symbol *fieldSym = fieldOpt.value();
-            llvm::AllocaInst *v = builder->CreateAlloca(baseValue->getType()); //(fieldSym->type->getLLVMType(module), 0, "");
+            llvm::AllocaInst *v = builder->CreateAlloca(baseValue->getType());
             builder->CreateStore(baseValue, v);
             Value *valPtr = builder->CreateGEP(v, {Int32Zero, ConstantInt::get(Int32Ty, index, true)});
 
