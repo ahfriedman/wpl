@@ -309,7 +309,7 @@ private:
      * @brief Name used by llvm to represent this function
      *
      */
-    std::optional<std::string> name = {};
+    std::optional<std::string> name = {}; //NOT FOR SEMANTIC NAMES!!! THIS ONE IS FOR LLVM ONLY
 
 public:
     /**
@@ -746,7 +746,7 @@ public:
 
         if (ty)
             return ty;
-        
+
         unsigned int min = std::numeric_limits<unsigned int>::max();
         unsigned int max = std::numeric_limits<unsigned int>::min();
 
@@ -754,7 +754,7 @@ public:
         {
             // Note: This is why one has to use pointers in order to nest a type into itself
             unsigned int t = M->getDataLayout().getTypeAllocSize(e->getLLVMType(M));
-            // FIXME: DO BETTER - ALSO WILL NOT WORK ON VARS!
+            // FIXME: DO BETTER - ALSO WILL NOT WORK ON VARS! (there are actually a LOT of places where using a var may break things bc we only check for TypeSum)
 
             // M->getDataLayout().getTypeAllocSize(e->getLLVMType(M));
 
