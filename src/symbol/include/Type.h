@@ -29,7 +29,6 @@
 #include "LinkedMap.h"
 
 // FIXME: CAN NOW HAVE UNDEFINED TYPES!!!! NEED TO TEST (AND PROBABLY REMOVE NULLPTR)!
-// FIXME: PROBABLY NEED A SEPARATE TYPE FOR DEFINITIONS AS THEY HAVE DIFFERENT INHERITANCES!
 
 /*******************************************
  *
@@ -410,7 +409,7 @@ public:
 
         for (const Type *ty : paramTypes)
         {
-            typeVec.push_back(ty->getLLVMType(M)); // paramTypes.typeVec); //FIXME: throw error if can't create?
+            typeVec.push_back(ty->getLLVMType(M)); //FIXME: throw error if can't create?
         }
 
         llvm::ArrayRef<llvm::Type *> paramRef = llvm::ArrayRef(typeVec);
@@ -720,7 +719,7 @@ public:
 
         for (auto e : cases)
         {
-            // FIXME: HERE IS WHY WE CANT DO RECURSIVE STUFF WO PTRS!
+            // Note: This is why one has to use pointers in order to nest a type into itself
             unsigned int t = M->getDataLayout().getTypeAllocSize(e->getLLVMType(M));
             // FIXME: DO BETTER - ALSO WILL NOT WORK ON VARS!
 
@@ -744,27 +743,15 @@ public:
         llvm::Type *inner = llvm::Type::getInt8Ty(M->getContext());
         llvm::Type *arr = llvm::ArrayType::get(inner, len);
 
-        // if(this->llvmType) {
-        //    return ;
-
-        // }//return llvmType;
-
-        std::vector<llvm::Type *> typeVec = {llvm::Type::getInt32Ty(M->getContext()), arr}; // FIXME: NEEDS TO BE LARGEST TYPE!
-
-        // for (const Type *ty : paramTypes)
-        // {
-        //     typeVec.push_back(ty->getLLVMType(M->getContext())); // paramTypes.typeVec); //FIXME: throw error if can't create?
-        // }
+        std::vector<llvm::Type *> typeVec = {llvm::Type::getInt32Ty(M->getContext()), arr};
 
         llvm::ArrayRef<llvm::Type *> ref = llvm::ArrayRef(typeVec);
 
         // Needed to prevent duplicating the type's definition
         //  TypeSum *mthis = const_cast<TypeSum *>(this);
-        ty = llvm::StructType::create(M->getContext(), ref, toString()); // FIXME: USE STRING REF GET NAME!!!
+        ty = llvm::StructType::create(M->getContext(), ref, toString());
 
-        // mthis->llvmType = ty
         return ty; // this->llvmType; //FIXME: WHAT SHOULD THE DEFAULT OF EMPTY ENUMS BE? OR I GUESS WE SHOULDNT ALLOW ANY EMPTYS
-        // return llvm::Type::getInt8PtrTy(M->getContext());
     }
 
 protected:
@@ -812,16 +799,12 @@ private:
      * @brief The types valid in this sum
      *
      */
-    // std::map<std::string, const Type *> elements = {};
     LinkedMap<std::string, const Type*> elements; 
 
     /**
      * @brief LLVM IR Representation of the type
      *
      */
-    // llvm::Type * llvmType;
-    // std::optional<llvm::StringRef> name = {}; // FIXME: DO BETTER--ESP FOR PRODUCTS!
-
     std::optional<std::string> name; 
 
 public:
@@ -831,17 +814,8 @@ public:
         name = n; //FIXME: TEST ANON STRUCTS!
     }
 
-    // auto lexical_compare = [](int a, int b) { return to_string(a) < to_string(b); };
-
     std::optional<const Type *> get(std::string id) const
     {
-        // auto symbol = elements.find(id);
-
-        // if (symbol == elements.end())
-        //     return {};
-
-        // return symbol->second;
-
         return elements.lookup(id); 
     }
 
@@ -897,7 +871,7 @@ public:
         llvm::ArrayRef<llvm::Type *> ref = llvm::ArrayRef(typeVec);
 
         // Needed to prevent duplicating the type's definition
-        ty = llvm::StructType::create(M->getContext(), ref, toString()); // FIXME: USE STRING REF GET NAME!!!
+        ty = llvm::StructType::create(M->getContext(), ref, toString());
 
         return ty; // this->llvmType; //FIXME: WHAT SHOULD THE DEFAULT OF EMPTY ENUMS BE? OR I GUESS WE SHOULDNT ALLOW ANY EMPTYS
     }

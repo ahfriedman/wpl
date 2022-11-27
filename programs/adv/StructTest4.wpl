@@ -16,7 +16,7 @@ define struct HSVColor {
     HSVData hsv; 
 }
 
-define enum ColorType { # FIXME: TEST THESE WITH ANON. ENUMS
+define enum ColorType {
     RGBColor, 
     HSVColor
 }
