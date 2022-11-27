@@ -807,7 +807,6 @@ std::optional<Value *> CodegenVisitor::TvisitFieldAccessExpr(WPLParser::FieldAcc
     }
 
     const Type *ty = sym->type;
-    std::cout << "894 " << ctx->getText() << std::endl;
     std::optional<Value *> baseOpt = visitVariable(ctx->VARIABLE().at(0)->getText(), props->getBinding(ctx->VARIABLE().at(0)), ctx);
     // std::optional<Value *> val = {};
 
@@ -822,20 +821,7 @@ std::optional<Value *> CodegenVisitor::TvisitFieldAccessExpr(WPLParser::FieldAcc
             }
 
             std::string field = ctx->fields.at(i)->getText();
-            std::optional<unsigned int> indexOpt = [s, field]()
-            {
-                unsigned int i = 0;
-                for (auto e : s->getElements())
-                {
-                    if (e.first == field) // FIXME: DO BETTER CONSIDERING WE HAVE MAPS
-                    {
-                        return std::optional<unsigned int>{i};
-                    }
-                    i++;
-                }
-                std::optional<unsigned int> ret = {};
-                return ret;
-            }();
+            std::optional<unsigned int> indexOpt = s->getIndex(field);
 
             if (!indexOpt)
             {

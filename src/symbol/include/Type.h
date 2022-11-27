@@ -840,6 +840,11 @@ public:
         return elements.lookup(id);
     }
 
+    std::optional<unsigned int> getIndex(std::string id) const 
+    {
+        return elements.getIndex(id); 
+    }
+
     // std::map<std::string, const Type*> getElements() const { return elements; }
     vector<pair<std::string, const Type *>> getElements() const { return elements.getElements(); }
     /**
