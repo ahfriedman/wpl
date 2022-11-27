@@ -166,14 +166,6 @@ int main(int argc, const char *argv[])
   // Case 1: We were given input files
   if (!inputFileName.empty())
   {
-
-    // Used to prevent giving file names when compiling multiple files---just as clang does
-    // if (inputFileName.size() > 1 && useOutputFileName)
-    // {
-    //   std::cerr << "Cannot specify output file name when generating multiple files." << std::endl;
-    //   std::exit(-1); //FIXME: WARN?
-    // }
-
     // For each file name, make sure the file exist. If so, create an input stream to it
     // and set its output filename to be the provided name (if we are compiling just
     // one file, and a name was provided), or the file's name but with the .wpl
@@ -364,7 +356,7 @@ int main(int argc, const char *argv[])
       return -1; // Not even possible
     }
 
-    for (auto input : inputs) //FIXME: LINKING ISSUES
+    for (auto input : inputs)
     {
       cmd << input.second << ".o ";
     }

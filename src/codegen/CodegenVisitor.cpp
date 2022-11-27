@@ -4,8 +4,7 @@ std::optional<Value *> CodegenVisitor::TvisitCompilationUnit(WPLParser::Compilat
 {
     for (auto e : ctx->defs)
     {
-        // FIXME: ENSURE CATCH ALL?
-        e->accept(this);
+        e->accept(this); // TODO: remove this?
     }
 
     for (auto e : ctx->extens)
@@ -159,7 +158,7 @@ std::optional<Value *> CodegenVisitor::TvisitMatchStatement(WPLParser::MatchStat
                 if (index == 0)
                 {
                     errorHandler.addCodegenError(ctx->getStart(), "Unable to find key for type " + localSymOpt.value()->type->toString() + " in sum");
-                    return {}; // FIXME: DO BETTER!
+                    return {};
                 }
 
                 BasicBlock *matchBlk = BasicBlock::Create(module->getContext(), "tagBranch" + std::to_string(index));
@@ -199,7 +198,6 @@ std::optional<Value *> CodegenVisitor::TvisitMatchStatement(WPLParser::MatchStat
 
                 builder->CreateStore(val, v);
 
-                // FIXME: DEFINE AND BIND THE VAR!!!
                 altCtx->eval->accept(this);
 
                 if (WPLParser::BlockStatementContext *blkStmtCtx = dynamic_cast<WPLParser::BlockStatementContext *>(altCtx->eval))
@@ -285,50 +283,10 @@ std::optional<Value *> CodegenVisitor::TvisitInvocation(WPLParser::InvocationCon
     }
 
     llvm::FunctionType *fnType = static_cast<llvm::FunctionType *>(ty->getPointerElementType());
-    // module->dump();
-    // llvm::Value *fn = builder->CreateLoad(fnVal);
+
     Value *val = builder->CreateCall(fnType, fnVal, ref);
     return val;
-
-    /*
-    if (!call)
-    {
-        std::optional<Symbol *> symOpt = props->getBinding(ctx);
-        if (!symOpt)
-        {
-            errorHandler.addCodegenError(ctx->getStart(), "Could not locate function for invocation: " + ctx->field->getText() + ". Has it been defined in IR yet?");
-            return {};
-        }
-
-        Symbol *sym = symOpt.value();
-
-        std::optional<llvm::Value *> fnPtrOpt = sym->val;
-
-        if (!fnPtrOpt)
-        {
-            errorHandler.addCodegenError(ctx->getStart(), "Could not find value for function: " + sym->toString());
-            return {};
-        }
-        // FIXME: TEST GLOBAL LAMBDAS!!!
-
-        llvm::Type *ty = sym->type->getLLVMType(module);
-
-        if (dynamic_cast<const TypeInvoke *>(sym->type))
-        {
-            llvm::FunctionType *fnType = static_cast<llvm::FunctionType *>(ty->getPointerElementType());
-            llvm::Value *fnPtr = fnPtrOpt.value();
-
-            llvm::Value *fn = builder->CreateLoad(fnPtr);
-
-            Value *val = builder->CreateCall(fnType, fn, ref);
-
-            return val;
-        }
-
-        errorHandler.addCodegenError(ctx->getStart(), "Invoke got non-function type: " + ctx->field->getText() + " : " + sym->type->toString());
-        return {};
-    }
-    */
+    // FIXME: TEST GLOBAL LAMBDAS!!!
 }
 
 std::optional<Value *> CodegenVisitor::TvisitInitProduct(WPLParser::InitProductContext *ctx)
@@ -354,7 +312,6 @@ std::optional<Value *> CodegenVisitor::TvisitInitProduct(WPLParser::InitProductC
     std::optional<Symbol *> varSymOpt = props->getBinding(ctx);
     if (!varSymOpt)
     {
-        // FIXME: DO BETTER
         errorHandler.addCodegenError(ctx->getStart(), "Incorrectly processed variable in assignment: " + ctx->getText());
         return {};
     }
@@ -397,7 +354,7 @@ std::optional<Value *> CodegenVisitor::TvisitInitProduct(WPLParser::InitProductC
                         Value *tagPtr = builder->CreateGEP(alloc, {Int32Zero, Int32Zero});
                         builder->CreateStore(ConstantInt::get(Int32Ty, index, true), tagPtr);
                         Value *valuePtr = builder->CreateGEP(alloc, {Int32Zero, Int32One});
-                        Value *corrected = builder->CreateBitCast(valuePtr, a->getType()->getPointerTo()); // FIXME: DO BETTER
+                        Value *corrected = builder->CreateBitCast(valuePtr, a->getType()->getPointerTo());
                         builder->CreateStore(a, corrected);
                         a = builder->CreateLoad(sumTy, alloc);
                     }
@@ -414,13 +371,12 @@ std::optional<Value *> CodegenVisitor::TvisitInitProduct(WPLParser::InitProductC
         return loaded;
     }
 
-    errorHandler.addCodegenError(ctx->getStart(), "Failed to gen init"); 
+    errorHandler.addCodegenError(ctx->getStart(), "Failed to gen init");
     return {};
 }
 
 std::optional<Value *> CodegenVisitor::TvisitArrayAccess(WPLParser::ArrayAccessContext *ctx)
 {
-    std::cout << "413" << std::endl;
     // Attempt to get the index Value
     std::optional<Value *> index = std::any_cast<std::optional<Value *>>(ctx->index->accept(this));
 
@@ -429,44 +385,21 @@ std::optional<Value *> CodegenVisitor::TvisitArrayAccess(WPLParser::ArrayAccessC
         errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code in TvisitArrayAccess for index!");
         return {};
     }
-    std::cout << "422" << std::endl;
+
     std::optional<Value *> arrayPtr = std::any_cast<std::optional<Value *>>(ctx->field->accept(this));
-    std::cout << "424" << std::endl;
     if (!arrayPtr)
     {
-        std::cout << "427" << std::endl;
-        // if (sym->isGlobal)
-        // {
-        //     // Lookup the global var for the symbol
-        //     llvm::GlobalVariable *glob = module->getNamedGlobal(sym->identifier);
-
-        //     // Check that we found the variable. If not, throw an error.
-        //     if (!glob)
-        //     {
-        //         errorHandler.addCodegenError(ctx->getStart(), "Unable to find global variable: " + sym->identifier);
-        //         return {};
-        //     }
-
-        //     arrayPtr = builder->CreateLoad(glob)->getPointerOperand();
-        // }
-        // else
-        // {
         errorHandler.addCodegenError(ctx->getStart(), "Failed to locate array in access");
         return {};
-        // }
     }
 
-    std::cout << "449" << std::endl;
-    // FIXME: CAN WE BREAK ARRAYS DUE TO THE ACCESS OF THE ALLOC VALUE?
     Value *baseValue = arrayPtr.value();
 
     llvm::AllocaInst *v = builder->CreateAlloca(baseValue->getType());
     builder->CreateStore(baseValue, v);
 
     auto ptr = builder->CreateGEP(v, {Int32Zero, index.value()});
-    std::cout << "452" << std::endl;
     Value *val = builder->CreateLoad(ptr->getType()->getPointerElementType(), ptr);
-    std::cout << "454" << std::endl;
     return val;
 }
 
