@@ -686,13 +686,17 @@ public:
         std::ostringstream description;
 
         description << "(";
+        
+        unsigned int ctr = 0; 
+        unsigned int size = cases.size(); 
 
         for (const Type *el : cases)
         {
-            description << el->toString() << " + "; // TODO: Do better!
+            description << el->toString();
+            if(++ctr != size) 
+                description << " + ";
         }
         description << ")";
-        // description << valueType->toString() << "[\" << length << "]";
 
         return description.str();
     }
@@ -824,7 +828,7 @@ public:
     TypeStruct(LinkedMap<std::string, const Type*> e, std::optional<std::string> n = {})
     {
         elements = e;
-        name = n; 
+        name = n; //FIXME: TEST ANON STRUCTS!
     }
 
     // auto lexical_compare = [](int a, int b) { return to_string(a) < to_string(b); };
@@ -856,12 +860,16 @@ public:
 
         description << "(";
 
+        unsigned int ctr = 0; 
+        unsigned int size = elements.getElements().size(); 
+
         for (auto e : elements.getElements())
         {
-            description << e.second->toString() << " * "; // FIXME: Do better!
+            description << e.second->toString();
+            if(++ctr != size) 
+                description << " * ";
         }
         description << ")";
-        // description << valueType->toString() << "[\" << length << "]";
 
         return description.str();
     }

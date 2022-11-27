@@ -1208,7 +1208,7 @@ TEST_CASE("programs/enum2 - Basic Enum 2", "[codegen][enum]")
 
     REQUIRE_FALSE(cv->hasErrors(0));
 
-    REQUIRE(llvmIrToSHA256(cv->getModule()) == "b82b68dc5cd14fe95a69d8e78dc5dac3544c95f36643cd8f72102c458f9b5c1d");
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "a20f2ee4191b776fdcde7e41a507b4c796e0f9d7a908890e7ed20ebe385f61ee");
 }
 
 TEST_CASE("programs/enumAssign - Same a  Enum 2 but with assignmens outside of decl", "[codegen][enum]")

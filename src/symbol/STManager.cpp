@@ -26,7 +26,7 @@ std::optional<Scope *> STManager::exitScope()
     Scope *last = currentScope.value();
 
     currentScope = last->getParent();
-    scopes.pop_back(); // FIXME: Delete last element in vector? -> We don't due this because it breaks the scope count
+    scopes.pop_back(); // FIXME: Delete last element in vector? -> We don't do this because it breaks the scope count
 
     int depth = scopes.size();
     if (getCurrentStop() == depth && getCurrentStop() != 0)
