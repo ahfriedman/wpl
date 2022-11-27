@@ -228,7 +228,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::InvocationContext *ctx)
                 errorHandler.addSemanticError(ctx->getStart(), errorMsg.str());
             }
         }
-        
+
         // Return the type of the invokable or BOT if it has none.
         return invokeable->getReturnType(); //.has_value() ? invokeable->getReturnType().value() : Types::UNDEFINED;
     }
@@ -875,7 +875,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::MatchStatementContext *ctx)
             errorHandler.addSemanticError(ctx->getStart(), "Match statement did not cover all cases needed for " + sumType->toString());
         }
 
-        bindings->bind(ctx->check, new Symbol(ctx->check->ex->getText(), sumType, false, false)); // FIXME: DO BETTER!
+        bindings->bind(ctx->check, new Symbol(ctx->check->ex->getText(), sumType, false, false));
         return Types::UNDEFINED;                                                                              
     }
 

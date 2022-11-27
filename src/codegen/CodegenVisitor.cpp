@@ -1158,7 +1158,6 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
             }
             else
             {
-                // FIXME: TRY PASSING VAR AS SUM IN ARGUMENT. IE, FUNCTION TAKES SUM AND WE JUST PROVIDE REGULAR TYPE!
                 //  As this is a local var we can just create an allocation for it
                 llvm::AllocaInst *v = builder->CreateAlloca(ty, 0, var->getText());
                 varSymbol->val = v;
