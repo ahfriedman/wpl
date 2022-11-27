@@ -14,7 +14,7 @@ define enum a {
     (str, int -> str + str -> str)
 }
 
-# FIXME: LET FOR () AROUND FN PARAMS IN Grammar?
+# TODO: LET FOR () AROUND FN PARAMS IN Grammar?
 # FIXME: CAN WE REDEFINE WITHIN THE SUM?
 
 int func program() {

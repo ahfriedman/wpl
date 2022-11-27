@@ -4,7 +4,7 @@ extern int func printf(str s, ...);
 define enum a {
     int, 
     boolean,
-    str # FIXME: how is this going to work? Or is this a pointer? What about a str array? lol
+    str
 }
 
 define enum b {
