@@ -142,12 +142,13 @@ const Type *SemanticVisitor::visitCtx(WPLParser::InvocationContext *ctx)
         /*
          * Look up the symbol to make sure that it is defined
          */
-        std::string name = ctx->VARIABLE()->getText();
-        std::optional<Symbol *> opt = stmgr->lookup(name);
+
+        const Type* type = std::any_cast<const Type*>(ctx->field->accept(this));
+        std::optional<Symbol *> opt  = bindings->getBinding(ctx->field->VARIABLE().at(ctx->field->VARIABLE().size() - 1)); //FIXME: Verify that the symbol type matches the return type ?
 
         if (!opt)
         {
-            errorHandler.addSemanticError(ctx->getStart(), "Cannot invoke undefined function: " + name);
+            errorHandler.addSemanticError(ctx->getStart(), "Cannot invoke undefined function: " + ctx->field->getText());
             return Types::UNDEFINED;
         }
 
@@ -162,7 +163,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::InvocationContext *ctx)
         return sym->type; 
     }(ctx);
 
-    std::string name = (ctx->lam) ? "lambda " : ctx->VARIABLE()->getText();
+    std::string name = (ctx->lam) ? "lambda " : ctx->field->getText();
 
     if (const TypeInvoke *invokeable = dynamic_cast<const TypeInvoke *>(type))
     {

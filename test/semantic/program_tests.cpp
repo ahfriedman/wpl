@@ -917,9 +917,9 @@ TEST_CASE("Invoke on Non-Invokable (str)", "[semantic][program]")
 
   sv->visitCompilationUnit(tree);
   REQUIRE(sv->hasErrors(ERROR));
-  CodegenVisitor *cv = new CodegenVisitor(pm, "test", CompilerFlags::NO_RUNTIME);
-  cv->visitCompilationUnit(tree);
-  REQUIRE(cv->hasErrors(0));
+  // CodegenVisitor *cv = new CodegenVisitor(pm, "test", CompilerFlags::NO_RUNTIME);
+  // cv->visitCompilationUnit(tree);
+  // REQUIRE(cv->hasErrors(0));
 }
 
 //FIXME: TYPE INFERENCE ON FUNCTIONS? AND TEST FUNCTION SUBTYPER!
@@ -952,9 +952,9 @@ TEST_CASE("Invoke on Non-Invokable (int)", "[semantic][program]")
 
   sv->visitCompilationUnit(tree);
   REQUIRE(sv->hasErrors(ERROR));
-  CodegenVisitor *cv = new CodegenVisitor(pm, "test", CompilerFlags::NO_RUNTIME);
-  cv->visitCompilationUnit(tree);
-  REQUIRE(cv->hasErrors(0));
+  // CodegenVisitor *cv = new CodegenVisitor(pm, "test", CompilerFlags::NO_RUNTIME);
+  // cv->visitCompilationUnit(tree);
+  // REQUIRE(cv->hasErrors(0));
 }
 
 TEST_CASE("Redeclaration of function 1", "[semantic][program]")

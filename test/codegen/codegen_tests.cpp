@@ -1039,7 +1039,7 @@ TEST_CASE("programs/Lambda1 - Basic lambda Test", "[codegen][lambda]")
 
     REQUIRE_FALSE(cv->hasErrors(0));
 
-    REQUIRE(llvmIrToSHA256(cv->getModule()) == "6e352285edacc42db930c25774b68b3a8fff977e2e858a61294b1ac14ad8c3a0");
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "d06bbb8013c6cfccd7f79ab269425b221c3a5dcb802949480b79fa28228d48bb");
 }
 
 // FIXME: LAMBDAS, ENUMS CAN"T BE ASSIGNED OUTSIDE OF DECL
@@ -1068,7 +1068,7 @@ TEST_CASE("programs/Lambda2 - Basic lambda Test w/ return", "[codegen][lambda]")
 
     REQUIRE_FALSE(cv->hasErrors(0));
 
-    REQUIRE(llvmIrToSHA256(cv->getModule()) == "ee35f7c8a82e6dece344d8a245c48982d894ea3e4db0f2ba939e0bea65e9e1e8");
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "3aca1c5d463a66b5ed899084647b2ed1ed6c76a4277b935c17fd3ca6ba30644a");
 }
 
 TEST_CASE("programs/Lambda3 - Basic lambda Test w/ return and same name", "[codegen][lambda]")
@@ -1095,7 +1095,7 @@ TEST_CASE("programs/Lambda3 - Basic lambda Test w/ return and same name", "[code
 
     REQUIRE_FALSE(cv->hasErrors(0));
 
-    REQUIRE(llvmIrToSHA256(cv->getModule()) == "526b0bc9f9b76dad00ad13676e16a11273b40e928342c848bdb9b7e8dfd75ab9");
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "c3d2c9ca20cd487e4612d275384a9801dbfef0e70cb2e7a799fff643f605d523");
 }
 
 TEST_CASE("programs/externLambda", "[codegen][lambda]")
@@ -1122,7 +1122,7 @@ TEST_CASE("programs/externLambda", "[codegen][lambda]")
 
     REQUIRE_FALSE(cv->hasErrors(0));
 
-    REQUIRE(llvmIrToSHA256(cv->getModule()) == "69a65ba7c965baab8ac203f032c7a7e8956f67ebf4699dbf682866de770404cb");
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "d81102c34794423af00dc4a13e2f2a3a1c37f4d4956655fb88e9527e37cb3b78");
 }
 
 TEST_CASE("programs/enum1 - Basic Enum 1", "[codegen][enum]")
@@ -1176,7 +1176,7 @@ TEST_CASE("programs/enum2 - Basic Enum 2", "[codegen][enum]")
 
     REQUIRE_FALSE(cv->hasErrors(0));
 
-    REQUIRE(llvmIrToSHA256(cv->getModule()) == "a20f2ee4191b776fdcde7e41a507b4c796e0f9d7a908890e7ed20ebe385f61ee");
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "523f0fdd247182b25da3af5c5e19e8878a4e1a98a9b42511a9a82bfc9922918b");
 }
 
 TEST_CASE("programs/enumAssign - Same a  Enum 2 but with assignmens outside of decl", "[codegen][enum]")
@@ -1203,7 +1203,7 @@ TEST_CASE("programs/enumAssign - Same a  Enum 2 but with assignmens outside of d
 
     REQUIRE_FALSE(cv->hasErrors(0));
 
-    REQUIRE(llvmIrToSHA256(cv->getModule()) == "5fb322db3a1c17135df54896d03d1312116a66754a7504660052950f6390e0df");
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "a754100cd398e8c52269bdf94bf069a461c5310f705b00cf984ca688ab622c04");
 }
 
 TEST_CASE("programs/enumAssign2 - Returning lambdas, functions, and enums", "[codegen][enum][lambda]")
@@ -1230,7 +1230,7 @@ TEST_CASE("programs/enumAssign2 - Returning lambdas, functions, and enums", "[co
 
     REQUIRE_FALSE(cv->hasErrors(0));
 
-    REQUIRE(llvmIrToSHA256(cv->getModule()) == "9153d63cc359041fb8e328cd523af59085257fdac3bfc74c85d8efca5caddf60");
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "bf7f5d87893b5afd5fe2ba76cbc633153d7fc26b10331ad8da8dfd6f86dfa22b");
 }
 
 TEST_CASE("programs/enum3", "[codegen][enum]")
@@ -1311,7 +1311,7 @@ TEST_CASE("programs/StructTest3", "[codegen][struct]")
 
     REQUIRE_FALSE(cv->hasErrors(0));
 
-    REQUIRE(llvmIrToSHA256(cv->getModule()) == "f94a952d400363f4c61815afdf0257a9ca447b66e8cf3d18ff9bd3b3a0cf3cce");
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "38f330db16fdb85c8f8ef7f9f4980beec1f936d4622c19f141436a9b4f102744");
 }
 
 TEST_CASE("programs/StructTest4", "[codegen][struct]")

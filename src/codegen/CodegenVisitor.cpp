@@ -270,14 +270,38 @@ std::optional<Value *> CodegenVisitor::TvisitInvocation(WPLParser::InvocationCon
         return val;
     }
 
-    llvm::Function *call = module->getFunction(ctx->VARIABLE()->getText());
+    // llvm::Function *call = module->getFunction(ctx->VARIABLE()->getText());
+    std::optional<Value *> fnOpt = std::any_cast<std::optional<Value *>>(ctx->field->accept(this));
+    if (!fnOpt)
+    {
+        errorHandler.addCodegenError(ctx->getStart(), "Could not locate function for invocation: " + ctx->field->getText() + ". Has it been defined in IR yet?");
+        return {};
+    }
 
+    Value *fnVal = fnOpt.value();
+
+    llvm::Type *ty = fnVal->getType();
+
+    if (llvm::isa<llvm::Function>(fnVal))
+    {
+        llvm::Function *call = static_cast<llvm::Function *>(fnVal);
+        Value *val = builder->CreateCall(call, ref); // Needs to be separate line because, C++
+        return val;
+    }
+
+    llvm::FunctionType *fnType = static_cast<llvm::FunctionType *>(ty->getPointerElementType());
+    // module->dump();
+    // llvm::Value *fn = builder->CreateLoad(fnVal);
+    Value *val = builder->CreateCall(fnType, fnVal, ref);
+    return val;
+
+    /*
     if (!call)
     {
         std::optional<Symbol *> symOpt = props->getBinding(ctx);
         if (!symOpt)
         {
-            errorHandler.addCodegenError(ctx->getStart(), "Could not locate function for invocation: " + ctx->VARIABLE()->getText() + ". Has it been defined in IR yet?");
+            errorHandler.addCodegenError(ctx->getStart(), "Could not locate function for invocation: " + ctx->field->getText() + ". Has it been defined in IR yet?");
             return {};
         }
 
@@ -303,19 +327,14 @@ std::optional<Value *> CodegenVisitor::TvisitInvocation(WPLParser::InvocationCon
             llvm::Value *fn = builder->CreateLoad(fnPtr);
 
             Value *val = builder->CreateCall(fnType, fn, ref);
-            // llvm::FunctionCallee *callee = new llvm::FunctionCallee(fnType, fnPtr);
 
-            // Value *val = builder->CreateCall(*callee, ref); // Needs to be separate line because, C++
             return val;
         }
 
-        errorHandler.addCodegenError(ctx->getStart(), "Invoke got non-function type: " + ctx->VARIABLE()->getText() + " : " + sym->type->toString());
-        // errorHandler.addCodegenError(ctx->getStart(), "Could not locate function for invocation: " + ctx->VARIABLE()->getText() + ". Has it been defined in IR yet?");
+        errorHandler.addCodegenError(ctx->getStart(), "Invoke got non-function type: " + ctx->field->getText() + " : " + sym->type->toString());
         return {};
     }
-
-    Value *val = builder->CreateCall(call, ref); // Needs to be separate line because, C++
-    return val;
+    */
 }
 
 std::optional<Value *> CodegenVisitor::TvisitInitProduct(WPLParser::InitProductContext *ctx)
@@ -448,7 +467,7 @@ std::optional<Value *> CodegenVisitor::TvisitArrayAccess(WPLParser::ArrayAccessC
 
     std::cout << "449" << std::endl;
     // FIXME: CAN WE BREAK ARRAYS DUE TO THE ACCESS OF THE ALLOC VALUE?
-    Value * baseValue = arrayPtr.value(); 
+    Value *baseValue = arrayPtr.value();
 
     llvm::AllocaInst *v = builder->CreateAlloca(baseValue->getType());
     builder->CreateStore(baseValue, v);

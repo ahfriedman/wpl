@@ -15,7 +15,7 @@ defineType        : 'define' 'enum' name=VARIABLE LSQB cases+=type (',' cases+=t
 
 externStatement : EXTERN (ty=type FUNC | PROC) name=VARIABLE LPAR ((paramList=parameterList variadic=VariadicParam?)? | ELLIPSIS) RPAR ';';
 
-invocation          :  (var=VARIABLE | lam=lambdaConstExpr) LPAR (args+=expression (',' args+=expression)* )? RPAR ;
+invocation          :  (field=fieldAccessExpr | lam=lambdaConstExpr) LPAR (args+=expression (',' args+=expression)* )? RPAR ;
 
 fieldAccessExpr     : fields+=VARIABLE ('.' fields+=VARIABLE)*  ;
 //Helps allow us to use VARIABLE or arrayAccess and not other expressions (such as for assignments)
