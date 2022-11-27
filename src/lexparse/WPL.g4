@@ -17,6 +17,7 @@ externStatement : EXTERN (ty=type FUNC | PROC) name=VARIABLE LPAR ((paramList=pa
 
 invocation          :  (var=VARIABLE | lam=lambdaConstExpr) LPAR (args+=expression (',' args+=expression)* )? RPAR ;
 
+fieldAccessExpr     : fields+=VARIABLE ('.' fields+=VARIABLE)+  ;
 //Helps allow us to use VARIABLE or arrayAccess and not other expressions (such as for assignments)
 arrayAccess         : var=VARIABLE '[' index=expression ']'; 
 arrayOrVar          : var=VARIABLE | array=arrayAccess  ;
@@ -43,7 +44,7 @@ arrayOrVar          : var=VARIABLE | array=arrayAccess  ;
  *      11-14. Typical boolean and variable constants. 
  */
 expression          : LPAR ex=expression RPAR                       # ParenExpr
-                    | fields+=VARIABLE ('.' fields+=VARIABLE)+           # FieldAccessExpr 
+                    | fieldAccessExpr                               # FieldAccess
                     | <assoc=right> op=(MINUS | NOT) ex=expression  # UnaryExpr 
                     | left=expression op=(MULTIPLY | DIVIDE) right=expression # BinaryArithExpr
                     | left=expression op=(PLUS | MINUS) right=expression      # BinaryArithExpr

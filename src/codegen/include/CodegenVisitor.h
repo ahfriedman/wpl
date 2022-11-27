@@ -294,7 +294,7 @@ public:
         return {};
     }
 
-    std::optional<Value *> visitVariable(std::string id, std::optional<Symbol *> symOpt, WPLParser::ExpressionContext *ctx)
+    std::optional<Value *> visitVariable(std::string id, std::optional<Symbol *> symOpt, antlr4::ParserRuleContext *ctx)
     {
         //  = props->getBinding(ctx);
 
