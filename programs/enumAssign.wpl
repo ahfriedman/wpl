@@ -14,8 +14,6 @@ define enum a {
     lambdaOp
 }
 
-# FIXME: TRY RETURNING FUNCTIONS/LAMBDAS AND ENUMS!
-
 int func program() {
     var fn <- (str msg, int times) : str {
         while times > 0 do {
@@ -30,7 +28,7 @@ int func program() {
 
     t2 <- fn; 
 
-    lambdaOp op; # FIXME: I FI CHANGE t2, WILL fn CHANGE?
+    lambdaOp op;
     op <- fn; 
     
     match op {
