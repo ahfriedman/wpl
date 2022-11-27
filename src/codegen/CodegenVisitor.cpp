@@ -268,7 +268,6 @@ std::optional<Value *> CodegenVisitor::TvisitInvocation(WPLParser::InvocationCon
 
     Value *val = builder->CreateCall(fnType, fnVal, ref);
     return val;
-    // FIXME: TEST GLOBAL LAMBDAS!!!
 }
 
 std::optional<Value *> CodegenVisitor::TvisitInitProduct(WPLParser::InitProductContext *ctx)
@@ -1137,7 +1136,7 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
                             return {}; // FIXME: DO BETTER!
                         }
 
-                        // FIXME: SUMS CANT BE GENERATED AT GLOBAL LEVEL?
+                        //FIXME: WHAT SHOULD SUMS DO IF NO MATCH CASE?
                         Value *tagPtr = builder->CreateGEP(v, {Int32Zero, Int32Zero});
 
                         builder->CreateStore(ConstantInt::get(Int32Ty, index, true), tagPtr);

@@ -195,7 +195,7 @@ public:
      */
     std::optional<Value *> visitInvokeable(WPLParser::FuncDefContext *ctx)
     {
-        BasicBlock *ins = builder->GetInsertBlock(); // FIXME: DO BETTER PROCESS DISCOVERY ALSO
+        BasicBlock *ins = builder->GetInsertBlock();
 
         // Lookup the symbol from the context
         std::optional<Symbol *> symOpt = props->getBinding(ctx);

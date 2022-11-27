@@ -43,7 +43,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::CompilationUnitContext *ctx)
             const TypeInvoke *funcType = (fnCtx->ty) ? new TypeInvoke(procType->getParamTypes(), retType, false, false)
                                                      : new TypeInvoke(procType->getParamTypes(), false, false);
 
-            Symbol *funcSymbol = new Symbol(id, funcType, true, true); // FIXME: WAS N/A, FALSE before -> VERY HACKY
+            Symbol *funcSymbol = new Symbol(id, funcType, true, true); 
             //FIXME: test name collisions with externs
             stmgr->addSymbol(funcSymbol);
             bindings->bind(ctx, funcSymbol);
@@ -789,6 +789,10 @@ const Type *SemanticVisitor::visitCtx(WPLParser::VarDeclStatementContext *ctx)
                   dynamic_cast<WPLParser::SConstExprContext *>(e->ex)))
             {
                 errorHandler.addSemanticError(e->ex->getStart(), "Global variables must be assigned explicit constants or initialized at runtime!");
+            }
+
+            if(dynamic_cast<const TypeSum*>(assignType)) {
+                errorHandler.addSemanticError(e->ex->getStart(), "Sums cannot be initialized at a global level");
             }
         }
 
