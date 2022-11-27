@@ -14,11 +14,10 @@ define enum a {
     (str, int -> str + str -> str)
 }
 
-# FIXME: LET FOR () AROUND FN PARAMS IN Grammar?
+# TODO: LET FOR () AROUND FN PARAMS IN Grammar?
 # FIXME: CAN WE REDEFINE WITHIN THE SUM?
 
 int func program() {
-    # FIXME: CANNOT ASSIGN DIRECTLY 
     var fn <- (str msg, int times) : str {
         while times > 0 do {
             printf("msg=%s\n", msg);
@@ -29,7 +28,7 @@ int func program() {
 
 
 
-    var t2 <- fn; # FIXME: STILL HAVE TO FIX NAME COLLISIONS ON FUNC DEF THO
+    var t2 <- fn;
 
     lambdaOp op <- fn; 
     # VS (str, int -> str + str -> str). Now, we need a way to make the two equivalent....

@@ -1,6 +1,5 @@
 extern int func printf(str s, ...);
 
-# FIXME: TEST BETTER, MULTIPLE ASSIGNMENTS ETC
 int func program() {
     var a <- printf; 
 

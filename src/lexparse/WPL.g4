@@ -15,10 +15,11 @@ defineType        : 'define' 'enum' name=VARIABLE LSQB cases+=type (',' cases+=t
 
 externStatement : EXTERN (ty=type FUNC | PROC) name=VARIABLE LPAR ((paramList=parameterList variadic=VariadicParam?)? | ELLIPSIS) RPAR ';';
 
-invocation          :  (var=VARIABLE | lam=lambdaConstExpr) LPAR (args+=expression (',' args+=expression)* )? RPAR ;
+invocation          :  (field=fieldAccessExpr | lam=lambdaConstExpr) LPAR (args+=expression (',' args+=expression)* )? RPAR ;
 
+fieldAccessExpr     : fields+=VARIABLE ('.' fields+=VARIABLE)*  ;
 //Helps allow us to use VARIABLE or arrayAccess and not other expressions (such as for assignments)
-arrayAccess         : var=VARIABLE '[' index=expression ']'; 
+arrayAccess         : field=fieldAccessExpr '[' index=expression ']'; 
 arrayOrVar          : var=VARIABLE | array=arrayAccess  ;
 
 /*
@@ -43,7 +44,7 @@ arrayOrVar          : var=VARIABLE | array=arrayAccess  ;
  *      11-14. Typical boolean and variable constants. 
  */
 expression          : LPAR ex=expression RPAR                       # ParenExpr
-                    | fields+=VARIABLE ('.' fields+=VARIABLE)+           # FieldAccessExpr 
+                    | fieldAccessExpr                               # FieldAccess
                     | <assoc=right> op=(MINUS | NOT) ex=expression  # UnaryExpr 
                     | left=expression op=(MULTIPLY | DIVIDE) right=expression # BinaryArithExpr
                     | left=expression op=(PLUS | MINUS) right=expression      # BinaryArithExpr
@@ -55,7 +56,6 @@ expression          : LPAR ex=expression RPAR                       # ParenExpr
                     | v=VARIABLE '::init' '(' (exprs+=expression (',' exprs+=expression)*)? ')' # InitProduct
                     | arrayAccess  # ArrayAccessExpr
                     | booleanConst # BConstExpr 
-                    | v=VARIABLE   # VariableExpr
                     | i=INTEGER    # IConstExpr
                     | s=STRING     # SConstExpr 
                     | lambdaConstExpr # LambdaExpr
@@ -76,7 +76,7 @@ condition           : (LPAR ex=expression RPAR) | ex=expression ;
 
 //Used to model each alternative in a selection 
 selectAlternative   : check=expression ':' eval=statement ; 
-matchAlternative    : check=type name=VARIABLE '=>' eval=statement ;  //FIXME: DO BETTER
+matchAlternative    : check=type name=VARIABLE '=>' eval=statement ;
 
 
 /*

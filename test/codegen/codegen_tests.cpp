@@ -39,7 +39,7 @@ TEST_CASE("Development Codegen Tests", "[codegen]")
 TEST_CASE("programs/test1 - General Overview", "[codegen]")
 {
     std::fstream *inStream = new std::fstream("/home/shared/programs/test1.wpl");
-    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+    antlr4::ANTLRInputStream *input = new antlr4::ANTLRInputStream(*inStream);
 
     WPLLexer lexer(input);
     antlr4::CommonTokenStream tokens(&lexer);
@@ -50,24 +50,23 @@ TEST_CASE("programs/test1 - General Overview", "[codegen]")
     REQUIRE(tree != NULL);
     STManager *stm = new STManager();
     PropertyManager *pm = new PropertyManager();
-    SemanticVisitor *sv = new SemanticVisitor(stm, pm, CompilerFlags::NO_RUNTIME);
+    SemanticVisitor *sv = new SemanticVisitor(stm, pm, 0);
     sv->visitCompilationUnit(tree);
-
 
     REQUIRE_FALSE(sv->hasErrors(0));
 
-    CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll", CompilerFlags::NO_RUNTIME);
+    CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll", 0);
     cv->visitCompilationUnit(tree);
 
     REQUIRE_FALSE(cv->hasErrors(0));
 
-    REQUIRE(llvmIrToSHA256(cv->getModule()) == "0d04df4ae9f27c56e731772debb2adee582fd37b34798e231df501f8288328ab");
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "c0bdac31a8ebe95ce34c84fc87340507f924e81315be3f4fea0d7c5f9d732019");
 }
 
 TEST_CASE("programs/test1-full - General Overview - full", "[codegen]")
 {
     std::fstream *inStream = new std::fstream("/home/shared/programs/test1-full.wpl");
-    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+    antlr4::ANTLRInputStream *input = new antlr4::ANTLRInputStream(*inStream);
 
     WPLLexer lexer(input);
     antlr4::CommonTokenStream tokens(&lexer);
@@ -78,24 +77,23 @@ TEST_CASE("programs/test1-full - General Overview - full", "[codegen]")
     REQUIRE(tree != NULL);
     STManager *stm = new STManager();
     PropertyManager *pm = new PropertyManager();
-    SemanticVisitor *sv = new SemanticVisitor(stm, pm, CompilerFlags::NO_RUNTIME);
+    SemanticVisitor *sv = new SemanticVisitor(stm, pm, 0);
     sv->visitCompilationUnit(tree);
-
 
     REQUIRE_FALSE(sv->hasErrors(0));
 
-    CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll", CompilerFlags::NO_RUNTIME);
+    CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll", 0);
     cv->visitCompilationUnit(tree);
 
     REQUIRE_FALSE(cv->hasErrors(0));
 
-    REQUIRE(llvmIrToSHA256(cv->getModule()) == "4ec8bf45d3a4b2114b2bd691018473cfed3b8f7688e626a626ea3cf691ad8f4f");
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "7207846e3c3466a82caba824eef32c06a12c4300d879e474a5beec37e0fe50eb");
 }
 
 TEST_CASE("programs/test1a", "[codegen]")
 {
     std::fstream *inStream = new std::fstream("/home/shared/programs/test1a.wpl");
-    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+    antlr4::ANTLRInputStream *input = new antlr4::ANTLRInputStream(*inStream);
 
     WPLLexer lexer(input);
     antlr4::CommonTokenStream tokens(&lexer);
@@ -119,11 +117,10 @@ TEST_CASE("programs/test1a", "[codegen]")
     // REQUIRE(llvmIrToSHA256(cv->getModule()) == "e0f894f1b6dd6613bd18eee553f5d6c8896228b4e4a21400b5dd6f1433ab0670");
 }
 
-
 TEST_CASE("programs/test2 - Scopes, multiple assignments, equality (non-arrays)", "[codegen]")
 {
     std::fstream *inStream = new std::fstream("/home/shared/programs/test2.wpl");
-    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+    antlr4::ANTLRInputStream *input = new antlr4::ANTLRInputStream(*inStream);
 
     WPLLexer lexer(input);
     antlr4::CommonTokenStream tokens(&lexer);
@@ -136,7 +133,6 @@ TEST_CASE("programs/test2 - Scopes, multiple assignments, equality (non-arrays)"
     PropertyManager *pm = new PropertyManager();
     SemanticVisitor *sv = new SemanticVisitor(stm, pm, 0);
     sv->visitCompilationUnit(tree);
-
 
     REQUIRE_FALSE(sv->hasErrors(0));
 
@@ -151,7 +147,7 @@ TEST_CASE("programs/test2 - Scopes, multiple assignments, equality (non-arrays)"
 TEST_CASE("programs/test3 - If w/o else", "[codegen]")
 {
     std::fstream *inStream = new std::fstream("/home/shared/programs/test3.wpl");
-    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+    antlr4::ANTLRInputStream *input = new antlr4::ANTLRInputStream(*inStream);
 
     WPLLexer lexer(input);
     antlr4::CommonTokenStream tokens(&lexer);
@@ -178,7 +174,7 @@ TEST_CASE("programs/test3 - If w/o else", "[codegen]")
 TEST_CASE("programs/test4a - Use and redeclaration of parameters", "[codegen]")
 {
     std::fstream *inStream = new std::fstream("/home/shared/programs/test4a.wpl");
-    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+    antlr4::ANTLRInputStream *input = new antlr4::ANTLRInputStream(*inStream);
 
     WPLLexer lexer(input);
     antlr4::CommonTokenStream tokens(&lexer);
@@ -205,7 +201,7 @@ TEST_CASE("programs/test4a - Use and redeclaration of parameters", "[codegen]")
 TEST_CASE("programs/test5 - Nested ifs and if equality", "[codegen]")
 {
     std::fstream *inStream = new std::fstream("/home/shared/programs/test5.wpl");
-    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+    antlr4::ANTLRInputStream *input = new antlr4::ANTLRInputStream(*inStream);
 
     WPLLexer lexer(input);
     antlr4::CommonTokenStream tokens(&lexer);
@@ -218,7 +214,6 @@ TEST_CASE("programs/test5 - Nested ifs and if equality", "[codegen]")
     PropertyManager *pm = new PropertyManager();
     SemanticVisitor *sv = new SemanticVisitor(stm, pm, CompilerFlags::NO_RUNTIME);
     sv->visitCompilationUnit(tree);
-
 
     REQUIRE_FALSE(sv->hasErrors(0));
 
@@ -233,7 +228,7 @@ TEST_CASE("programs/test5 - Nested ifs and if equality", "[codegen]")
 TEST_CASE("programs/test6 - Basic Select with Return", "[codegen]")
 {
     std::fstream *inStream = new std::fstream("/home/shared/programs/test6.wpl");
-    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+    antlr4::ANTLRInputStream *input = new antlr4::ANTLRInputStream(*inStream);
 
     WPLLexer lexer(input);
     antlr4::CommonTokenStream tokens(&lexer);
@@ -246,7 +241,6 @@ TEST_CASE("programs/test6 - Basic Select with Return", "[codegen]")
     PropertyManager *pm = new PropertyManager();
     SemanticVisitor *sv = new SemanticVisitor(stm, pm, CompilerFlags::NO_RUNTIME);
     sv->visitCompilationUnit(tree);
-
 
     REQUIRE_FALSE(sv->hasErrors(0));
 
@@ -261,7 +255,7 @@ TEST_CASE("programs/test6 - Basic Select with Return", "[codegen]")
 TEST_CASE("programs/testSelectBlock1 - Basic Select with Blocks that Return", "[codegen]")
 {
     std::fstream *inStream = new std::fstream("/home/shared/programs/testSelectBlock1.wpl");
-    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+    antlr4::ANTLRInputStream *input = new antlr4::ANTLRInputStream(*inStream);
 
     WPLLexer lexer(input);
     antlr4::CommonTokenStream tokens(&lexer);
@@ -282,14 +276,14 @@ TEST_CASE("programs/testSelectBlock1 - Basic Select with Blocks that Return", "[
 
     REQUIRE_FALSE(cv->hasErrors(0));
 
-    //NOTE: THIS SHOULD BE THE SAME AS test6!!!
+    // NOTE: THIS SHOULD BE THE SAME AS test6!!!
     REQUIRE(llvmIrToSHA256(cv->getModule()) == "686f9e63c3f0c7f09de2dbc0ca6a6e8ae5161be63048a68814c74c5164c33305");
 }
 
 TEST_CASE("programs/test6a - Basic Nested Selects, LEQ, GEQ", "[codegen]")
 {
     std::fstream *inStream = new std::fstream("/home/shared/programs/test6a.wpl");
-    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+    antlr4::ANTLRInputStream *input = new antlr4::ANTLRInputStream(*inStream);
 
     WPLLexer lexer(input);
     antlr4::CommonTokenStream tokens(&lexer);
@@ -302,7 +296,6 @@ TEST_CASE("programs/test6a - Basic Nested Selects, LEQ, GEQ", "[codegen]")
     PropertyManager *pm = new PropertyManager();
     SemanticVisitor *sv = new SemanticVisitor(stm, pm, CompilerFlags::NO_RUNTIME);
     sv->visitCompilationUnit(tree);
-
 
     REQUIRE_FALSE(sv->hasErrors(0));
 
@@ -317,7 +310,7 @@ TEST_CASE("programs/test6a - Basic Nested Selects, LEQ, GEQ", "[codegen]")
 TEST_CASE("programs/testSelectBlock2 - Select with blocks that don't return", "[codegen]")
 {
     std::fstream *inStream = new std::fstream("/home/shared/programs/testSelectBlock2.wpl");
-    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+    antlr4::ANTLRInputStream *input = new antlr4::ANTLRInputStream(*inStream);
 
     WPLLexer lexer(input);
     antlr4::CommonTokenStream tokens(&lexer);
@@ -331,7 +324,6 @@ TEST_CASE("programs/testSelectBlock2 - Select with blocks that don't return", "[
     SemanticVisitor *sv = new SemanticVisitor(stm, pm, CompilerFlags::NO_RUNTIME);
     sv->visitCompilationUnit(tree);
 
-
     REQUIRE_FALSE(sv->hasErrors(0));
 
     CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll", CompilerFlags::NO_RUNTIME);
@@ -339,14 +331,14 @@ TEST_CASE("programs/testSelectBlock2 - Select with blocks that don't return", "[
 
     REQUIRE_FALSE(cv->hasErrors(0));
 
-    //NOTE: Should be same as test6a
+    // NOTE: Should be same as test6a
     REQUIRE(llvmIrToSHA256(cv->getModule()) == "d86d9c224f8b22cfc4a52bab88aa5f9ce60016604aafe0e865dc6fc0aa177093");
 }
 
 TEST_CASE("programs/test7 - Test String equality + Nested Loops", "[codegen]")
 {
     std::fstream *inStream = new std::fstream("/home/shared/programs/test7.wpl");
-    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+    antlr4::ANTLRInputStream *input = new antlr4::ANTLRInputStream(*inStream);
 
     WPLLexer lexer(input);
     antlr4::CommonTokenStream tokens(&lexer);
@@ -357,23 +349,23 @@ TEST_CASE("programs/test7 - Test String equality + Nested Loops", "[codegen]")
     REQUIRE(tree != NULL);
     STManager *stm = new STManager();
     PropertyManager *pm = new PropertyManager();
-    SemanticVisitor *sv = new SemanticVisitor(stm, pm, CompilerFlags::NO_RUNTIME);
+    SemanticVisitor *sv = new SemanticVisitor(stm, pm, 0);
     sv->visitCompilationUnit(tree);
 
     REQUIRE_FALSE(sv->hasErrors(0));
 
-    CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll", CompilerFlags::NO_RUNTIME);
+    CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll", 0);
     cv->visitCompilationUnit(tree);
 
     REQUIRE_FALSE(cv->hasErrors(0));
 
-    REQUIRE(llvmIrToSHA256(cv->getModule()) == "a78e889150724d1dee3ee614df0caee51d717748a2b2ef1ace7a76d34da06716");
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "19032701f53255d06397da61e16546db973fd3347ddfed33f7629d64508935fb");
 }
 
 TEST_CASE("programs/test8 - Nested Loops", "[codegen]")
 {
     std::fstream *inStream = new std::fstream("/home/shared/programs/test8.wpl");
-    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+    antlr4::ANTLRInputStream *input = new antlr4::ANTLRInputStream(*inStream);
 
     WPLLexer lexer(input);
     antlr4::CommonTokenStream tokens(&lexer);
@@ -400,7 +392,7 @@ TEST_CASE("programs/test8 - Nested Loops", "[codegen]")
 TEST_CASE("programs/test9i - Global Integers", "[codegen]")
 {
     std::fstream *inStream = new std::fstream("/home/shared/programs/test9i.wpl");
-    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+    antlr4::ANTLRInputStream *input = new antlr4::ANTLRInputStream(*inStream);
 
     WPLLexer lexer(input);
     antlr4::CommonTokenStream tokens(&lexer);
@@ -413,7 +405,6 @@ TEST_CASE("programs/test9i - Global Integers", "[codegen]")
     PropertyManager *pm = new PropertyManager();
     SemanticVisitor *sv = new SemanticVisitor(stm, pm, CompilerFlags::NO_RUNTIME);
     sv->visitCompilationUnit(tree);
-
 
     REQUIRE_FALSE(sv->hasErrors(0));
 
@@ -428,7 +419,7 @@ TEST_CASE("programs/test9i - Global Integers", "[codegen]")
 TEST_CASE("programs/test9iv - Global Integer Inference", "[codegen]")
 {
     std::fstream *inStream = new std::fstream("/home/shared/programs/test9iv.wpl");
-    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+    antlr4::ANTLRInputStream *input = new antlr4::ANTLRInputStream(*inStream);
 
     WPLLexer lexer(input);
     antlr4::CommonTokenStream tokens(&lexer);
@@ -441,7 +432,6 @@ TEST_CASE("programs/test9iv - Global Integer Inference", "[codegen]")
     PropertyManager *pm = new PropertyManager();
     SemanticVisitor *sv = new SemanticVisitor(stm, pm, CompilerFlags::NO_RUNTIME);
     sv->visitCompilationUnit(tree);
-
 
     REQUIRE_FALSE(sv->hasErrors(0));
 
@@ -456,7 +446,7 @@ TEST_CASE("programs/test9iv - Global Integer Inference", "[codegen]")
 TEST_CASE("programs/test9b - Global Booleans", "[codegen]")
 {
     std::fstream *inStream = new std::fstream("/home/shared/programs/test9b.wpl");
-    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+    antlr4::ANTLRInputStream *input = new antlr4::ANTLRInputStream(*inStream);
 
     WPLLexer lexer(input);
     antlr4::CommonTokenStream tokens(&lexer);
@@ -483,7 +473,7 @@ TEST_CASE("programs/test9b - Global Booleans", "[codegen]")
 TEST_CASE("programs/test9bv - Global Boolean Inference", "[codegen]")
 {
     std::fstream *inStream = new std::fstream("/home/shared/programs/test9bv.wpl");
-    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+    antlr4::ANTLRInputStream *input = new antlr4::ANTLRInputStream(*inStream);
 
     WPLLexer lexer(input);
     antlr4::CommonTokenStream tokens(&lexer);
@@ -507,11 +497,10 @@ TEST_CASE("programs/test9bv - Global Boolean Inference", "[codegen]")
     REQUIRE(llvmIrToSHA256(cv->getModule()) == "d871755f7c89cd02ee76c67541ec1935a2117a1e3f23cc86a09573fa1ef8422c");
 }
 
-
 TEST_CASE("programs/test9s - Global Strings", "[codegen]")
 {
     std::fstream *inStream = new std::fstream("/home/shared/programs/test9s.wpl");
-    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+    antlr4::ANTLRInputStream *input = new antlr4::ANTLRInputStream(*inStream);
 
     WPLLexer lexer(input);
     antlr4::CommonTokenStream tokens(&lexer);
@@ -524,7 +513,6 @@ TEST_CASE("programs/test9s - Global Strings", "[codegen]")
     PropertyManager *pm = new PropertyManager();
     SemanticVisitor *sv = new SemanticVisitor(stm, pm, CompilerFlags::NO_RUNTIME);
     sv->visitCompilationUnit(tree);
-
 
     REQUIRE_FALSE(sv->hasErrors(0));
 
@@ -539,7 +527,7 @@ TEST_CASE("programs/test9s - Global Strings", "[codegen]")
 TEST_CASE("programs/test9sv - Global String Inference", "[codegen]")
 {
     std::fstream *inStream = new std::fstream("/home/shared/programs/test9sv.wpl");
-    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+    antlr4::ANTLRInputStream *input = new antlr4::ANTLRInputStream(*inStream);
 
     WPLLexer lexer(input);
     antlr4::CommonTokenStream tokens(&lexer);
@@ -566,7 +554,7 @@ TEST_CASE("programs/test9sv - Global String Inference", "[codegen]")
 TEST_CASE("programs/test9ba - Global Boolean Array", "[codegen]")
 {
     std::fstream *inStream = new std::fstream("/home/shared/programs/test9ba.wpl");
-    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+    antlr4::ANTLRInputStream *input = new antlr4::ANTLRInputStream(*inStream);
 
     WPLLexer lexer(input);
     antlr4::CommonTokenStream tokens(&lexer);
@@ -593,7 +581,7 @@ TEST_CASE("programs/test9ba - Global Boolean Array", "[codegen]")
 TEST_CASE("programs/test9ia - Global Integer Array", "[codegen]")
 {
     std::fstream *inStream = new std::fstream("/home/shared/programs/test9ia.wpl");
-    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+    antlr4::ANTLRInputStream *input = new antlr4::ANTLRInputStream(*inStream);
 
     WPLLexer lexer(input);
     antlr4::CommonTokenStream tokens(&lexer);
@@ -606,7 +594,6 @@ TEST_CASE("programs/test9ia - Global Integer Array", "[codegen]")
     PropertyManager *pm = new PropertyManager();
     SemanticVisitor *sv = new SemanticVisitor(stm, pm, CompilerFlags::NO_RUNTIME);
     sv->visitCompilationUnit(tree);
-
 
     REQUIRE_FALSE(sv->hasErrors(0));
 
@@ -621,7 +608,7 @@ TEST_CASE("programs/test9ia - Global Integer Array", "[codegen]")
 TEST_CASE("programs/test9sa - Global String Array - FLAWED", "[codegen]")
 {
     std::fstream *inStream = new std::fstream("/home/shared/programs/test9sa.wpl");
-    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+    antlr4::ANTLRInputStream *input = new antlr4::ANTLRInputStream(*inStream);
 
     WPLLexer lexer(input);
     antlr4::CommonTokenStream tokens(&lexer);
@@ -634,7 +621,6 @@ TEST_CASE("programs/test9sa - Global String Array - FLAWED", "[codegen]")
     PropertyManager *pm = new PropertyManager();
     SemanticVisitor *sv = new SemanticVisitor(stm, pm, CompilerFlags::NO_RUNTIME);
     sv->visitCompilationUnit(tree);
-
 
     REQUIRE_FALSE(sv->hasErrors(0));
 
@@ -649,7 +635,7 @@ TEST_CASE("programs/test9sa - Global String Array - FLAWED", "[codegen]")
 TEST_CASE("programs/test9sa-1 - Global String Array - CORRECT", "[codegen]")
 {
     std::fstream *inStream = new std::fstream("/home/shared/programs/test9sa-1.wpl");
-    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+    antlr4::ANTLRInputStream *input = new antlr4::ANTLRInputStream(*inStream);
 
     WPLLexer lexer(input);
     antlr4::CommonTokenStream tokens(&lexer);
@@ -670,14 +656,13 @@ TEST_CASE("programs/test9sa-1 - Global String Array - CORRECT", "[codegen]")
 
     REQUIRE_FALSE(cv->hasErrors(0));
 
-    REQUIRE(llvmIrToSHA256(cv->getModule()) == "5ee667e609c925ca3dda1d158aeb2e8bf70818e7ef91965f9eadcd5243d6e76c");
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "b7e94a1425ecfbc8a9b99dbc9160cb966bfcd7ae69e13bee2cf4702d310d9f0c");
 }
-
 
 TEST_CASE("programs/test11 - Expressions in decl (let*) ", "[codegen]")
 {
     std::fstream *inStream = new std::fstream("/home/shared/programs/test11.wpl");
-    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+    antlr4::ANTLRInputStream *input = new antlr4::ANTLRInputStream(*inStream);
 
     WPLLexer lexer(input);
     antlr4::CommonTokenStream tokens(&lexer);
@@ -690,7 +675,6 @@ TEST_CASE("programs/test11 - Expressions in decl (let*) ", "[codegen]")
     PropertyManager *pm = new PropertyManager();
     SemanticVisitor *sv = new SemanticVisitor(stm, pm, CompilerFlags::NO_RUNTIME);
     sv->visitCompilationUnit(tree);
-
 
     REQUIRE_FALSE(sv->hasErrors(0));
 
@@ -705,7 +689,7 @@ TEST_CASE("programs/test11 - Expressions in decl (let*) ", "[codegen]")
 TEST_CASE("programs/test12 - Scopes & Prime Finder Example! ", "[codegen]")
 {
     std::fstream *inStream = new std::fstream("/home/shared/programs/test12.wpl");
-    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+    antlr4::ANTLRInputStream *input = new antlr4::ANTLRInputStream(*inStream);
 
     WPLLexer lexer(input);
     antlr4::CommonTokenStream tokens(&lexer);
@@ -718,7 +702,6 @@ TEST_CASE("programs/test12 - Scopes & Prime Finder Example! ", "[codegen]")
     PropertyManager *pm = new PropertyManager();
     SemanticVisitor *sv = new SemanticVisitor(stm, pm, CompilerFlags::NO_RUNTIME);
     sv->visitCompilationUnit(tree);
-
 
     REQUIRE_FALSE(sv->hasErrors(0));
 
@@ -733,7 +716,7 @@ TEST_CASE("programs/test12 - Scopes & Prime Finder Example! ", "[codegen]")
 TEST_CASE("programs/test13 - Recursive Fibonacci", "[codegen]")
 {
     std::fstream *inStream = new std::fstream("/home/shared/programs/test13.wpl");
-    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+    antlr4::ANTLRInputStream *input = new antlr4::ANTLRInputStream(*inStream);
 
     WPLLexer lexer(input);
     antlr4::CommonTokenStream tokens(&lexer);
@@ -759,9 +742,9 @@ TEST_CASE("programs/test13 - Recursive Fibonacci", "[codegen]")
 
 TEST_CASE("programs/test-runtime - Basic runtime tests", "[codegen]")
 {
-    //NOTE: tested linking each runtime function locally 
+    // NOTE: tested linking each runtime function locally
     std::fstream *inStream = new std::fstream("/home/shared/programs/test-runtime.wpl");
-    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+    antlr4::ANTLRInputStream *input = new antlr4::ANTLRInputStream(*inStream);
 
     WPLLexer lexer(input);
     antlr4::CommonTokenStream tokens(&lexer);
@@ -788,7 +771,7 @@ TEST_CASE("programs/test-runtime - Basic runtime tests", "[codegen]")
 TEST_CASE("programs/test-shortcircuit - Basic Short Circuit (and)", "[codegen]")
 {
     std::fstream *inStream = new std::fstream("/home/shared/programs/test-shortcircuit.wpl");
-    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+    antlr4::ANTLRInputStream *input = new antlr4::ANTLRInputStream(*inStream);
 
     WPLLexer lexer(input);
     antlr4::CommonTokenStream tokens(&lexer);
@@ -801,7 +784,6 @@ TEST_CASE("programs/test-shortcircuit - Basic Short Circuit (and)", "[codegen]")
     PropertyManager *pm = new PropertyManager();
     SemanticVisitor *sv = new SemanticVisitor(stm, pm, 0);
     sv->visitCompilationUnit(tree);
-
 
     REQUIRE_FALSE(sv->hasErrors(0));
 
@@ -816,7 +798,7 @@ TEST_CASE("programs/test-shortcircuit - Basic Short Circuit (and)", "[codegen]")
 TEST_CASE("programs/test-shortcircuit-rt - Basic Short Circuit (and + or) w/ Runtime", "[codegen]")
 {
     std::fstream *inStream = new std::fstream("/home/shared/programs/test-shortcircuit-rt.wpl");
-    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+    antlr4::ANTLRInputStream *input = new antlr4::ANTLRInputStream(*inStream);
 
     WPLLexer lexer(input);
     antlr4::CommonTokenStream tokens(&lexer);
@@ -840,42 +822,12 @@ TEST_CASE("programs/test-shortcircuit-rt - Basic Short Circuit (and + or) w/ Run
     REQUIRE(llvmIrToSHA256(cv->getModule()) == "2309d18c37760ca695b7acd1fe81c7bf428ea5e44764f35e6c993780a3815459");
 }
 
-
 TEST_CASE("programs/test-arrayAssign - Assigning one array to another and editing arrays in functions", "[codegen]")
 {
-    //WPL is pass by value! 
+    // WPL is pass by value!
 
     std::fstream *inStream = new std::fstream("/home/shared/programs/test-arrayAssign.wpl");
-    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
-
-    WPLLexer lexer(input);
-    antlr4::CommonTokenStream tokens(&lexer);
-    WPLParser parser(&tokens);
-    parser.removeErrorListeners();
-    WPLParser::CompilationUnitContext *tree = NULL;
-    REQUIRE_NOTHROW(tree = parser.compilationUnit());
-    REQUIRE(tree != NULL);
-    STManager *stm = new STManager();
-    PropertyManager *pm = new PropertyManager();
-    SemanticVisitor *sv = new SemanticVisitor(stm, pm, CompilerFlags::NO_RUNTIME);
-    sv->visitCompilationUnit(tree);
-
-
-    REQUIRE_FALSE(sv->hasErrors(0));
-
-    CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll", CompilerFlags::NO_RUNTIME);
-    cv->visitCompilationUnit(tree);
-
-    REQUIRE_FALSE(cv->hasErrors(0));
-
-    REQUIRE(llvmIrToSHA256(cv->getModule()) == "62fbd52566574970733029781d99322e75c828df74aece217c00f0fb1795dcf1");
-}
-
-TEST_CASE("programs/externProc - Declaring an external proc", "[codegen]")
-{
-    //FIXME: TEST WITH AN ACTUAL LINK!
-    std::fstream *inStream = new std::fstream("/home/shared/programs/externProc.wpl");
-    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+    antlr4::ANTLRInputStream *input = new antlr4::ANTLRInputStream(*inStream);
 
     WPLLexer lexer(input);
     antlr4::CommonTokenStream tokens(&lexer);
@@ -889,6 +841,32 @@ TEST_CASE("programs/externProc - Declaring an external proc", "[codegen]")
     SemanticVisitor *sv = new SemanticVisitor(stm, pm, 0);
     sv->visitCompilationUnit(tree);
 
+    REQUIRE_FALSE(sv->hasErrors(0));
+
+    CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll", 0);
+    cv->visitCompilationUnit(tree);
+
+    REQUIRE_FALSE(cv->hasErrors(0));
+
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "ea6cf3bb36fb69f95ea73e48f616f5dc4415f3184579cfe08d668d3722e865e3");
+}
+
+TEST_CASE("programs/externProc - Declaring an external proc", "[codegen]")
+{
+    std::fstream *inStream = new std::fstream("/home/shared/programs/externProc.wpl");
+    antlr4::ANTLRInputStream *input = new antlr4::ANTLRInputStream(*inStream);
+
+    WPLLexer lexer(input);
+    antlr4::CommonTokenStream tokens(&lexer);
+    WPLParser parser(&tokens);
+    parser.removeErrorListeners();
+    WPLParser::CompilationUnitContext *tree = NULL;
+    REQUIRE_NOTHROW(tree = parser.compilationUnit());
+    REQUIRE(tree != NULL);
+    STManager *stm = new STManager();
+    PropertyManager *pm = new PropertyManager();
+    SemanticVisitor *sv = new SemanticVisitor(stm, pm, 0);
+    sv->visitCompilationUnit(tree);
 
     REQUIRE_FALSE(sv->hasErrors(0));
 
@@ -902,9 +880,9 @@ TEST_CASE("programs/externProc - Declaring an external proc", "[codegen]")
 
 TEST_CASE("programs/test14a - Test nested/more complex shorting", "[codegen]")
 {
-    //TODO: MANY OF THE SHORT CIRCUITING CASES COULD BE OPTIMIZED!!! -> Done?
+    // TODO: MANY OF THE SHORT CIRCUITING CASES COULD BE OPTIMIZED!!! -> Done?
     std::fstream *inStream = new std::fstream("/home/shared/programs/test14a.wpl");
-    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+    antlr4::ANTLRInputStream *input = new antlr4::ANTLRInputStream(*inStream);
 
     WPLLexer lexer(input);
     antlr4::CommonTokenStream tokens(&lexer);
@@ -917,7 +895,6 @@ TEST_CASE("programs/test14a - Test nested/more complex shorting", "[codegen]")
     PropertyManager *pm = new PropertyManager();
     SemanticVisitor *sv = new SemanticVisitor(stm, pm, 0);
     sv->visitCompilationUnit(tree);
-
 
     REQUIRE_FALSE(sv->hasErrors(0));
 
@@ -932,7 +909,7 @@ TEST_CASE("programs/test14a - Test nested/more complex shorting", "[codegen]")
 TEST_CASE("programs/test18 - Parody", "[codegen]")
 {
     std::fstream *inStream = new std::fstream("/home/shared/programs/test18.wpl");
-    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+    antlr4::ANTLRInputStream *input = new antlr4::ANTLRInputStream(*inStream);
 
     WPLLexer lexer(input);
     antlr4::CommonTokenStream tokens(&lexer);
@@ -945,7 +922,6 @@ TEST_CASE("programs/test18 - Parody", "[codegen]")
     PropertyManager *pm = new PropertyManager();
     SemanticVisitor *sv = new SemanticVisitor(stm, pm, 0);
     sv->visitCompilationUnit(tree);
-
 
     REQUIRE_FALSE(sv->hasErrors(0));
 
@@ -954,13 +930,13 @@ TEST_CASE("programs/test18 - Parody", "[codegen]")
 
     REQUIRE_FALSE(cv->hasErrors(0));
 
-    REQUIRE(llvmIrToSHA256(cv->getModule()) == "9c4c64be2b335ecf58d9bbe4b267adc12a5b74518f587f30ba37591be79b09c1");
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "171d2045fbfe890b72ef57ae92b798e8bcc88a099aa1791e58fa653cc2d94c22");
 }
 
 TEST_CASE("programs/test19 - Editing Global String and Using Across Inv", "[codegen]")
 {
     std::fstream *inStream = new std::fstream("/home/shared/programs/test19.wpl");
-    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+    antlr4::ANTLRInputStream *input = new antlr4::ANTLRInputStream(*inStream);
 
     WPLLexer lexer(input);
     antlr4::CommonTokenStream tokens(&lexer);
@@ -973,7 +949,6 @@ TEST_CASE("programs/test19 - Editing Global String and Using Across Inv", "[code
     PropertyManager *pm = new PropertyManager();
     SemanticVisitor *sv = new SemanticVisitor(stm, pm, 0);
     sv->visitCompilationUnit(tree);
-
 
     REQUIRE_FALSE(sv->hasErrors(0));
 
@@ -988,7 +963,7 @@ TEST_CASE("programs/test19 - Editing Global String and Using Across Inv", "[code
 TEST_CASE("programs/testGlobalAndLocal - Parody", "[codegen]")
 {
     std::fstream *inStream = new std::fstream("/home/shared/programs/testGlobalAndLocal.wpl");
-    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+    antlr4::ANTLRInputStream *input = new antlr4::ANTLRInputStream(*inStream);
 
     WPLLexer lexer(input);
     antlr4::CommonTokenStream tokens(&lexer);
@@ -1001,7 +976,6 @@ TEST_CASE("programs/testGlobalAndLocal - Parody", "[codegen]")
     PropertyManager *pm = new PropertyManager();
     SemanticVisitor *sv = new SemanticVisitor(stm, pm, 0);
     sv->visitCompilationUnit(tree);
-
 
     REQUIRE_FALSE(sv->hasErrors(0));
 
@@ -1016,7 +990,7 @@ TEST_CASE("programs/testGlobalAndLocal - Parody", "[codegen]")
 TEST_CASE("programs/forwardWrongArg - Forward Declaration w/ wrong arg name", "[codegen]")
 {
     std::fstream *inStream = new std::fstream("/home/shared/programs/forwardWrongArg.wpl");
-    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+    antlr4::ANTLRInputStream *input = new antlr4::ANTLRInputStream(*inStream);
 
     WPLLexer lexer(input);
     antlr4::CommonTokenStream tokens(&lexer);
@@ -1029,7 +1003,6 @@ TEST_CASE("programs/forwardWrongArg - Forward Declaration w/ wrong arg name", "[
     PropertyManager *pm = new PropertyManager();
     SemanticVisitor *sv = new SemanticVisitor(stm, pm, 0);
     sv->visitCompilationUnit(tree);
-
 
     REQUIRE(sv->hasErrors(0));
 
@@ -1044,7 +1017,7 @@ TEST_CASE("programs/forwardWrongArg - Forward Declaration w/ wrong arg name", "[
 TEST_CASE("programs/Lambda1 - Basic lambda Test", "[codegen][lambda]")
 {
     std::fstream *inStream = new std::fstream("/home/shared/programs/Lambda1.wpl");
-    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+    antlr4::ANTLRInputStream *input = new antlr4::ANTLRInputStream(*inStream);
 
     WPLLexer lexer(input);
     antlr4::CommonTokenStream tokens(&lexer);
@@ -1058,7 +1031,6 @@ TEST_CASE("programs/Lambda1 - Basic lambda Test", "[codegen][lambda]")
     SemanticVisitor *sv = new SemanticVisitor(stm, pm, 0);
     sv->visitCompilationUnit(tree);
 
-
     REQUIRE_FALSE(sv->hasErrors(0));
 
     CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll", 0);
@@ -1066,15 +1038,13 @@ TEST_CASE("programs/Lambda1 - Basic lambda Test", "[codegen][lambda]")
 
     REQUIRE_FALSE(cv->hasErrors(0));
 
-    REQUIRE(llvmIrToSHA256(cv->getModule()) == "6e352285edacc42db930c25774b68b3a8fff977e2e858a61294b1ac14ad8c3a0");
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "d06bbb8013c6cfccd7f79ab269425b221c3a5dcb802949480b79fa28228d48bb");
 }
-
-//FIXME: LAMBDAS, ENUMS CAN"T BE ASSIGNED OUTSIDE OF DECL
 
 TEST_CASE("programs/Lambda2 - Basic lambda Test w/ return", "[codegen][lambda]")
 {
     std::fstream *inStream = new std::fstream("/home/shared/programs/Lambda2.wpl");
-    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+    antlr4::ANTLRInputStream *input = new antlr4::ANTLRInputStream(*inStream);
 
     WPLLexer lexer(input);
     antlr4::CommonTokenStream tokens(&lexer);
@@ -1088,7 +1058,6 @@ TEST_CASE("programs/Lambda2 - Basic lambda Test w/ return", "[codegen][lambda]")
     SemanticVisitor *sv = new SemanticVisitor(stm, pm, 0);
     sv->visitCompilationUnit(tree);
 
-
     REQUIRE_FALSE(sv->hasErrors(0));
 
     CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll", 0);
@@ -1096,13 +1065,13 @@ TEST_CASE("programs/Lambda2 - Basic lambda Test w/ return", "[codegen][lambda]")
 
     REQUIRE_FALSE(cv->hasErrors(0));
 
-    REQUIRE(llvmIrToSHA256(cv->getModule()) == "ee35f7c8a82e6dece344d8a245c48982d894ea3e4db0f2ba939e0bea65e9e1e8");
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "3aca1c5d463a66b5ed899084647b2ed1ed6c76a4277b935c17fd3ca6ba30644a");
 }
 
 TEST_CASE("programs/Lambda3 - Basic lambda Test w/ return and same name", "[codegen][lambda]")
 {
     std::fstream *inStream = new std::fstream("/home/shared/programs/Lambda3.wpl");
-    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+    antlr4::ANTLRInputStream *input = new antlr4::ANTLRInputStream(*inStream);
 
     WPLLexer lexer(input);
     antlr4::CommonTokenStream tokens(&lexer);
@@ -1116,7 +1085,6 @@ TEST_CASE("programs/Lambda3 - Basic lambda Test w/ return and same name", "[code
     SemanticVisitor *sv = new SemanticVisitor(stm, pm, 0);
     sv->visitCompilationUnit(tree);
 
-
     REQUIRE_FALSE(sv->hasErrors(0));
 
     CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll", 0);
@@ -1124,13 +1092,13 @@ TEST_CASE("programs/Lambda3 - Basic lambda Test w/ return and same name", "[code
 
     REQUIRE_FALSE(cv->hasErrors(0));
 
-    REQUIRE(llvmIrToSHA256(cv->getModule()) == "526b0bc9f9b76dad00ad13676e16a11273b40e928342c848bdb9b7e8dfd75ab9");
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "c3d2c9ca20cd487e4612d275384a9801dbfef0e70cb2e7a799fff643f605d523");
 }
 
 TEST_CASE("programs/externLambda", "[codegen][lambda]")
 {
     std::fstream *inStream = new std::fstream("/home/shared/programs/externLambda.wpl");
-    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+    antlr4::ANTLRInputStream *input = new antlr4::ANTLRInputStream(*inStream);
 
     WPLLexer lexer(input);
     antlr4::CommonTokenStream tokens(&lexer);
@@ -1143,7 +1111,6 @@ TEST_CASE("programs/externLambda", "[codegen][lambda]")
     PropertyManager *pm = new PropertyManager();
     SemanticVisitor *sv = new SemanticVisitor(stm, pm, 0);
     sv->visitCompilationUnit(tree);
-
 
     REQUIRE_FALSE(sv->hasErrors(0));
 
@@ -1152,13 +1119,13 @@ TEST_CASE("programs/externLambda", "[codegen][lambda]")
 
     REQUIRE_FALSE(cv->hasErrors(0));
 
-    REQUIRE(llvmIrToSHA256(cv->getModule()) == "69a65ba7c965baab8ac203f032c7a7e8956f67ebf4699dbf682866de770404cb");
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "d81102c34794423af00dc4a13e2f2a3a1c37f4d4956655fb88e9527e37cb3b78");
 }
 
 TEST_CASE("programs/enum1 - Basic Enum 1", "[codegen][enum]")
 {
     std::fstream *inStream = new std::fstream("/home/shared/programs/enum1.wpl");
-    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+    antlr4::ANTLRInputStream *input = new antlr4::ANTLRInputStream(*inStream);
 
     WPLLexer lexer(input);
     antlr4::CommonTokenStream tokens(&lexer);
@@ -1171,7 +1138,6 @@ TEST_CASE("programs/enum1 - Basic Enum 1", "[codegen][enum]")
     PropertyManager *pm = new PropertyManager();
     SemanticVisitor *sv = new SemanticVisitor(stm, pm, 0);
     sv->visitCompilationUnit(tree);
-
 
     REQUIRE_FALSE(sv->hasErrors(0));
 
@@ -1186,7 +1152,7 @@ TEST_CASE("programs/enum1 - Basic Enum 1", "[codegen][enum]")
 TEST_CASE("programs/enum2 - Basic Enum 2", "[codegen][enum]")
 {
     std::fstream *inStream = new std::fstream("/home/shared/programs/enum2.wpl");
-    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+    antlr4::ANTLRInputStream *input = new antlr4::ANTLRInputStream(*inStream);
 
     WPLLexer lexer(input);
     antlr4::CommonTokenStream tokens(&lexer);
@@ -1200,7 +1166,6 @@ TEST_CASE("programs/enum2 - Basic Enum 2", "[codegen][enum]")
     SemanticVisitor *sv = new SemanticVisitor(stm, pm, 0);
     sv->visitCompilationUnit(tree);
 
-
     REQUIRE_FALSE(sv->hasErrors(0));
 
     CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll", 0);
@@ -1208,13 +1173,13 @@ TEST_CASE("programs/enum2 - Basic Enum 2", "[codegen][enum]")
 
     REQUIRE_FALSE(cv->hasErrors(0));
 
-    REQUIRE(llvmIrToSHA256(cv->getModule()) == "b82b68dc5cd14fe95a69d8e78dc5dac3544c95f36643cd8f72102c458f9b5c1d");
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "523f0fdd247182b25da3af5c5e19e8878a4e1a98a9b42511a9a82bfc9922918b");
 }
 
 TEST_CASE("programs/enumAssign - Same a  Enum 2 but with assignmens outside of decl", "[codegen][enum]")
 {
     std::fstream *inStream = new std::fstream("/home/shared/programs/enumAssign.wpl");
-    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+    antlr4::ANTLRInputStream *input = new antlr4::ANTLRInputStream(*inStream);
 
     WPLLexer lexer(input);
     antlr4::CommonTokenStream tokens(&lexer);
@@ -1227,7 +1192,6 @@ TEST_CASE("programs/enumAssign - Same a  Enum 2 but with assignmens outside of d
     PropertyManager *pm = new PropertyManager();
     SemanticVisitor *sv = new SemanticVisitor(stm, pm, 0);
     sv->visitCompilationUnit(tree);
-
 
     REQUIRE_FALSE(sv->hasErrors(0));
 
@@ -1236,13 +1200,13 @@ TEST_CASE("programs/enumAssign - Same a  Enum 2 but with assignmens outside of d
 
     REQUIRE_FALSE(cv->hasErrors(0));
 
-    REQUIRE(llvmIrToSHA256(cv->getModule()) == "5fb322db3a1c17135df54896d03d1312116a66754a7504660052950f6390e0df");
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "a754100cd398e8c52269bdf94bf069a461c5310f705b00cf984ca688ab622c04");
 }
 
-TEST_CASE("programs/enum3", "[codegen][enum]")
+TEST_CASE("programs/enumAssign2 - Returning lambdas, functions, and enums", "[codegen][enum][lambda]")
 {
-    std::fstream *inStream = new std::fstream("/home/shared/programs/enum3.wpl");
-    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+    std::fstream *inStream = new std::fstream("/home/shared/programs/enumAssign2.wpl");
+    antlr4::ANTLRInputStream *input = new antlr4::ANTLRInputStream(*inStream);
 
     WPLLexer lexer(input);
     antlr4::CommonTokenStream tokens(&lexer);
@@ -1256,6 +1220,32 @@ TEST_CASE("programs/enum3", "[codegen][enum]")
     SemanticVisitor *sv = new SemanticVisitor(stm, pm, 0);
     sv->visitCompilationUnit(tree);
 
+    REQUIRE_FALSE(sv->hasErrors(0));
+
+    CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll", 0);
+    cv->visitCompilationUnit(tree);
+
+    REQUIRE_FALSE(cv->hasErrors(0));
+
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "bf7f5d87893b5afd5fe2ba76cbc633153d7fc26b10331ad8da8dfd6f86dfa22b");
+}
+
+TEST_CASE("programs/enum3", "[codegen][enum]")
+{
+    std::fstream *inStream = new std::fstream("/home/shared/programs/enum3.wpl");
+    antlr4::ANTLRInputStream *input = new antlr4::ANTLRInputStream(*inStream);
+
+    WPLLexer lexer(input);
+    antlr4::CommonTokenStream tokens(&lexer);
+    WPLParser parser(&tokens);
+    parser.removeErrorListeners();
+    WPLParser::CompilationUnitContext *tree = NULL;
+    REQUIRE_NOTHROW(tree = parser.compilationUnit());
+    REQUIRE(tree != NULL);
+    STManager *stm = new STManager();
+    PropertyManager *pm = new PropertyManager();
+    SemanticVisitor *sv = new SemanticVisitor(stm, pm, 0);
+    sv->visitCompilationUnit(tree);
 
     REQUIRE_FALSE(sv->hasErrors(0));
 
@@ -1270,7 +1260,7 @@ TEST_CASE("programs/enum3", "[codegen][enum]")
 TEST_CASE("programs/StructTest2", "[codegen][struct]")
 {
     std::fstream *inStream = new std::fstream("/home/shared/programs/adv/StructTest2.wpl");
-    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+    antlr4::ANTLRInputStream *input = new antlr4::ANTLRInputStream(*inStream);
 
     WPLLexer lexer(input);
     antlr4::CommonTokenStream tokens(&lexer);
@@ -1283,7 +1273,6 @@ TEST_CASE("programs/StructTest2", "[codegen][struct]")
     PropertyManager *pm = new PropertyManager();
     SemanticVisitor *sv = new SemanticVisitor(stm, pm, 0);
     sv->visitCompilationUnit(tree);
-
 
     REQUIRE_FALSE(sv->hasErrors(0));
 
@@ -1298,7 +1287,7 @@ TEST_CASE("programs/StructTest2", "[codegen][struct]")
 TEST_CASE("programs/StructTest3", "[codegen][struct]")
 {
     std::fstream *inStream = new std::fstream("/home/shared/programs/adv/StructTest3.wpl");
-    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+    antlr4::ANTLRInputStream *input = new antlr4::ANTLRInputStream(*inStream);
 
     WPLLexer lexer(input);
     antlr4::CommonTokenStream tokens(&lexer);
@@ -1312,6 +1301,32 @@ TEST_CASE("programs/StructTest3", "[codegen][struct]")
     SemanticVisitor *sv = new SemanticVisitor(stm, pm, 0);
     sv->visitCompilationUnit(tree);
 
+    REQUIRE_FALSE(sv->hasErrors(0));
+
+    CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll", 0);
+    cv->visitCompilationUnit(tree);
+
+    REQUIRE_FALSE(cv->hasErrors(0));
+
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "21b9ab1ae93492f89f17f6ff8da9bd340b2a71d110463f19499bc9192b10b6cd");
+}
+
+TEST_CASE("programs/StructTest3a - nested fields", "[codegen][struct]")
+{
+    std::fstream *inStream = new std::fstream("/home/shared/programs/adv/StructTest3a.wpl");
+    antlr4::ANTLRInputStream *input = new antlr4::ANTLRInputStream(*inStream);
+
+    WPLLexer lexer(input);
+    antlr4::CommonTokenStream tokens(&lexer);
+    WPLParser parser(&tokens);
+    parser.removeErrorListeners();
+    WPLParser::CompilationUnitContext *tree = NULL;
+    REQUIRE_NOTHROW(tree = parser.compilationUnit());
+    REQUIRE(tree != NULL);
+    STManager *stm = new STManager();
+    PropertyManager *pm = new PropertyManager();
+    SemanticVisitor *sv = new SemanticVisitor(stm, pm, 0);
+    sv->visitCompilationUnit(tree);
 
     REQUIRE_FALSE(sv->hasErrors(0));
 
@@ -1320,13 +1335,40 @@ TEST_CASE("programs/StructTest3", "[codegen][struct]")
 
     REQUIRE_FALSE(cv->hasErrors(0));
 
-    REQUIRE(llvmIrToSHA256(cv->getModule()) == "d6c8f8d7281225520fe7b276946031ef6ff0aa7be0fc65e7c2f2a610f6f0721d");
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "58c43527727e01ae069ff43a95d8d62aed6e850d3f9693c3cb7c74efdab41b13");
+}
+
+TEST_CASE("programs/StructTest3b - nested fields", "[codegen][struct]")
+{
+    std::fstream *inStream = new std::fstream("/home/shared/programs/adv/StructTest3b.wpl");
+    antlr4::ANTLRInputStream *input = new antlr4::ANTLRInputStream(*inStream);
+
+    WPLLexer lexer(input);
+    antlr4::CommonTokenStream tokens(&lexer);
+    WPLParser parser(&tokens);
+    parser.removeErrorListeners();
+    WPLParser::CompilationUnitContext *tree = NULL;
+    REQUIRE_NOTHROW(tree = parser.compilationUnit());
+    REQUIRE(tree != NULL);
+    STManager *stm = new STManager();
+    PropertyManager *pm = new PropertyManager();
+    SemanticVisitor *sv = new SemanticVisitor(stm, pm, 0);
+    sv->visitCompilationUnit(tree);
+
+    REQUIRE_FALSE(sv->hasErrors(0));
+
+    CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll", 0);
+    cv->visitCompilationUnit(tree);
+
+    REQUIRE_FALSE(cv->hasErrors(0));
+
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "f29652970edd86dff1e5cd7e80d41a43fbfe1b47f993eb7f5fb0fb06a2563d41");
 }
 
 TEST_CASE("programs/StructTest4", "[codegen][struct]")
 {
     std::fstream *inStream = new std::fstream("/home/shared/programs/adv/StructTest4.wpl");
-    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+    antlr4::ANTLRInputStream *input = new antlr4::ANTLRInputStream(*inStream);
 
     WPLLexer lexer(input);
     antlr4::CommonTokenStream tokens(&lexer);
@@ -1340,6 +1382,32 @@ TEST_CASE("programs/StructTest4", "[codegen][struct]")
     SemanticVisitor *sv = new SemanticVisitor(stm, pm, 0);
     sv->visitCompilationUnit(tree);
 
+    REQUIRE_FALSE(sv->hasErrors(0));
+
+    CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll", 0);
+    cv->visitCompilationUnit(tree);
+
+    REQUIRE_FALSE(cv->hasErrors(0));
+
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "f84941b2168968d3c991b76e9ed5374a025c1db7200f825476e29a84446f9390");
+}
+
+TEST_CASE("programs/adv/NestedEnum", "[codegen][struct]")
+{
+    std::fstream *inStream = new std::fstream("/home/shared/programs/adv/NestedEnum.wpl");
+    antlr4::ANTLRInputStream *input = new antlr4::ANTLRInputStream(*inStream);
+
+    WPLLexer lexer(input);
+    antlr4::CommonTokenStream tokens(&lexer);
+    WPLParser parser(&tokens);
+    parser.removeErrorListeners();
+    WPLParser::CompilationUnitContext *tree = NULL;
+    REQUIRE_NOTHROW(tree = parser.compilationUnit());
+    REQUIRE(tree != NULL);
+    STManager *stm = new STManager();
+    PropertyManager *pm = new PropertyManager();
+    SemanticVisitor *sv = new SemanticVisitor(stm, pm, 0);
+    sv->visitCompilationUnit(tree);
 
     REQUIRE_FALSE(sv->hasErrors(0));
 
@@ -1348,52 +1416,175 @@ TEST_CASE("programs/StructTest4", "[codegen][struct]")
 
     REQUIRE_FALSE(cv->hasErrors(0));
 
-    REQUIRE(llvmIrToSHA256(cv->getModule()) == "c70f78537551fa7e0c20633aa8dcbdaa3635ffde514d919758dc42dd62e13e25");
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "25c3e6bbdf9ecb257815732a7f75a2be1cb209a503bde63cd92658b4ee8c5977");
 }
+
+TEST_CASE("programs/dangerLambda - lambdas with dupl function names", "[codegen][struct]")
+{
+    std::fstream *inStream = new std::fstream("/home/shared/programs/dangerLambda.wpl");
+    antlr4::ANTLRInputStream *input = new antlr4::ANTLRInputStream(*inStream);
+
+    WPLLexer lexer(input);
+    antlr4::CommonTokenStream tokens(&lexer);
+    WPLParser parser(&tokens);
+    parser.removeErrorListeners();
+    WPLParser::CompilationUnitContext *tree = NULL;
+    REQUIRE_NOTHROW(tree = parser.compilationUnit());
+    REQUIRE(tree != NULL);
+    STManager *stm = new STManager();
+    PropertyManager *pm = new PropertyManager();
+    SemanticVisitor *sv = new SemanticVisitor(stm, pm, 0);
+    sv->visitCompilationUnit(tree);
+
+    REQUIRE_FALSE(sv->hasErrors(0));
+
+    CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll", 0);
+    cv->visitCompilationUnit(tree);
+
+    REQUIRE_FALSE(cv->hasErrors(0));
+
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "19c387e4371170bb078319a7323018c2bd6488f01e8a5a98d0c3ebadf3356048");
+}
+
+TEST_CASE("programs/adv/enumPassing - passing non-enum as enum argument", "[codegen][struct]")
+{
+    std::fstream *inStream = new std::fstream("/home/shared/programs/adv/enumPassing.wpl");
+    antlr4::ANTLRInputStream *input = new antlr4::ANTLRInputStream(*inStream);
+
+    WPLLexer lexer(input);
+    antlr4::CommonTokenStream tokens(&lexer);
+    WPLParser parser(&tokens);
+    parser.removeErrorListeners();
+    WPLParser::CompilationUnitContext *tree = NULL;
+    REQUIRE_NOTHROW(tree = parser.compilationUnit());
+    REQUIRE(tree != NULL);
+    STManager *stm = new STManager();
+    PropertyManager *pm = new PropertyManager();
+    SemanticVisitor *sv = new SemanticVisitor(stm, pm, 0);
+    sv->visitCompilationUnit(tree);
+
+    REQUIRE_FALSE(sv->hasErrors(0));
+
+    CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll", 0);
+    cv->visitCompilationUnit(tree);
+
+    REQUIRE_FALSE(cv->hasErrors(0));
+
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "3a8deea38620a5392962e96679b5c4e6f2e7564d369fa712eb211d5af150ae97");
+}
+
+TEST_CASE("programs/Lambda2a - More nested lambdas", "[codegen][lambda]")
+{
+    std::fstream *inStream = new std::fstream("/home/shared/programs/Lambda2a.wpl");
+    antlr4::ANTLRInputStream *input = new antlr4::ANTLRInputStream(*inStream);
+
+    WPLLexer lexer(input);
+    antlr4::CommonTokenStream tokens(&lexer);
+    WPLParser parser(&tokens);
+    parser.removeErrorListeners();
+    WPLParser::CompilationUnitContext *tree = NULL;
+    REQUIRE_NOTHROW(tree = parser.compilationUnit());
+    REQUIRE(tree != NULL);
+    STManager *stm = new STManager();
+    PropertyManager *pm = new PropertyManager();
+    SemanticVisitor *sv = new SemanticVisitor(stm, pm, 0);
+    sv->visitCompilationUnit(tree);
+
+    REQUIRE_FALSE(sv->hasErrors(0));
+
+    CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll", 0);
+    cv->visitCompilationUnit(tree);
+
+    REQUIRE_FALSE(cv->hasErrors(0));
+
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "d7baa5365992b710eef5b1dd8780324342fc6e7534b276297ffb0fd3b716966c");
+}
+
+TEST_CASE("programs/adv/enumPassingInf - Enum passing with Type Inference", "[codegen][enum][type-inf]")
+{
+    std::fstream *inStream = new std::fstream("/home/shared/programs/adv/enumPassingInf.wpl");
+    antlr4::ANTLRInputStream *input = new antlr4::ANTLRInputStream(*inStream);
+
+    WPLLexer lexer(input);
+    antlr4::CommonTokenStream tokens(&lexer);
+    WPLParser parser(&tokens);
+    parser.removeErrorListeners();
+    WPLParser::CompilationUnitContext *tree = NULL;
+    REQUIRE_NOTHROW(tree = parser.compilationUnit());
+    REQUIRE(tree != NULL);
+    STManager *stm = new STManager();
+    PropertyManager *pm = new PropertyManager();
+    SemanticVisitor *sv = new SemanticVisitor(stm, pm, 0);
+    sv->visitCompilationUnit(tree);
+
+    REQUIRE_FALSE(sv->hasErrors(0));
+
+    CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll", 0);
+    cv->visitCompilationUnit(tree);
+
+    REQUIRE_FALSE(cv->hasErrors(0));
+
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "98b014e6ea9ae1f277bcd10f6e4a326fe5dd24cc966c9985d30e78507dc83c5d");
+}
+
+TEST_CASE("programs/Lambda2b - More nested lambdas", "[codegen][struct]")
+{
+    std::fstream *inStream = new std::fstream("/home/shared/programs/Lambda2b.wpl");
+    antlr4::ANTLRInputStream *input = new antlr4::ANTLRInputStream(*inStream);
+
+    WPLLexer lexer(input);
+    antlr4::CommonTokenStream tokens(&lexer);
+    WPLParser parser(&tokens);
+    parser.removeErrorListeners();
+    WPLParser::CompilationUnitContext *tree = NULL;
+    REQUIRE_NOTHROW(tree = parser.compilationUnit());
+    REQUIRE(tree != NULL);
+    STManager *stm = new STManager();
+    PropertyManager *pm = new PropertyManager();
+    SemanticVisitor *sv = new SemanticVisitor(stm, pm, 0);
+    sv->visitCompilationUnit(tree);
+
+    REQUIRE_FALSE(sv->hasErrors(0));
+
+    CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll", 0);
+    cv->visitCompilationUnit(tree);
+
+    REQUIRE_FALSE(cv->hasErrors(0));
+
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "988c2083a8eceed9f580c8ec6830e3bee0f4353b677bdad6b59aed2fe98afbe2");
+}
+
 
 TEST_CASE("Out of order function", "[codegen][program]")
 {
-  antlr4::ANTLRInputStream input(
-      R""""(
-extern int func printf(...);
+    std::fstream *inStream = new std::fstream("/home/shared/programs/ooof.wpl");
+    antlr4::ANTLRInputStream *input = new antlr4::ANTLRInputStream(*inStream);
 
-str a <- "hello";
+    WPLLexer lexer(input);
+    // lexer.removeErrorListeners();
+    // lexer.addErrorListener(new TestErrorListener());
+    antlr4::CommonTokenStream tokens(&lexer);
+    WPLParser parser(&tokens);
+    parser.removeErrorListeners();
+    //   parser.addErrorListener(new TestErrorListener()); //FIXME: SHOULD WE TEST THESE HERE?
 
-int func program() {
-    foo(); 
-    return 0;
+    WPLParser::CompilationUnitContext *tree = NULL;
+    REQUIRE_NOTHROW(tree = parser.compilationUnit());
+    REQUIRE(tree != NULL);
+    REQUIRE(tree->getText() != "");
+
+    STManager *stmgr = new STManager();
+    PropertyManager *pm = new PropertyManager();
+    SemanticVisitor *sv = new SemanticVisitor(stmgr, pm);
+
+    sv->visitCompilationUnit(tree);
+    REQUIRE_FALSE(sv->hasErrors(ERROR));
+    CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll", 0);
+    cv->visitCompilationUnit(tree);
+    REQUIRE_FALSE(cv->hasErrors(0));
+
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "c226659bfe066e66d2491aa77e5073a4d512f3ddb376a29a8355cfe7b7022e18");
 }
-
-proc foo() {
-    printf("a = %s\n", a);
-}
-    )"""");
-  WPLLexer lexer(&input);
-  // lexer.removeErrorListeners();
-  // lexer.addErrorListener(new TestErrorListener());
-  antlr4::CommonTokenStream tokens(&lexer);
-  WPLParser parser(&tokens);
-  parser.removeErrorListeners();
-//   parser.addErrorListener(new TestErrorListener()); //FIXME: SHOULD WE TEST THESE HERE?
-
-  WPLParser::CompilationUnitContext *tree = NULL;
-  REQUIRE_NOTHROW(tree = parser.compilationUnit());
-  REQUIRE(tree != NULL);
-  REQUIRE(tree->getText() != "");
-
-  STManager *stmgr = new STManager();
-  PropertyManager *pm = new PropertyManager();
-  SemanticVisitor *sv = new SemanticVisitor(stmgr, pm);
-
-  sv->visitCompilationUnit(tree);
-  REQUIRE_FALSE(sv->hasErrors(ERROR));
-  CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll", 0);
-  cv->visitCompilationUnit(tree);
-  REQUIRE_FALSE(cv->hasErrors(0));
-
-  REQUIRE(llvmIrToSHA256(cv->getModule()) == "c226659bfe066e66d2491aa77e5073a4d512f3ddb376a29a8355cfe7b7022e18");
-}
-
 
 /************************************
  * Example C-Level Tests
@@ -1401,7 +1592,7 @@ proc foo() {
 TEST_CASE("C Level Positive Test #1", "[codegen]")
 {
     std::fstream *inStream = new std::fstream("/home/shared/programs/CLevel/CPositive1.wpl");
-    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+    antlr4::ANTLRInputStream *input = new antlr4::ANTLRInputStream(*inStream);
 
     WPLLexer lexer(input);
     antlr4::CommonTokenStream tokens(&lexer);
@@ -1428,7 +1619,7 @@ TEST_CASE("C Level Positive Test #1", "[codegen]")
 TEST_CASE("C Level Positive Test #2", "[codegen]")
 {
     std::fstream *inStream = new std::fstream("/home/shared/programs/CLevel/CPositive2.wpl");
-    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+    antlr4::ANTLRInputStream *input = new antlr4::ANTLRInputStream(*inStream);
 
     WPLLexer lexer(input);
     antlr4::CommonTokenStream tokens(&lexer);
@@ -1458,7 +1649,7 @@ TEST_CASE("C Level Positive Test #2", "[codegen]")
 TEST_CASE("B Level Positive Test #1", "[codegen]")
 {
     std::fstream *inStream = new std::fstream("/home/shared/programs/BLevel/BPositive1.wpl");
-    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+    antlr4::ANTLRInputStream *input = new antlr4::ANTLRInputStream(*inStream);
 
     WPLLexer lexer(input);
     antlr4::CommonTokenStream tokens(&lexer);
@@ -1485,7 +1676,7 @@ TEST_CASE("B Level Positive Test #1", "[codegen]")
 TEST_CASE("B Level Positive Test #2", "[codegen]")
 {
     std::fstream *inStream = new std::fstream("/home/shared/programs/BLevel/BPositive2.wpl");
-    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+    antlr4::ANTLRInputStream *input = new antlr4::ANTLRInputStream(*inStream);
 
     WPLLexer lexer(input);
     antlr4::CommonTokenStream tokens(&lexer);
@@ -1515,7 +1706,7 @@ TEST_CASE("B Level Positive Test #2", "[codegen]")
 TEST_CASE("A Level Positive Test #1", "[codegen]")
 {
     std::fstream *inStream = new std::fstream("/home/shared/programs/ALevel/APositive1.wpl");
-    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+    antlr4::ANTLRInputStream *input = new antlr4::ANTLRInputStream(*inStream);
 
     WPLLexer lexer(input);
     antlr4::CommonTokenStream tokens(&lexer);
@@ -1542,7 +1733,7 @@ TEST_CASE("A Level Positive Test #1", "[codegen]")
 TEST_CASE("A Level Positive Test #2", "[codegen]")
 {
     std::fstream *inStream = new std::fstream("/home/shared/programs/ALevel/APositive2.wpl");
-    antlr4::ANTLRInputStream * input = new antlr4::ANTLRInputStream(*inStream);
+    antlr4::ANTLRInputStream *input = new antlr4::ANTLRInputStream(*inStream);
 
     WPLLexer lexer(input);
     antlr4::CommonTokenStream tokens(&lexer);

@@ -101,7 +101,7 @@ public:
     std::optional<Value *> TvisitLogAndExpr(WPLParser::LogAndExprContext *ctx);
     std::optional<Value *> TvisitLogOrExpr(WPLParser::LogOrExprContext *ctx);
     std::optional<Value *> TvisitCallExpr(WPLParser::CallExprContext *ctx);
-    std::optional<Value *> TvisitVariableExpr(WPLParser::VariableExprContext *ctx);
+    // std::optional<Value *> TvisitVariableExpr(WPLParser::VariableExprContext *ctx);
     std::optional<Value *> TvisitFieldAccessExpr(WPLParser::FieldAccessExprContext *ctx);
     std::optional<Value *> TvisitParenExpr(WPLParser::ParenExprContext *ctx);
     std::optional<Value *> TvisitBinaryRelExpr(WPLParser::BinaryRelExprContext *ctx);
@@ -127,7 +127,7 @@ public:
     std::optional<Value *> TvisitBooleanConst(WPLParser::BooleanConstContext *ctx);
 
     std::optional<Value *> TvisitLambdaConstExpr(WPLParser::LambdaConstExprContext *ctx);
-    std::optional<Value *> TvisitDefineEnum(WPLParser::DefineEnumContext *ctx);
+    // std::optional<Value *> TvisitDefineEnum(WPLParser::DefineEnumContext *ctx);
     std::optional<Value *> TvisitMatchStatement(WPLParser::MatchStatementContext *ctx);
     std::optional<Value *> TvisitInitProduct(WPLParser::InitProductContext *ctx);
 
@@ -149,7 +149,7 @@ public:
     std::any visitLogAndExpr(WPLParser::LogAndExprContext *ctx) override { return TvisitLogAndExpr(ctx); };
     std::any visitLogOrExpr(WPLParser::LogOrExprContext *ctx) override { return TvisitLogOrExpr(ctx); };
     std::any visitCallExpr(WPLParser::CallExprContext *ctx) override { return TvisitCallExpr(ctx); };
-    std::any visitVariableExpr(WPLParser::VariableExprContext *ctx) override { return TvisitVariableExpr(ctx); };
+    // std::any visitVariableExpr(WPLParser::VariableExprContext *ctx) override { return TvisitVariableExpr(ctx); };
     std::any visitFieldAccessExpr(WPLParser::FieldAccessExprContext *ctx) override { return TvisitFieldAccessExpr(ctx); };
     std::any visitParenExpr(WPLParser::ParenExprContext *ctx) override { return TvisitParenExpr(ctx); };
     std::any visitBinaryRelExpr(WPLParser::BinaryRelExprContext *ctx) override { return TvisitBinaryRelExpr(ctx); };
@@ -174,10 +174,8 @@ public:
     // std::any visitType(WPLParser::TypeContext *ctx) override { return TvisitType(ctx); };
     std::any visitBooleanConst(WPLParser::BooleanConstContext *ctx) override { return TvisitBooleanConst(ctx); };
 
-    // FIXME: Add Base and LamdaTypes?
-
     std::any visitLambdaConstExpr(WPLParser::LambdaConstExprContext *ctx) override { return TvisitLambdaConstExpr(ctx); }
-    std::any visitDefineEnum(WPLParser::DefineEnumContext *ctx) override { return TvisitDefineEnum(ctx); }
+    // std::any visitDefineEnum(WPLParser::DefineEnumContext *ctx) override { return TvisitDefineEnum(ctx); }
     std::any visitMatchStatement(WPLParser::MatchStatementContext *ctx) override { return TvisitMatchStatement(ctx); }
     std::any visitInitProduct(WPLParser::InitProductContext *ctx) override { return TvisitInitProduct(ctx); }
 
@@ -197,7 +195,7 @@ public:
      */
     std::optional<Value *> visitInvokeable(WPLParser::FuncDefContext *ctx)
     {
-        BasicBlock *ins = builder->GetInsertBlock(); // FIXME: DO BETTER PROCESS DISCOVERY ALSO
+        BasicBlock *ins = builder->GetInsertBlock();
 
         // Lookup the symbol from the context
         std::optional<Symbol *> symOpt = props->getBinding(ctx);
@@ -221,80 +219,82 @@ public:
 
         const Type *type = sym->type;
 
-        llvm::Type *genericType = type->getLLVMType(module)->getPointerElementType();
-
-        if (llvm::FunctionType *fnType = static_cast<llvm::FunctionType *>(genericType))
+        if (const TypeInvoke *inv = dynamic_cast<const TypeInvoke *>(type))
         {
-            Function *fn = module->getFunction(funcId); // Lookup the function first
-            /*
-             * If we couldn't find the function, that means it wasn't pre-declared, and we need to create it here and now.
-             */
-            if (!fn)
+
+            llvm::Type *genericType = type->getLLVMType(module)->getPointerElementType();
+
+            if (llvm::FunctionType *fnType = static_cast<llvm::FunctionType *>(genericType))
             {
-                fn = Function::Create(fnType, GlobalValue::PrivateLinkage, funcId, module); // FIXME: DO BETTER
-            }
+                Function *fn = inv->getLLVMName() ? module->getFunction(inv->getLLVMName().value()) : Function::Create(fnType, GlobalValue::PrivateLinkage, funcId, module);; // Lookup the function first
+                inv->setName(fn->getName().str());
 
-            // Get the parameter list context for the invokable
-            WPLParser::ParameterListContext *paramList = ctx->paramList;
-            // Create basic block
-            BasicBlock *bBlk = BasicBlock::Create(module->getContext(), "entry", fn);
-            builder->SetInsertPoint(bBlk);
+                // Get the parameter list context for the invokable
+                WPLParser::ParameterListContext *paramList = ctx->paramList;
+                // Create basic block
+                BasicBlock *bBlk = BasicBlock::Create(module->getContext(), "entry", fn);
+                builder->SetInsertPoint(bBlk);
 
-            // Bind all of the arguments
-            for (auto &arg : fn->args())
-            {
-                // Get the argumengt number (just seems easier than making my own counter)
-                int argNumber = arg.getArgNo();
-
-                // Get the argument's type
-                llvm::Type *type = fnType->params()[argNumber];
-
-                // Get the argument name (This even works for arrays!)
-                std::string argName = paramList->params.at(argNumber)->getText();
-
-                // Create an allocation for the argumentr
-                llvm::AllocaInst *v = builder->CreateAlloca(type, 0, argName);
-
-                // Try to find the parameter's bnding to determine what value to bind to it.
-                std::optional<Symbol *> symOpt = props->getBinding(paramList->params.at(argNumber));
-
-                if (!symOpt)
+                // Bind all of the arguments
+                for (auto &arg : fn->args())
                 {
-                    errorHandler.addCodegenError(ctx->getStart(), "Unable to generate parameter for function: " + argName);
+                    // Get the argumengt number (just seems easier than making my own counter)
+                    int argNumber = arg.getArgNo();
+
+                    // Get the argument's type
+                    llvm::Type *type = fnType->params()[argNumber];
+
+                    // Get the argument name (This even works for arrays!)
+                    std::string argName = paramList->params.at(argNumber)->getText();
+
+                    // Create an allocation for the argumentr
+                    llvm::AllocaInst *v = builder->CreateAlloca(type, 0, argName);
+
+                    // Try to find the parameter's bnding to determine what value to bind to it.
+                    std::optional<Symbol *> symOpt = props->getBinding(paramList->params.at(argNumber));
+
+                    if (!symOpt)
+                    {
+                        errorHandler.addCodegenError(ctx->getStart(), "Unable to generate parameter for function: " + argName);
+                    }
+                    else
+                    {
+                        symOpt.value()->val = v;
+
+                        builder->CreateStore(&arg, v);
+                    }
                 }
-                else
+
+                // Get the codeblock for the PROC/FUNC
+                WPLParser::BlockContext *block = ctx->block();
+
+                // Generate code for the block
+                for (auto e : block->stmts)
                 {
-                    symOpt.value()->val = v;
+                    e->accept(this);
+                }
 
-                    builder->CreateStore(&arg, v);
+                // If we are a PROC, make sure to add a return type (if we don't already have one)
+                if (ctx->PROC() && !CodegenVisitor::blockEndsInReturn(block))
+                {
+                    builder->CreateRetVoid();
                 }
             }
-
-            // Get the codeblock for the PROC/FUNC
-            WPLParser::BlockContext *block = ctx->block();
-
-            // Generate code for the block
-            for (auto e : block->stmts)
+            else
             {
-                e->accept(this);
-            }
-
-            // If we are a PROC, make sure to add a return type (if we don't already have one)
-            if (ctx->PROC() && !CodegenVisitor::blockEndsInReturn(block))
-            {
-                builder->CreateRetVoid();
+                errorHandler.addCodegenError(ctx->getStart(), "Invocation type could not be cast to function!");
             }
         }
-        else
+        else 
         {
-            errorHandler.addCodegenError(ctx->getStart(), "Invocation type could not be cast to function!");
+            errorHandler.addCodegenError(ctx->getStart(), "Could not generate a function call for type of: " + type->toString()); 
         }
 
         builder->SetInsertPoint(ins);
         return {};
     }
 
-    std::optional<Value *> visitVariable(std::string id, std::optional<Symbol *> symOpt, WPLParser::ExpressionContext *ctx)
+    std::optional<Value *> visitVariable(std::string id, std::optional<Symbol *> symOpt, antlr4::ParserRuleContext *ctx)
     {
         //  = props->getBinding(ctx);
 
@@ -312,21 +312,22 @@ public:
         if (!type)
         {
             errorHandler.addCodegenError(ctx->getStart(), "Unable to find type for variable: " + ctx->getText());
-            return {}; // FIXME: IS THIS USED? SOMETIMES MAYBE?
+            return {};
         }
 
         // Make sure the variable has an allocation (or that we can find it due to it being a global var)
         if (!sym->val)
         {
             // If the symbol is a global var
-            if (dynamic_cast<const TypeInvoke *>(sym->type))
+            if (const TypeInvoke* inv = dynamic_cast<const TypeInvoke *>(sym->type))
             {
-                // FIXME: METHODIZE!!!
-                Function *fn = module->getFunction(id);
+                if(!inv->getLLVMName()) {
+                    errorHandler.addCodegenError(ctx->getStart(), "Could not locate IR name for function " + sym->toString());
+                    return {}; 
+                }
 
-                // FIXME: COPY IN STUB GEN!
-                // Value *val = builder->CreateLoad(fn);
-                // return val;
+                Function *fn = module->getFunction(inv->getLLVMName().value());
+
                 return fn;
             }
             else if (sym->isGlobal)
@@ -349,10 +350,20 @@ public:
             errorHandler.addCodegenError(ctx->getStart(), "Unable to find allocation for variable: " + ctx->getText());
             return {};
         }
-        
+
         // Otherwise, we are a local variable with an allocation and, thus, can simply load it.
         Value *v = builder->CreateLoad(type, sym->val.value(), id);
         return v;
+    }
+
+    std::optional<Value *> any2Value(std::any any)
+    {
+        // if(!any) return {}; 
+
+        if(std::optional<Value *> valOpt = std::any_cast<std::optional<Value *>>(any))
+            return valOpt; 
+        
+        return {}; 
     }
 
 protected:

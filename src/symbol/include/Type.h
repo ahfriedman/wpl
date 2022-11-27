@@ -29,7 +29,6 @@
 #include "LinkedMap.h"
 
 // FIXME: CAN NOW HAVE UNDEFINED TYPES!!!! NEED TO TEST (AND PROBABLY REMOVE NULLPTR)!
-// FIXME: PROBABLY NEED A SEPARATE TYPE FOR DEFINITIONS AS THEY HAVE DIFFERENT INHERITANCES!
 
 /*******************************************
  *
@@ -306,6 +305,12 @@ private:
      */
     bool defined = true;
 
+    /**
+     * @brief Name used by llvm to represent this function
+     *
+     */
+    std::optional<std::string> name = {}; //NOT FOR SEMANTIC NAMES!!! THIS ONE IS FOR LLVM ONLY
+
 public:
     /**
      * @brief Construct a new Type Invoke object that has no return and no arguments
@@ -410,7 +415,7 @@ public:
 
         for (const Type *ty : paramTypes)
         {
-            typeVec.push_back(ty->getLLVMType(M)); // paramTypes.typeVec); //FIXME: throw error if can't create?
+            typeVec.push_back(ty->getLLVMType(M));
         }
 
         llvm::ArrayRef<llvm::Type *> paramRef = llvm::ArrayRef(typeVec);
@@ -423,6 +428,17 @@ public:
             variadic);
 
         return fnType->getPointerTo();
+    }
+
+    std::optional<std::string> getLLVMName() const { return name; }
+    bool setName(std::string n) const
+    {
+        if (name)
+            return false;
+        TypeInvoke *mthis = const_cast<TypeInvoke *>(this);
+        mthis->name = n;
+        // name = n;
+        return true;
     }
 
     /**
@@ -662,7 +678,7 @@ public:
     TypeSum(std::set<const Type *, TypeCompare> c, std::optional<std::string> n = {})
     {
         cases = c;
-        name = n; 
+        name = n;
     }
 
     // auto lexical_compare = [](int a, int b) { return to_string(a) < to_string(b); };
@@ -674,6 +690,22 @@ public:
 
     std::set<const Type *, TypeCompare> getCases() const { return cases; }
 
+    unsigned int getIndex(llvm::Module *M, llvm::Type *toFind) const
+    {
+        unsigned i = 1;
+
+        for (auto e : getCases())
+        {
+            if (e->getLLVMType(M) == toFind)
+            {
+                return i;
+            }
+            i++;
+        }
+
+        return (unsigned int)0;
+    }
+
     /**
      * @brief Returns the name of the string in form of <valueType name>[<array length>].
      *
@@ -681,18 +713,23 @@ public:
      */
     std::string toString() const override
     {
-        if(name) return name.value(); 
+        if (name)
+            return name.value();
 
         std::ostringstream description;
 
         description << "(";
 
+        unsigned int ctr = 0;
+        unsigned int size = cases.size();
+
         for (const Type *el : cases)
         {
-            description << el->toString() << " + "; // TODO: Do better!
+            description << el->toString();
+            if (++ctr != size)
+                description << " + ";
         }
         description << ")";
-        // description << valueType->toString() << "[\" << length << "]";
 
         return description.str();
     }
@@ -710,15 +747,14 @@ public:
         if (ty)
             return ty;
 
-        // FIXME: HANDLE ZERO SIZE OBJS!!
         unsigned int min = std::numeric_limits<unsigned int>::max();
         unsigned int max = std::numeric_limits<unsigned int>::min();
 
         for (auto e : cases)
         {
-            // FIXME: HERE IS WHY WE CANT DO RECURSIVE STUFF WO PTRS!
+            // Note: This is why one has to use pointers in order to nest a type into itself
             unsigned int t = M->getDataLayout().getTypeAllocSize(e->getLLVMType(M));
-            // FIXME: DO BETTER - ALSO WILL NOT WORK ON VARS!
+            // FIXME: DO BETTER - ALSO WILL NOT WORK ON VARS! (there are actually a LOT of places where using a var may break things bc we only check for TypeSum)
 
             // M->getDataLayout().getTypeAllocSize(e->getLLVMType(M));
 
@@ -740,61 +776,48 @@ public:
         llvm::Type *inner = llvm::Type::getInt8Ty(M->getContext());
         llvm::Type *arr = llvm::ArrayType::get(inner, len);
 
-        // if(this->llvmType) {
-        //    return ;
-
-        // }//return llvmType;
-
-        std::vector<llvm::Type *> typeVec = {llvm::Type::getInt32Ty(M->getContext()), arr}; // FIXME: NEEDS TO BE LARGEST TYPE!
-
-        // for (const Type *ty : paramTypes)
-        // {
-        //     typeVec.push_back(ty->getLLVMType(M->getContext())); // paramTypes.typeVec); //FIXME: throw error if can't create?
-        // }
+        std::vector<llvm::Type *> typeVec = {llvm::Type::getInt32Ty(M->getContext()), arr};
 
         llvm::ArrayRef<llvm::Type *> ref = llvm::ArrayRef(typeVec);
 
         // Needed to prevent duplicating the type's definition
         //  TypeSum *mthis = const_cast<TypeSum *>(this);
-        ty = llvm::StructType::create(M->getContext(), ref, toString()); // FIXME: USE STRING REF GET NAME!!!
+        ty = llvm::StructType::create(M->getContext(), ref, toString());
 
-        // mthis->llvmType = ty
-        return ty; // this->llvmType; //FIXME: WHAT SHOULD THE DEFAULT OF EMPTY ENUMS BE? OR I GUESS WE SHOULDNT ALLOW ANY EMPTYS
-        // return llvm::Type::getInt8PtrTy(M->getContext());
+        return ty; // this->llvmType; //FIXME: WHAT SHOULD THE DEFAULT OF EMPTY ENUMS BE? OR I GUESS WE SHOULDNT ALLOW ANY EMPTYS -> but they are in global!!
     }
 
 protected:
     bool isSupertypeFor(const Type *other) const override
     {
-        // FIXME: THIS DOES NOT WORK WITH SUBTYPING.
         if (this->contains(other))
             return true;
 
         if (const TypeSum *oSum = dynamic_cast<const TypeSum *>(other))
         {
-            if(this->cases.size() != oSum->cases.size()) return false; 
-            
-            for(const Type * t : this->cases)
-            {
-                bool found = false; 
+            if (this->cases.size() != oSum->cases.size())
+                return false;
 
-                for(const Type * y : oSum->cases)
+            for (const Type *t : this->cases)
+            {
+                bool found = false;
+
+                for (const Type *y : oSum->cases)
                 {
-                    if(t->isSubtype(y)) {
-                        found = true; 
+                    if (t->isSubtype(y))
+                    {
+                        found = true;
                         break;
                     }
                 }
 
-                if(!found) return false; 
+                if (!found)
+                    return false;
             }
 
-            return true; 
-            //FIXME: NESTED ENUMS - Types won't be noticed correctly.....
-            // return this->cases == oSum->cases; // FIXME: VERIFY
+            return true;
         }
-        // FIXME: DOESNT WORK FOR FUNCTIONS, SUMS, ETC
-        // return this->contains(other); // FIXME: ADDRESS SETTING SUM = SUM!
+
         return false;
     }
 };
@@ -811,41 +834,33 @@ private:
      * @brief The types valid in this sum
      *
      */
-    // std::map<std::string, const Type *> elements = {};
-    LinkedMap<std::string, const Type*> elements; 
+    LinkedMap<std::string, const Type *> elements;
 
     /**
      * @brief LLVM IR Representation of the type
      *
      */
-    // llvm::Type * llvmType;
-    // std::optional<llvm::StringRef> name = {}; // FIXME: DO BETTER--ESP FOR PRODUCTS!
-
-    std::optional<std::string> name; 
+    std::optional<std::string> name;
 
 public:
-    TypeStruct(LinkedMap<std::string, const Type*> e, std::optional<std::string> n = {})
+    TypeStruct(LinkedMap<std::string, const Type *> e, std::optional<std::string> n = {})
     {
         elements = e;
-        name = n; 
+        name = n;
     }
-
-    // auto lexical_compare = [](int a, int b) { return to_string(a) < to_string(b); };
 
     std::optional<const Type *> get(std::string id) const
     {
-        // auto symbol = elements.find(id);
-
-        // if (symbol == elements.end())
-        //     return {};
-
-        // return symbol->second;
-
-        return elements.lookup(id); 
+        return elements.lookup(id);
     }
 
-    //std::map<std::string, const Type*> getElements() const { return elements; }
-    vector<pair<std::string, const Type*>> getElements() const { return elements.getElements(); }
+    std::optional<unsigned int> getIndex(std::string id) const
+    {
+        return elements.getIndex(id);
+    }
+
+    // std::map<std::string, const Type*> getElements() const { return elements; }
+    vector<pair<std::string, const Type *>> getElements() const { return elements.getElements(); }
     /**
      * @brief Returns the name of the string in form of <valueType name>[<array length>].
      *
@@ -853,18 +868,23 @@ public:
      */
     std::string toString() const override
     {
-        if(name) return name.value();
+        if (name)
+            return name.value();
 
         std::ostringstream description;
 
         description << "(";
 
+        unsigned int ctr = 0;
+        unsigned int size = elements.getElements().size();
+
         for (auto e : elements.getElements())
         {
-            description << e.second->toString() << " * "; // FIXME: Do better!
+            description << e.second->toString();
+            if (++ctr != size)
+                description << " * ";
         }
         description << ")";
-        // description << valueType->toString() << "[\" << length << "]";
 
         return description.str();
     }
@@ -882,26 +902,19 @@ public:
         if (ty)
             return ty;
 
-        std::vector<llvm::Type *> typeVec; //{llvm::Type::getInt32Ty(M->getContext()), arr}; // FIXME: NEEDS TO BE LARGEST TYPE!
+        std::vector<llvm::Type *> typeVec;
 
         for (auto ty : elements.getElements())
         {
             typeVec.push_back(ty.second->getLLVMType(M));
         }
 
-        // for (const Type *ty : paramTypes)
-        // {
-        //     typeVec.push_back(ty->getLLVMType(M->getContext())); // paramTypes.typeVec); //FIXME: throw error if can't create?
-        // }
-
         llvm::ArrayRef<llvm::Type *> ref = llvm::ArrayRef(typeVec);
 
         // Needed to prevent duplicating the type's definition
-        //  TypeSum *mthis = const_cast<TypeSum *>(this);
-        ty = llvm::StructType::create(M->getContext(), ref, toString()); // FIXME: USE STRING REF GET NAME!!!
+        ty = llvm::StructType::create(M->getContext(), ref, toString());
 
-        // mthis->llvmType = ty
-        return ty; // this->llvmType; //FIXME: WHAT SHOULD THE DEFAULT OF EMPTY ENUMS BE? OR I GUESS WE SHOULDNT ALLOW ANY EMPTYS
+        return ty;
     }
 
 protected:
@@ -909,15 +922,5 @@ protected:
     {
         // FIXME: How do we get types across files?
         return this == other; // FIXME: DO BETTER
-        // //FIXME: THIS DOES NOT WORK WITH SUBTYPING.
-        // if(this->contains(other)) return true;
-
-        // if(const TypeSum* oSum = dynamic_cast<const TypeSum*>(other))
-        // {
-        //     return this->cases == oSum->cases; //FIXME: VERIFY
-        // }
-        // // FIXME: DOESNT WORK FOR FUNCTIONS, SUMS, ETC
-        // // return this->contains(other); // FIXME: ADDRESS SETTING SUM = SUM!
-        // return false;
     }
 };

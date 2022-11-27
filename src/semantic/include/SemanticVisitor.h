@@ -50,7 +50,7 @@ public:
     const Type *visitCtx(WPLParser::LogAndExprContext *ctx);
     const Type *visitCtx(WPLParser::LogOrExprContext *ctx);
     const Type *visitCtx(WPLParser::CallExprContext *ctx);
-    const Type *visitCtx(WPLParser::VariableExprContext *ctx);
+    // const Type *visitCtx(WPLParser::VariableExprContext *ctx);
     const Type *visitCtx(WPLParser::FieldAccessExprContext *ctx);
     const Type *visitCtx(WPLParser::ParenExprContext *ctx);
     const Type *visitCtx(WPLParser::BinaryRelExprContext *ctx);
@@ -78,16 +78,14 @@ public:
     const Type *visitCtx(WPLParser::LambdaTypeContext *ctx);
     const Type *visitCtx(WPLParser::BaseTypeContext *ctx);
 
-    const Type* visitCtx(WPLParser::LambdaConstExprContext *ctx);
+    const Type *visitCtx(WPLParser::LambdaConstExprContext *ctx);
 
-    const Type* visitCtx(WPLParser::SumTypeContext * ctx); //FIXME: NEED TO DO THIS & OTHERS!
-    const Type* visitCtx(WPLParser::CustomTypeContext * ctx);
-    const Type* visitCtx(WPLParser::DefineEnumContext * ctx);
-    const Type* visitCtx(WPLParser::MatchStatementContext * ctx);
-    const Type* visitCtx(WPLParser::DefineStructContext * ctx);
-    const Type* visitCtx(WPLParser::InitProductContext * ctx);
-
-
+    const Type *visitCtx(WPLParser::SumTypeContext *ctx); // FIXME: NEED TO DO THIS & OTHERS!
+    const Type *visitCtx(WPLParser::CustomTypeContext *ctx);
+    const Type *visitCtx(WPLParser::DefineEnumContext *ctx);
+    const Type *visitCtx(WPLParser::MatchStatementContext *ctx);
+    const Type *visitCtx(WPLParser::DefineStructContext *ctx);
+    const Type *visitCtx(WPLParser::InitProductContext *ctx);
 
     /*
      * Traditional visitor methods all overridden with our typed versions
@@ -105,7 +103,7 @@ public:
     std::any visitLogAndExpr(WPLParser::LogAndExprContext *ctx) override { return visitCtx(ctx); }
     std::any visitLogOrExpr(WPLParser::LogOrExprContext *ctx) override { return visitCtx(ctx); }
     std::any visitCallExpr(WPLParser::CallExprContext *ctx) override { return visitCtx(ctx); }
-    std::any visitVariableExpr(WPLParser::VariableExprContext *ctx) override { return visitCtx(ctx); }
+    // std::any visitVariableExpr(WPLParser::VariableExprContext *ctx) override { return visitCtx(ctx); }
     std::any visitFieldAccessExpr(WPLParser::FieldAccessExprContext *ctx) override { return visitCtx(ctx); }
     std::any visitParenExpr(WPLParser::ParenExprContext *ctx) override { return visitCtx(ctx); }
     std::any visitBinaryRelExpr(WPLParser::BinaryRelExprContext *ctx) override { return visitCtx(ctx); }
@@ -135,12 +133,12 @@ public:
 
     std::any visitLambdaConstExpr(WPLParser::LambdaConstExprContext *ctx) override { return visitCtx(ctx); }
 
-    std::any visitSumType(WPLParser::SumTypeContext * ctx) override { return visitCtx(ctx); }
-    std::any visitCustomType(WPLParser::CustomTypeContext * ctx) override { return visitCtx(ctx); }
-    std::any visitDefineEnum(WPLParser::DefineEnumContext * ctx) override { return visitCtx(ctx); }
-    std::any visitMatchStatement(WPLParser::MatchStatementContext * ctx) override { return visitCtx(ctx); }
-    std::any visitDefineStruct(WPLParser::DefineStructContext * ctx) override { return visitCtx(ctx); }
-    std::any visitInitProduct(WPLParser::InitProductContext * ctx) override { return visitCtx(ctx); }
+    std::any visitSumType(WPLParser::SumTypeContext *ctx) override { return visitCtx(ctx); }
+    std::any visitCustomType(WPLParser::CustomTypeContext *ctx) override { return visitCtx(ctx); }
+    std::any visitDefineEnum(WPLParser::DefineEnumContext *ctx) override { return visitCtx(ctx); }
+    std::any visitMatchStatement(WPLParser::MatchStatementContext *ctx) override { return visitCtx(ctx); }
+    std::any visitDefineStruct(WPLParser::DefineStructContext *ctx) override { return visitCtx(ctx); }
+    std::any visitInitProduct(WPLParser::InitProductContext *ctx) override { return visitCtx(ctx); }
 
     /**
      * @brief Used to safely enter a block. This is used to ensure there aren't FUNC/PROC definitions / code following returns in it.
@@ -193,20 +191,15 @@ public:
      */
     const Type *visitInvokeable(antlr4::ParserRuleContext *ctx, std::string funcId, WPLParser::ParameterListContext *paramList, WPLParser::TypeContext *ty, WPLParser::BlockContext *block)
     {
-        // Visit the parameter list context to get a TypeInvoke that represents just the parameters to this PROC/FUNC
-        const Type *tmpTy = (paramList) ? visitCtx(paramList) : new TypeInvoke();
-        const TypeInvoke *procType = dynamic_cast<const TypeInvoke *>(tmpTy); // Always true, but needs separate statement to make C happy.
+        std::optional<std::pair<const TypeInvoke *, Symbol *>> pairOpt = invokableHelper(ctx, funcId, paramList, ty);
 
-        // If we have a return type, then visit that contex to determine what it is. Otherwise, set it as Types::UNDEFINED.
-        const Type *retType = ty ? std::any_cast<const Type *>(ty->accept(this))//this->visitCtx(ty)
-                                 : Types::UNDEFINED;
+        if (!pairOpt)
+            return {}; // Errors already caught
 
-        // Create a new func with the return type (or reuse the procType) NOTE: We do NOT need to worry about discarding the variadic here as variadic FUNC/PROC is not supported
-        const TypeInvoke *funcType = ty ? new TypeInvoke(procType->getParamTypes(), retType) //FIXME: VERIFY THESE ARE DEFS IF THEY SHOULD BE
-                                        : procType;
+        std::pair<const TypeInvoke *, Symbol *> pair = pairOpt.value();
 
-        // Create a new symbol for the PROC/FUNC
-        Symbol *funcSymbol = new Symbol(funcId, funcType, true, false); //FIXME: DO BETTER!
+        const TypeInvoke *funcType = pair.first;
+        Symbol *funcSymbol = pair.second;
 
         // If the symbol name is program, do some extra checks to make sure it has no arguments and returns an INT. Otherwise, we will get a link error.
         if (funcId == "program")
@@ -234,12 +227,12 @@ public:
                     if (other->isSubtype(funcType) && !(other->isDefined()))
                     {
                         other->define();
-                        goto cont; 
+                        goto cont;
                     }
                 }
             }
             errorHandler.addSemanticError(ctx->getStart(), "Unsupported redeclaration of " + funcId);
-            return Types::UNDEFINED; // FIXME: DO BETTER, NEED ORDERING TO CATCH ALL ERRORS
+            return Types::UNDEFINED;
         }
 
     cont:
@@ -248,7 +241,7 @@ public:
         stmgr->enterScope(true); // NOTE: We do NOT duplicate scopes here because we use a saveVisitBlock with newScope=false
 
         // In the new scope. set our return type. We use @RETURN as it is not a valid symbol the programmer could write in the language
-        stmgr->addSymbol(new Symbol("@RETURN", retType, false, false)); //FIXME: VERIFY
+        stmgr->addSymbol(new Symbol("@RETURN", funcType->getReturnType(), false, false));
 
         // If we have a parameter list, bind each of the parameters.
         // NOTE: if there were a duplicate name, then the initial visit to the paramList wuld have already
@@ -288,6 +281,16 @@ public:
         return funcType;
     }
 
+    const Type* any2Type(std::any any)
+    {
+        // if(!any) return {}; 
+
+        if(const Type * valOpt = std::any_cast<const Type *>(any))
+            return valOpt; 
+        
+        return Types::UNDEFINED; //TODO: DO BETTER 
+    }
+
 private:
     STManager *stmgr;
     PropertyManager *bindings;
@@ -324,5 +327,53 @@ private:
         }
 
         return res;
+    }
+
+    std::optional<const TypeInvoke *> invokableHelper2(antlr4::ParserRuleContext *ctx, std::string funcId, WPLParser::ParameterListContext *paramList, WPLParser::TypeContext *ty)
+    {
+        // std::optional<Symbol *> optSym = bindings->getBinding(ctx);
+        std::optional<Symbol *> opt = stmgr->lookupInCurrentScope(funcId); //FIXME: VERIFY?
+
+        if (opt)
+        {
+            Symbol *sym = opt.value();
+
+            if (const TypeInvoke *inv = dynamic_cast<const TypeInvoke *>(sym->type))
+            {
+                return inv; 
+            }
+
+            errorHandler.addSemanticError(ctx->getStart(), "Cannot invoke " + sym->toString());
+            return {};
+        }
+
+        // Visit the parameter list context to get a TypeInvoke that represents just the parameters to this PROC/FUNC
+        const Type *tmpTy = (paramList) ? visitCtx(paramList) : new TypeInvoke();
+        const TypeInvoke *procType = dynamic_cast<const TypeInvoke *>(tmpTy); // Always true, but needs separate statement to make C happy.
+
+        // If we have a return type, then visit that contex to determine what it is. Otherwise, set it as Types::UNDEFINED.
+        const Type *retType = ty ? any2Type(ty->accept(this)) // this->visitCtx(ty)
+                                 : Types::UNDEFINED;
+
+        // Create a new func with the return type (or reuse the procType) NOTE: We do NOT need to worry about discarding the variadic here as variadic FUNC/PROC is not supported
+        const TypeInvoke *funcType = ty ? new TypeInvoke(procType->getParamTypes(), retType)
+                                        : procType;
+
+        return funcType;
+    }
+
+
+    std::optional<std::pair<const TypeInvoke *, Symbol *>> invokableHelper(antlr4::ParserRuleContext *ctx, std::string funcId, WPLParser::ParameterListContext *paramList, WPLParser::TypeContext *ty)
+    {
+        std::optional<const TypeInvoke *> funcTypeOpt = invokableHelper2(ctx, funcId, paramList, ty);
+
+        if(!funcTypeOpt) return {}; 
+
+        const TypeInvoke * funcType = funcTypeOpt.value(); 
+        // Create a new symbol for the PROC/FUNC
+        Symbol *funcSymbol = new Symbol(funcId, funcType, true, false);
+
+        std::pair<const TypeInvoke *, Symbol *> ans = {funcType, funcSymbol};
+        return ans; 
     }
 };

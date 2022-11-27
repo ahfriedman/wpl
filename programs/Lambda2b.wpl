@@ -3,8 +3,11 @@ extern int func printf(...);
 int func program() {
 
     int func foo(int x) {
-        printf("FOO: %u\n", x);
-        return x; 
+        int func foo(int x) {
+            printf("FOO_I: %u\n", x);
+            return x; 
+        }
+        return foo(x); 
     }
 
     var ref <- foo; 

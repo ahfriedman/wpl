@@ -26,7 +26,7 @@ std::optional<Scope *> STManager::exitScope()
     Scope *last = currentScope.value();
 
     currentScope = last->getParent();
-    scopes.pop_back(); // FIXME: Delete last element in vector? -> We don't due this because it breaks the scope count
+    scopes.pop_back(); // FIXME: Delete last element in vector? -> We don't do this because it breaks the scope count
 
     int depth = scopes.size();
     if (getCurrentStop() == depth && getCurrentStop() != 0)
@@ -70,8 +70,7 @@ std::optional<Symbol *> STManager::lookup(std::string id)
         std::optional<Symbol *> sym = scope->lookup(id);
         if (sym)
         {
-            // std::cout << sym.value()->toString() << " " << depth << " >= " << stop  << " || " << sym.value()->isDefinition << std::endl;
-            if (depth >= stop || sym.value()->isDefinition || sym.value()->isGlobal) // FIXME: VERIFY, ALSO MAY GET CONFUSING IF WE HAVE DUPLICATE NAMED VARS!!!
+            if (depth >= stop || sym.value()->isDefinition || sym.value()->isGlobal)
                 return sym;
             return {};
         }
@@ -94,20 +93,20 @@ std::optional<Symbol *> STManager::lookupInCurrentScope(std::string id)
         if (sym)
             return sym;
 
-        opt = scope->getParent();
-        while (opt)
-        {
-            scope = opt.value();
-            std::optional<Symbol *> sym = scope->lookup(id);
-            if (sym)
-            {
-                // std::cout << sym.value()->toString() << " " << depth << " >= " << stop  << " || " << sym.value()->isDefinition << std::endl;
-                if (sym.value()->isDefinition) // FIXME: VERIFY, ALSO MAY GET CONFUSING IF WE HAVE DUPLICATE NAMED VARS!!!
-                    return sym;
-                return {};
-            }
-            opt = scope->getParent();
-        }
+        // opt = scope->getParent();
+        // while (opt)
+        // {
+        //     scope = opt.value();
+        //     std::optional<Symbol *> sym = scope->lookup(id);
+        //     if (sym)
+        //     {
+        //         // std::cout << sym.value()->toString() << " " << depth << " >= " << stop  << " || " << sym.value()->isDefinition << std::endl;
+        //         if (sym.value()->isDefinition)
+        //             return sym;
+        //         return {};
+        //     }
+        //     opt = scope->getParent();
+        // }
     }
 
     return {};
