@@ -232,7 +232,7 @@ public:
                 }
             }
             errorHandler.addSemanticError(ctx->getStart(), "Unsupported redeclaration of " + funcId);
-            return Types::UNDEFINED; // FIXME: DO BETTER, NEED ORDERING TO CATCH ALL ERRORS
+            return Types::UNDEFINED;
         }
 
     cont:
@@ -361,7 +361,7 @@ private:
 
         const TypeInvoke * funcType = funcTypeOpt.value(); 
         // Create a new symbol for the PROC/FUNC
-        Symbol *funcSymbol = new Symbol(funcId, funcType, true, false); // FIXME: DO BETTER!
+        Symbol *funcSymbol = new Symbol(funcId, funcType, true, false);
 
         std::pair<const TypeInvoke *, Symbol *> ans = {funcType, funcSymbol};
         return ans; 

@@ -70,8 +70,7 @@ std::optional<Symbol *> STManager::lookup(std::string id)
         std::optional<Symbol *> sym = scope->lookup(id);
         if (sym)
         {
-            // std::cout << sym.value()->toString() << " " << depth << " >= " << stop  << " || " << sym.value()->isDefinition << std::endl;
-            if (depth >= stop || sym.value()->isDefinition || sym.value()->isGlobal) // FIXME: VERIFY, ALSO MAY GET CONFUSING IF WE HAVE DUPLICATE NAMED VARS!!!
+            if (depth >= stop || sym.value()->isDefinition || sym.value()->isGlobal)
                 return sym;
             return {};
         }

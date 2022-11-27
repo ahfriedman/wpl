@@ -106,8 +106,8 @@ std::optional<Value *> CodegenVisitor::TvisitMatchStatement(WPLParser::MatchStat
 
         std::any anyCheck = ctx->check->accept(this);
 
-        // Attempt to cast the check; if this fails, then codegen for the check failed //FIXME: VERIFY THESE ARE FINE
-        if (std::optional<Value *> optVal = std::any_cast<std::optional<Value *>>(anyCheck))
+        // Attempt to cast the check; if this fails, then codegen for the check failed
+        if (std::optional<Value *> optVal = any2Value(anyCheck))
         {
             // Check that the optional, in fact, has a value. Otherwise, something went wrong.
             if (!optVal)
@@ -221,7 +221,7 @@ std::optional<Value *> CodegenVisitor::TvisitInvocation(WPLParser::InvocationCon
     // Populate the argument vector, breaking out of compilation if any argument fails to generate.
     for (auto e : ctx->args)
     {
-        std::optional<Value *> valOpt = std::any_cast<std::optional<Value *>>(e->accept(this));
+        std::optional<Value *> valOpt = any2Value(e->accept(this));
         if (!valOpt)
         {
             errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code");
@@ -246,7 +246,7 @@ std::optional<Value *> CodegenVisitor::TvisitInvocation(WPLParser::InvocationCon
     }
 
     // llvm::Function *call = module->getFunction(ctx->VARIABLE()->getText());
-    std::optional<Value *> fnOpt = std::any_cast<std::optional<Value *>>(ctx->field->accept(this));
+    std::optional<Value *> fnOpt = any2Value(ctx->field->accept(this));
     if (!fnOpt)
     {
         errorHandler.addCodegenError(ctx->getStart(), "Could not locate function for invocation: " + ctx->field->getText() + ". Has it been defined in IR yet?");
@@ -276,7 +276,7 @@ std::optional<Value *> CodegenVisitor::TvisitInitProduct(WPLParser::InitProductC
 
     for (auto e : ctx->exprs)
     {
-        std::optional<Value *> valOpt = std::any_cast<std::optional<Value *>>(e->accept(this));
+        std::optional<Value *> valOpt = any2Value(e->accept(this));
         if (!valOpt)
         {
             errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code");
@@ -344,7 +344,7 @@ std::optional<Value *> CodegenVisitor::TvisitInitProduct(WPLParser::InitProductC
 std::optional<Value *> CodegenVisitor::TvisitArrayAccess(WPLParser::ArrayAccessContext *ctx)
 {
     // Attempt to get the index Value
-    std::optional<Value *> index = std::any_cast<std::optional<Value *>>(ctx->index->accept(this));
+    std::optional<Value *> index = any2Value(ctx->index->accept(this));
 
     if (!index)
     {
@@ -352,7 +352,7 @@ std::optional<Value *> CodegenVisitor::TvisitArrayAccess(WPLParser::ArrayAccessC
         return {};
     }
 
-    std::optional<Value *> arrayPtr = std::any_cast<std::optional<Value *>>(ctx->field->accept(this));
+    std::optional<Value *> arrayPtr = any2Value(ctx->field->accept(this));
     if (!arrayPtr)
     {
         errorHandler.addCodegenError(ctx->getStart(), "Failed to locate array in access");
@@ -454,7 +454,7 @@ std::optional<Value *> CodegenVisitor::TvisitUnaryExpr(WPLParser::UnaryExprConte
     {
     case WPLParser::MINUS:
     {
-        std::optional<Value *> innerVal = std::any_cast<std::optional<Value *>>(ctx->ex->accept(this));
+        std::optional<Value *> innerVal = any2Value(ctx->ex->accept(this));
 
         if (!innerVal)
         {
@@ -468,7 +468,7 @@ std::optional<Value *> CodegenVisitor::TvisitUnaryExpr(WPLParser::UnaryExprConte
 
     case WPLParser::NOT:
     {
-        std::optional<Value *> v = std::any_cast<std::optional<Value *>>(ctx->ex->accept(this));
+        std::optional<Value *> v = any2Value(ctx->ex->accept(this));
 
         if (!v)
         {
@@ -487,8 +487,8 @@ std::optional<Value *> CodegenVisitor::TvisitUnaryExpr(WPLParser::UnaryExprConte
 
 std::optional<Value *> CodegenVisitor::TvisitBinaryArithExpr(WPLParser::BinaryArithExprContext *ctx)
 {
-    std::optional<Value *> lhs = std::any_cast<std::optional<Value *>>(ctx->left->accept(this));
-    std::optional<Value *> rhs = std::any_cast<std::optional<Value *>>(ctx->right->accept(this));
+    std::optional<Value *> lhs = any2Value(ctx->left->accept(this));
+    std::optional<Value *> rhs = any2Value(ctx->right->accept(this));
 
     if (!lhs || !rhs)
     {
@@ -514,8 +514,8 @@ std::optional<Value *> CodegenVisitor::TvisitBinaryArithExpr(WPLParser::BinaryAr
 
 std::optional<Value *> CodegenVisitor::TvisitEqExpr(WPLParser::EqExprContext *ctx)
 {
-    std::optional<Value *> lhs = std::any_cast<std::optional<Value *>>(ctx->left->accept(this));
-    std::optional<Value *> rhs = std::any_cast<std::optional<Value *>>(ctx->right->accept(this));
+    std::optional<Value *> lhs = any2Value(ctx->left->accept(this));
+    std::optional<Value *> rhs = any2Value(ctx->right->accept(this));
 
     if (!lhs || !rhs)
     {
@@ -585,7 +585,7 @@ std::optional<Value *> CodegenVisitor::TvisitLogAndExpr(WPLParser::LogAndExprCon
 
     builder->SetInsertPoint(current);
 
-    std::optional<Value *> first = std::any_cast<std::optional<Value *>>(toGen.at(0)->accept(this));
+    std::optional<Value *> first = any2Value(toGen.at(0)->accept(this));
 
     if (!first)
     {
@@ -611,7 +611,7 @@ std::optional<Value *> CodegenVisitor::TvisitLogAndExpr(WPLParser::LogAndExprCon
          */
         builder->SetInsertPoint(falseBlk);
 
-        std::optional<Value *> rhs = std::any_cast<std::optional<Value *>>(toGen.at(i)->accept(this));
+        std::optional<Value *> rhs = any2Value(toGen.at(i)->accept(this));
 
         if (!rhs)
         {
@@ -679,7 +679,7 @@ std::optional<Value *> CodegenVisitor::TvisitLogOrExpr(WPLParser::LogOrExprConte
 
     builder->SetInsertPoint(current);
 
-    std::optional<Value *> first = std::any_cast<std::optional<Value *>>(toGen.at(0)->accept(this));
+    std::optional<Value *> first = any2Value(toGen.at(0)->accept(this));
 
     if (!first)
     {
@@ -705,7 +705,7 @@ std::optional<Value *> CodegenVisitor::TvisitLogOrExpr(WPLParser::LogOrExprConte
          */
         builder->SetInsertPoint(falseBlk);
 
-        std::optional<Value *> rhs = std::any_cast<std::optional<Value *>>(toGen.at(i)->accept(this));
+        std::optional<Value *> rhs = any2Value(toGen.at(i)->accept(this));
 
         if (!rhs)
         {
@@ -831,14 +831,14 @@ std::optional<Value *> CodegenVisitor::TvisitFieldAccessExpr(WPLParser::FieldAcc
 
 std::optional<Value *> CodegenVisitor::TvisitParenExpr(WPLParser::ParenExprContext *ctx)
 {
-    return std::any_cast<std::optional<Value *>>(ctx->ex->accept(this));
+    return any2Value(ctx->ex->accept(this));
 }
 
 std::optional<Value *> CodegenVisitor::TvisitBinaryRelExpr(WPLParser::BinaryRelExprContext *ctx)
 {
     // Generate code for LHS and RHS
-    std::optional<Value *> lhs = std::any_cast<std::optional<Value *>>(ctx->left->accept(this));
-    std::optional<Value *> rhs = std::any_cast<std::optional<Value *>>(ctx->right->accept(this));
+    std::optional<Value *> lhs = any2Value(ctx->left->accept(this));
+    std::optional<Value *> rhs = any2Value(ctx->right->accept(this));
 
     // Ensure we successfully generated LHS and RHS
     if (!lhs || !rhs)
@@ -879,7 +879,7 @@ std::optional<Value *> CodegenVisitor::TvisitBConstExpr(WPLParser::BConstExprCon
 std::optional<Value *> CodegenVisitor::TvisitCondition(WPLParser::ConditionContext *ctx)
 {
     // Passthrough to visiting the conditon
-    return std::any_cast<std::optional<Value *>>(ctx->ex->accept(this));
+    return any2Value(ctx->ex->accept(this));
 }
 
 std::optional<Value *> CodegenVisitor::TvisitExternStatement(WPLParser::ExternStatementContext *ctx)
@@ -933,7 +933,7 @@ std::optional<Value *> CodegenVisitor::TvisitFuncDef(WPLParser::FuncDefContext *
 std::optional<Value *> CodegenVisitor::TvisitAssignStatement(WPLParser::AssignStatementContext *ctx)
 {
     // Visit the expression to get the value we will assign
-    std::optional<Value *> exprVal = std::any_cast<std::optional<Value *>>(ctx->ex->accept(this));
+    std::optional<Value *> exprVal = any2Value(ctx->ex->accept(this));
 
     // Check that the expression generated
     if (!exprVal)
@@ -983,7 +983,7 @@ std::optional<Value *> CodegenVisitor::TvisitAssignStatement(WPLParser::AssignSt
     if (!ctx->to->VARIABLE())
     {
         // As this is an array access, we need to determine the index we will be accessing
-        std::optional<Value *> index = std::any_cast<std::optional<Value *>>(ctx->to->array->index->accept(this));
+        std::optional<Value *> index = any2Value(ctx->to->array->index->accept(this));
 
         // Ensure we built an index
         if (!index)
@@ -1044,7 +1044,7 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
         {
             std::any anyVal = e->ex->accept(this);
 
-            if (std::optional<Value *> opt = std::any_cast<std::optional<Value *>>(anyVal))
+            if (std::optional<Value *> opt = any2Value(anyVal))
             {
                 exVal = opt;
             }
@@ -1160,7 +1160,7 @@ std::optional<Value *> CodegenVisitor::TvisitLoopStatement(WPLParser::LoopStatem
 {
     // Very similar to conditionals
 
-    std::optional<Value *> check = this->TvisitCondition(ctx->check); // std::any_cast<std::optional<Value *>>(ctx->check->accept(this));
+    std::optional<Value *> check = this->TvisitCondition(ctx->check); // any2Value(ctx->check->accept(this));
 
     if (!check)
     {
@@ -1295,7 +1295,7 @@ std::optional<Value *> CodegenVisitor::TvisitSelectStatement(WPLParser::SelectSt
         std::any anyCheck = evalCase->check->accept(this);
 
         // Attempt to cast the check; if this fails, then codegen for the check failed
-        if (std::optional<Value *> optVal = std::any_cast<std::optional<Value *>>(anyCheck))
+        if (std::optional<Value *> optVal = any2Value(anyCheck))
         {
             // Check that the optional, in fact, has a value. Otherwise, something went wrong.
             if (!optVal)
@@ -1388,7 +1388,7 @@ std::optional<Value *> CodegenVisitor::TvisitReturnStatement(WPLParser::ReturnSt
         std::any anyInner = ctx->expression()->accept(this);
 
         // Perform some checks to make sure that code was generated
-        if (std::optional<Value *> inner = std::any_cast<std::optional<Value *>>(anyInner))
+        if (std::optional<Value *> inner = any2Value(anyInner))
         {
             if (!inner)
             {

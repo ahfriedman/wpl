@@ -785,13 +785,12 @@ public:
         //  TypeSum *mthis = const_cast<TypeSum *>(this);
         ty = llvm::StructType::create(M->getContext(), ref, toString());
 
-        return ty; // this->llvmType; //FIXME: WHAT SHOULD THE DEFAULT OF EMPTY ENUMS BE? OR I GUESS WE SHOULDNT ALLOW ANY EMPTYS
+        return ty; // this->llvmType; //FIXME: WHAT SHOULD THE DEFAULT OF EMPTY ENUMS BE? OR I GUESS WE SHOULDNT ALLOW ANY EMPTYS -> but they are in global!!
     }
 
 protected:
     bool isSupertypeFor(const Type *other) const override
     {
-        // FIXME: THIS DOES NOT WORK WITH SUBTYPING.
         if (this->contains(other))
             return true;
 
@@ -819,7 +818,7 @@ protected:
 
             return true;
         }
-        // FIXME: DOESNT WORK FOR FUNCTIONS, SUMS, ETC
+
         return false;
     }
 };
@@ -848,7 +847,7 @@ public:
     TypeStruct(LinkedMap<std::string, const Type *> e, std::optional<std::string> n = {})
     {
         elements = e;
-        name = n; // FIXME: TEST ANON STRUCTS!
+        name = n;
     }
 
     std::optional<const Type *> get(std::string id) const
@@ -916,7 +915,7 @@ public:
         // Needed to prevent duplicating the type's definition
         ty = llvm::StructType::create(M->getContext(), ref, toString());
 
-        return ty; // this->llvmType; //FIXME: WHAT SHOULD THE DEFAULT OF EMPTY ENUMS BE? OR I GUESS WE SHOULDNT ALLOW ANY EMPTYS
+        return ty;
     }
 
 protected:

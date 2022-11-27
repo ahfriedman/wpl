@@ -356,6 +356,16 @@ public:
         return v;
     }
 
+    std::optional<Value *> any2Value(std::any any)
+    {
+        // if(!any) return {}; 
+
+        if(std::optional<Value *> valOpt = std::any_cast<std::optional<Value *>>(any))
+            return valOpt; 
+        
+        return {}; 
+    }
+
 protected:
     /**
      * @brief Helper function to determine if a Block ends in a return or not

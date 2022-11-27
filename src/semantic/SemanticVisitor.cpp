@@ -733,7 +733,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::ExternStatementContext *ctx)
     const TypeInvoke *funcType = (ctx->ty) ? new TypeInvoke(procType->getParamTypes(), retType, variadic, true)
                                            : new TypeInvoke(procType->getParamTypes(), variadic, true);
 
-    Symbol *funcSymbol = new Symbol(id, funcType, true, true); // FIXME: WAS N/A, FALSE before
+    Symbol *funcSymbol = new Symbol(id, funcType, true, true);
 
     stmgr->addSymbol(funcSymbol);
     bindings->bind(ctx, funcSymbol);
@@ -829,11 +829,8 @@ const Type *SemanticVisitor::visitCtx(WPLParser::VarDeclStatementContext *ctx)
 
 const Type *SemanticVisitor::visitCtx(WPLParser::MatchStatementContext *ctx)
 {
-    // const Type * condType = this->visitCtx(ctx->check->ex);
     const Type *condType = std::any_cast<const Type *>(ctx->check->ex->accept(this)); // FIXME: VERIFY?
 
-    // FIXME: ADD ERROR CHAINS TO LIMIT DUPL MSGS
-    // FIXME: ADD OTHER LISTENERS W ERROR MSGS?
     if (const TypeSum *sumType = dynamic_cast<const TypeSum *>(condType))
     {
         std::set<const Type *> foundCaseTypes = {};
@@ -1025,7 +1022,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::LambdaConstExprContext *ctx)
     const TypeInvoke *funcType = new TypeInvoke(paramType->getParamTypes(), retType);
 
     stmgr->enterScope(true);
-    stmgr->addSymbol(new Symbol("@RETURN", retType, false, false)); // FIXME: VERIFY
+    stmgr->addSymbol(new Symbol("@RETURN", retType, false, false));
 
     for (unsigned int i = 0; i < ctx->parameterList()->params.size(); i++)
     {
@@ -1143,7 +1140,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::DefineStructContext *ctx)
         std::string caseName = caseCtx->name->getText();
         if (el.lookup(caseName))
         {
-            errorHandler.addSemanticError(ctx->getStart(), "Unsupported redeclaration of " + caseName); // FIXME: DO BETTER
+            errorHandler.addSemanticError(ctx->getStart(), "Unsupported redeclaration of " + caseName);
             return Types::UNDEFINED;
         }
         const Type *caseTy = std::any_cast<const Type *>(caseCtx->ty->accept(this)); // FIXME: VERIFY SAFE

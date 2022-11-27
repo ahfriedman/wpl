@@ -853,7 +853,6 @@ TEST_CASE("programs/test-arrayAssign - Assigning one array to another and editin
 
 TEST_CASE("programs/externProc - Declaring an external proc", "[codegen]")
 {
-    // FIXME: TEST WITH AN ACTUAL LINK!
     std::fstream *inStream = new std::fstream("/home/shared/programs/externProc.wpl");
     antlr4::ANTLRInputStream *input = new antlr4::ANTLRInputStream(*inStream);
 
@@ -1041,8 +1040,6 @@ TEST_CASE("programs/Lambda1 - Basic lambda Test", "[codegen][lambda]")
 
     REQUIRE(llvmIrToSHA256(cv->getModule()) == "d06bbb8013c6cfccd7f79ab269425b221c3a5dcb802949480b79fa28228d48bb");
 }
-
-// FIXME: LAMBDAS, ENUMS CAN"T BE ASSIGNED OUTSIDE OF DECL
 
 TEST_CASE("programs/Lambda2 - Basic lambda Test w/ return", "[codegen][lambda]")
 {
