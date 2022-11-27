@@ -138,7 +138,6 @@ std::optional<Value *> CodegenVisitor::TvisitMatchStatement(WPLParser::MatchStat
 
                 llvm::Type *toFind = localSymOpt.value()->type->getLLVMType(module); // FIXME: DO THIS ALL BETTER, MORE CHECKS!!
 
-                // FIXME: METHODIZE!!
                 unsigned int index = sumType->getIndex(module, toFind);
 
                 if (index == 0)
@@ -316,22 +315,7 @@ std::optional<Value *> CodegenVisitor::TvisitInitProduct(WPLParser::InitProductC
             {
                 if (const TypeSum *sum = dynamic_cast<const TypeSum *>(elements.at(i).second))
                 {
-                    // FIXME: METHODIZE!!
-                    unsigned int index = [sum, a](llvm::Module *M)
-                    {
-                        unsigned i = 1;
-                        auto toFind = a->getType();
-                        for (auto e : sum->getCases())
-                        {
-                            if (e->getLLVMType(M) == toFind)
-                            {
-                                return i;
-                            }
-                            i++;
-                        }
-
-                        return (unsigned int)0;
-                    }(module);
+                    unsigned int index = sum->getIndex(module, a->getType());
 
                     if (index != 0)
                     {
@@ -1018,27 +1002,12 @@ std::optional<Value *> CodegenVisitor::TvisitAssignStatement(WPLParser::AssignSt
     }
 
     // Store the expression's value
-    // FIXME: METHODIZE?
+    // TODO: METHODIZE?
     Value *v = val.value();
     Value *stoVal = exprVal.value();
     if (const TypeSum *sum = dynamic_cast<const TypeSum *>(varSym->type))
     {
-        // FIXME: METHODIZE!!
-        unsigned int index = [sum, stoVal](llvm::Module *M)
-        {
-            unsigned i = 1;
-            auto toFind = stoVal->getType();
-            for (auto e : sum->getCases())
-            {
-                if (e->getLLVMType(M) == toFind)
-                {
-                    return i;
-                }
-                i++;
-            }
-
-            return (unsigned int)0;
-        }(module);
+        unsigned int index = sum->getIndex(module, stoVal->getType());
 
         if (index == 0)
         {
@@ -1162,22 +1131,7 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
                     Value *stoVal = exVal.value();
                     if (const TypeSum *sum = dynamic_cast<const TypeSum *>(varSymbol->type))
                     {
-                        // FIXME: METHODIZE!!
-                        unsigned int index = [sum, stoVal](llvm::Module *M)
-                        {
-                            unsigned i = 1;
-                            auto toFind = stoVal->getType();
-                            for (auto e : sum->getCases())
-                            {
-                                if (e->getLLVMType(M) == toFind)
-                                {
-                                    return i;
-                                }
-                                i++;
-                            }
-
-                            return (unsigned int)0;
-                        }(module);
+                        unsigned int index = sum->getIndex(module, stoVal->getType());
 
                         if (index == 0)
                         {
