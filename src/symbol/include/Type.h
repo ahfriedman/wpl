@@ -690,6 +690,22 @@ public:
 
     std::set<const Type *, TypeCompare> getCases() const { return cases; }
 
+    unsigned int getIndex(llvm::Module *M, llvm::Type *toFind) const
+    {
+        unsigned i = 1;
+
+        for (auto e : getCases())
+        {
+            if (e->getLLVMType(M) == toFind)
+            {
+                return i;
+            }
+            i++;
+        }
+
+        return (unsigned int)0;
+    }
+
     /**
      * @brief Returns the name of the string in form of <valueType name>[<array length>].
      *
@@ -840,9 +856,9 @@ public:
         return elements.lookup(id);
     }
 
-    std::optional<unsigned int> getIndex(std::string id) const 
+    std::optional<unsigned int> getIndex(std::string id) const
     {
-        return elements.getIndex(id); 
+        return elements.getIndex(id);
     }
 
     // std::map<std::string, const Type*> getElements() const { return elements; }

@@ -87,7 +87,7 @@ int func lamePrint(Color c) {
                 RGBData -> int getGreen <- rgb.getGreen; 
                 RGBData -> int getBlue <- rgb.getBlue;
 
-                # FIXME: DEADCODE IF BLOCKS ARE ALL ASSIGNMENTS? DO BETTER OPT!
+                # TODO: DEADCODE IF BLOCKS ARE ALL ASSIGNMENTS? DO BETTER OPT!
                 printf("r=%u, g=%u, b=%u]\n", getRed(rgb.rgb), getBlue(rgb.rgb), getGreen(rgb.rgb));
             }
             HSVColor hsv => {

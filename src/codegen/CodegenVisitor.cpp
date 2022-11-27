@@ -139,21 +139,7 @@ std::optional<Value *> CodegenVisitor::TvisitMatchStatement(WPLParser::MatchStat
                 llvm::Type *toFind = localSymOpt.value()->type->getLLVMType(module); // FIXME: DO THIS ALL BETTER, MORE CHECKS!!
 
                 // FIXME: METHODIZE!!
-                unsigned int index = [sumType, toFind](llvm::Module *M)
-                {
-                    unsigned i = 1;
-
-                    for (auto e : sumType->getCases())
-                    {
-                        if (e->getLLVMType(M) == toFind)
-                        {
-                            return i;
-                        }
-                        i++;
-                    }
-
-                    return (unsigned int)0;
-                }(module);
+                unsigned int index = sumType->getIndex(module, toFind);
 
                 if (index == 0)
                 {
@@ -176,7 +162,7 @@ std::optional<Value *> CodegenVisitor::TvisitMatchStatement(WPLParser::MatchStat
                 if (!varSymbolOpt)
                 {
                     errorHandler.addCodegenError(altCtx->getStart(), "Failed to find symbol in match");
-                    return {}; // FIXME: SHOULD WE RETURN OR WOULD THIS BREAK STUFF?
+                    return {};
                 }
 
                 Symbol *varSymbol = varSymbolOpt.value();
@@ -194,7 +180,7 @@ std::optional<Value *> CodegenVisitor::TvisitMatchStatement(WPLParser::MatchStat
 
                 Value *corrected = builder->CreateBitCast(valuePtr, ty->getPointerTo());
 
-                Value *val = builder->CreateLoad(ty, corrected); // FIXME: WILL THIS WORK WITH NESTED SUMS?
+                Value *val = builder->CreateLoad(ty, corrected);
 
                 builder->CreateStore(val, v);
 
@@ -860,11 +846,7 @@ std::optional<Value *> CodegenVisitor::TvisitFieldAccessExpr(WPLParser::FieldAcc
         return {};
     }
 
-    return baseOpt.value(); // FIXME: DO BETTER, VERIFY CORRECT
-
-    // // Throw an error as we currently only support array length.
-    // errorHandler.addCodegenError(ctx->getStart(), "Given non-array type in TvisitFieldAccessExpr!");
-    // return {};
+    return baseOpt.value();
 }
 
 std::optional<Value *> CodegenVisitor::TvisitParenExpr(WPLParser::ParenExprContext *ctx)
@@ -1210,7 +1192,7 @@ std::optional<Value *> CodegenVisitor::TvisitVarDeclStatement(WPLParser::VarDecl
                         builder->CreateStore(ConstantInt::get(Int32Ty, index, true), tagPtr);
                         Value *valuePtr = builder->CreateGEP(v, {Int32Zero, Int32One});
 
-                        Value *corrected = builder->CreateBitCast(valuePtr, stoVal->getType()->getPointerTo()); // FIXME: DO BETTER
+                        Value *corrected = builder->CreateBitCast(valuePtr, stoVal->getType()->getPointerTo());
                         builder->CreateStore(stoVal, corrected);
                     }
                     else
@@ -1502,7 +1484,6 @@ std::optional<Value *> CodegenVisitor::TvisitBlock(WPLParser::BlockContext *ctx)
 
 std::optional<Value *> CodegenVisitor::TvisitLambdaConstExpr(WPLParser::LambdaConstExprContext *ctx)
 {
-    // FIXME: SEE ALL ISSUES W GENERAL INVOKE VISIT
     // Get the current insertion point
     BasicBlock *ins = builder->GetInsertBlock();
 
@@ -1525,7 +1506,7 @@ std::optional<Value *> CodegenVisitor::TvisitLambdaConstExpr(WPLParser::LambdaCo
 
     const Type *type = sym->type;
 
-    llvm::Type *genericType = type->getLLVMType(module)->getPointerElementType(); // FIXME: CHECK IF SAFE!
+    llvm::Type *genericType = type->getLLVMType(module)->getPointerElementType();
 
     if (llvm::FunctionType *fnType = static_cast<llvm::FunctionType *>(genericType))
     {
@@ -1587,7 +1568,7 @@ std::optional<Value *> CodegenVisitor::TvisitLambdaConstExpr(WPLParser::LambdaCo
     // Return to original insert point
     builder->SetInsertPoint(ins);
 
-    return {}; // FIXME: if we ever get here, LLVM will probs seg fault
+    return {}; 
 }
 
 /*

@@ -50,7 +50,7 @@ Color func getRGBColor(int r)
             # printf("r=%u]\n", getRed(rgb.rgb));
             printf("r=%u]\n", rgb.rgb.r);
         }
-        HSVColor hsv => { # FIXME: THESE BLOCKS CAN BE EMPTY?
+        HSVColor hsv => { # TODO: THESE BLOCKS CAN BE EMPTY?
             printf("hsv\n");
         }
     }
