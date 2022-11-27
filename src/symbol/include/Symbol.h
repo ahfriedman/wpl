@@ -53,6 +53,7 @@ struct Symbol
         isDefinition = definition; 
 
         val = {};
+        std::cout << "NEW SYMBOL: " << id << std::endl; 
     }
 
     std::string toString() const

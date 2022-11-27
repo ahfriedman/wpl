@@ -93,20 +93,20 @@ std::optional<Symbol *> STManager::lookupInCurrentScope(std::string id)
         if (sym)
             return sym;
 
-        opt = scope->getParent();
-        while (opt)
-        {
-            scope = opt.value();
-            std::optional<Symbol *> sym = scope->lookup(id);
-            if (sym)
-            {
-                // std::cout << sym.value()->toString() << " " << depth << " >= " << stop  << " || " << sym.value()->isDefinition << std::endl;
-                if (sym.value()->isDefinition) // FIXME: VERIFY, ALSO MAY GET CONFUSING IF WE HAVE DUPLICATE NAMED VARS!!!
-                    return sym;
-                return {};
-            }
-            opt = scope->getParent();
-        }
+        // opt = scope->getParent();
+        // while (opt)
+        // {
+        //     scope = opt.value();
+        //     std::optional<Symbol *> sym = scope->lookup(id);
+        //     if (sym)
+        //     {
+        //         // std::cout << sym.value()->toString() << " " << depth << " >= " << stop  << " || " << sym.value()->isDefinition << std::endl;
+        //         if (sym.value()->isDefinition)
+        //             return sym;
+        //         return {};
+        //     }
+        //     opt = scope->getParent();
+        // }
     }
 
     return {};

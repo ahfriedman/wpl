@@ -1473,6 +1473,60 @@ TEST_CASE("programs/adv/enumPassing - passing non-enum as enum argument", "[code
     REQUIRE(llvmIrToSHA256(cv->getModule()) == "3a8deea38620a5392962e96679b5c4e6f2e7564d369fa712eb211d5af150ae97");
 }
 
+TEST_CASE("programs/Lambda2a - More nested lambdas", "[codegen][struct]")
+{
+    std::fstream *inStream = new std::fstream("/home/shared/programs/Lambda2a.wpl");
+    antlr4::ANTLRInputStream *input = new antlr4::ANTLRInputStream(*inStream);
+
+    WPLLexer lexer(input);
+    antlr4::CommonTokenStream tokens(&lexer);
+    WPLParser parser(&tokens);
+    parser.removeErrorListeners();
+    WPLParser::CompilationUnitContext *tree = NULL;
+    REQUIRE_NOTHROW(tree = parser.compilationUnit());
+    REQUIRE(tree != NULL);
+    STManager *stm = new STManager();
+    PropertyManager *pm = new PropertyManager();
+    SemanticVisitor *sv = new SemanticVisitor(stm, pm, 0);
+    sv->visitCompilationUnit(tree);
+
+    REQUIRE_FALSE(sv->hasErrors(0));
+
+    CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll", 0);
+    cv->visitCompilationUnit(tree);
+
+    REQUIRE_FALSE(cv->hasErrors(0));
+
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "d7baa5365992b710eef5b1dd8780324342fc6e7534b276297ffb0fd3b716966c");
+}
+
+TEST_CASE("programs/Lambda2b - More nested lambdas", "[codegen][struct]")
+{
+    std::fstream *inStream = new std::fstream("/home/shared/programs/Lambda2b.wpl");
+    antlr4::ANTLRInputStream *input = new antlr4::ANTLRInputStream(*inStream);
+
+    WPLLexer lexer(input);
+    antlr4::CommonTokenStream tokens(&lexer);
+    WPLParser parser(&tokens);
+    parser.removeErrorListeners();
+    WPLParser::CompilationUnitContext *tree = NULL;
+    REQUIRE_NOTHROW(tree = parser.compilationUnit());
+    REQUIRE(tree != NULL);
+    STManager *stm = new STManager();
+    PropertyManager *pm = new PropertyManager();
+    SemanticVisitor *sv = new SemanticVisitor(stm, pm, 0);
+    sv->visitCompilationUnit(tree);
+
+    REQUIRE_FALSE(sv->hasErrors(0));
+
+    CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll", 0);
+    cv->visitCompilationUnit(tree);
+
+    REQUIRE_FALSE(cv->hasErrors(0));
+
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "988c2083a8eceed9f580c8ec6830e3bee0f4353b677bdad6b59aed2fe98afbe2");
+}
+
 
 TEST_CASE("Out of order function", "[codegen][program]")
 {
