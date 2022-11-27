@@ -251,7 +251,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::InitProductContext *ctx)
 
     Symbol *sym = opt.value();
 
-    // FIXME: METHODIZE WITH INVOKE?
+    // TODO: METHODIZE WITH INVOKE?
     bindings->bind(ctx, sym);
 
     if (const TypeStruct *product = dynamic_cast<const TypeStruct *>(sym->type))
@@ -836,9 +836,6 @@ const Type *SemanticVisitor::visitCtx(WPLParser::MatchStatementContext *ctx)
 
         for (WPLParser::MatchAlternativeContext *altCtx : ctx->cases)
         {
-            // FIXME: METHODIZE WITH SelectAlternativeContext?
-            //  Might not be easily able to though bc we need to track types...
-
             const Type *caseType = any2Type(altCtx->type()->accept(this));
 
             if (!sumType->contains(caseType))

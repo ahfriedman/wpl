@@ -312,7 +312,7 @@ public:
         if (!type)
         {
             errorHandler.addCodegenError(ctx->getStart(), "Unable to find type for variable: " + ctx->getText());
-            return {}; // FIXME: IS THIS USED? SOMETIMES MAYBE?
+            return {};
         }
 
         // Make sure the variable has an allocation (or that we can find it due to it being a global var)
