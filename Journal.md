@@ -1,3 +1,22 @@
+# November 23rd, 2022
+
+Having implemented the code to initialize structs, I then worked on making it so that way their fields could be accessed. To do this, I had to modify my initial fieldAccess rule (which previously was in the form of `VARIABLE '.' VARIABLE` and only allowed for array lengths) to `VARIABLE ('.' VARIABLE)+`. This was not too challenging to do as I could simply process this by loading the first `VARIABLE`, getting its type, making sure that the subsequent `VARIABLE` was the name of a field in this type, and then repeating the process. The only trick here was adding in a case for arrays so that way my language can still read their length. Similarly, in the code generation process, aside from an override to process array lengths, I am able to load the first `VARIABLE`, then lookup (and load) the fields by determining which element in the struct each subsequent field corresponds to. This, similarly to arrays, is done with a getelementpointer instruction. 
+
+With this implementation in place, I started testing structs, and quickly found that field accesses did not work properly due to the fact that I was using a C++ map to lookup fields and which index a field corresponded to in the IR. This, however, was leading to inconsistent field accesses as the order I was accessing elements within a map was inconsistent. To solve this, I created my own wrapper around maps which functions similarly to a `LinkedHashMap` in java so that way I can track the order of elements. In doing so, I was able to resolve this problem. 
+
+
+
+FIXME: DOES GEP WORK WITH VARIOUS TYPES?
+
+# November 21th, 2022
+
+Added basic implementation for struct initialization in the language. This attempt was largely based on how I implemented sum types due to the fact that, by nature of being a tagged union, their implementation requires the use of custom struct types in the LLVM IR. 
+
+
+# November 19th, 2022
+
+Added basic definition of a struct to the grammar file, created (but did not implement) visitor functions for them, and created a basic type to represent them. 
+
 # November 18th, 2022
 
 Today I fixed the bug I introduced last time where wpl would always attempt to generate an executable---even if there were previous compiler errors. In implementing this change, I also used an enum to create a compiler flag option for either no executable (default), to compile the executabel with clang, or to compile the executable with gcc. Finally, I switched from using a manual runtime object I had compiled to an automatically generated archive. 
