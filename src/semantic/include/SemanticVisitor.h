@@ -333,7 +333,6 @@ private:
 
     std::optional<const TypeInvoke *> invokableHelper2(antlr4::ParserRuleContext *ctx, std::string funcId, WPLParser::ParameterListContext *paramList, WPLParser::TypeContext *ty)
     {
-        // std::optional<Symbol *> optSym = bindings->getBinding(ctx);
         std::optional<Symbol *> opt = stmgr->lookupInCurrentScope(funcId); //FIXME: VERIFY?
 
         if (opt)

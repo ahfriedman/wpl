@@ -1585,7 +1585,7 @@ TEST_CASE("Out of order function", "[codegen][program]")
 
     REQUIRE(llvmIrToSHA256(cv->getModule()) == "c226659bfe066e66d2491aa77e5073a4d512f3ddb376a29a8355cfe7b7022e18");
 }
-
+//FIXME: TRY REDECL OF ENUM IE. SETTING IT AGAIN
 TEST_CASE("programs/example", "[codegen][program]")
 {
     std::fstream *inStream = new std::fstream("/home/shared/programs/example.wpl");
