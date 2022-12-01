@@ -42,8 +42,8 @@ const Type *SemanticVisitor::visitCtx(WPLParser::CompilationUnitContext *ctx)
             const TypeInvoke *funcType = (fnCtx->ty) ? new TypeInvoke(procType->getParamTypes(), retType, false, false)
                                                      : new TypeInvoke(procType->getParamTypes(), false, false);
 
-            Symbol *funcSymbol = new Symbol(id, funcType, true, true); 
-            //FIXME: test name collisions with externs
+            Symbol *funcSymbol = new Symbol(id, funcType, true, true);
+            // FIXME: test name collisions with externs
             stmgr->addSymbol(funcSymbol);
             bindings->bind(ctx, funcSymbol);
             // errorHandler.addSemanticCritWarning(ctx->getStart(), "Currently, only FUNC, PROC, EXTERN, and variable declarations allowed at top-level. Not: " + e->getText());
@@ -133,7 +133,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::CompilationUnitContext *ctx)
 
 const Type *SemanticVisitor::visitCtx(WPLParser::InvocationContext *ctx)
 {
-    const Type *type = [this](WPLParser::InvocationContext *ctx) //Huh, interesting how we probably can't get the ctx from this
+    const Type *type = [this](WPLParser::InvocationContext *ctx) // Huh, interesting how we probably can't get the ctx from this
     {
         if (ctx->lam)
             return visitCtx(ctx->lam);
@@ -142,8 +142,8 @@ const Type *SemanticVisitor::visitCtx(WPLParser::InvocationContext *ctx)
          * Look up the symbol to make sure that it is defined
          */
 
-        const Type* type = any2Type(ctx->field->accept(this));
-        std::optional<Symbol *> opt  = bindings->getBinding(ctx->field->VARIABLE().at(ctx->field->VARIABLE().size() - 1)); //FIXME: Verify that the symbol type matches the return type ?
+        const Type *type = any2Type(ctx->field->accept(this));
+        std::optional<Symbol *> opt = bindings->getBinding(ctx->field->VARIABLE().at(ctx->field->VARIABLE().size() - 1)); // FIXME: Verify that the symbol type matches the return type ?
 
         if (!opt)
         {
@@ -159,7 +159,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::InvocationContext *ctx)
         // Bind the symbol
         bindings->bind(ctx, sym);
 
-        return sym->type; 
+        return sym->type;
     }(ctx);
 
     std::string name = (ctx->lam) ? "lambda " : ctx->field->getText();
@@ -279,7 +279,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::InitProductContext *ctx)
 
                     errorHandler.addSemanticError(ctx->getStart(), errorMsg.str());
                 }
-                //FIXME: WHAT HAPPENS IF VAR PASSED TO THIS?
+                // FIXME: WHAT HAPPENS IF VAR PASSED TO THIS?
                 i++;
             }
         }
@@ -307,8 +307,8 @@ const Type *SemanticVisitor::visitCtx(WPLParser::ArrayAccessContext *ctx)
      * Look up the symbol and check that it is defined.
      */
 
-    const Type* type = any2Type(ctx->field->accept(this));
-    std::optional<Symbol *> opt  = bindings->getBinding(ctx->field->VARIABLE().at(ctx->field->VARIABLE().size() - 1));
+    const Type *type = any2Type(ctx->field->accept(this));
+    std::optional<Symbol *> opt = bindings->getBinding(ctx->field->VARIABLE().at(ctx->field->VARIABLE().size() - 1));
 
     if (!opt)
     {
@@ -321,7 +321,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::ArrayAccessContext *ctx)
      */
 
     Symbol *sym = opt.value();
-    if (const TypeArray *arr = dynamic_cast<const TypeArray *>(sym->type)) //FIXME: Verify that the symbol type matches the return type ?
+    if (const TypeArray *arr = dynamic_cast<const TypeArray *>(sym->type)) // FIXME: Verify that the symbol type matches the return type ?
     {
         bindings->bind(ctx, sym);
         return arr->getValueType(); // Return type of array
@@ -546,7 +546,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::FieldAccessExprContext *ctx)
             if (eleOpt)
             {
                 ty = eleOpt.value();
-                Symbol * bnd = new Symbol("", ty, false, false); 
+                Symbol *bnd = new Symbol("", ty, false, false);
                 bindings->bind(ctx->VARIABLE().at(i), bnd); // FIXME: DO BETTER
             }
             else
@@ -789,7 +789,8 @@ const Type *SemanticVisitor::visitCtx(WPLParser::VarDeclStatementContext *ctx)
                 errorHandler.addSemanticError(e->ex->getStart(), "Global variables must be assigned explicit constants or initialized at runtime!");
             }
 
-            if(dynamic_cast<const TypeSum*>(assignType)) {
+            if (dynamic_cast<const TypeSum *>(assignType))
+            {
                 errorHandler.addSemanticError(e->ex->getStart(), "Sums cannot be initialized at a global level");
             }
         }
@@ -873,7 +874,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::MatchStatementContext *ctx)
         }
 
         bindings->bind(ctx->check, new Symbol(ctx->check->ex->getText(), sumType, false, false));
-        return Types::UNDEFINED;                                                                              
+        return Types::UNDEFINED;
     }
 
     errorHandler.addSemanticError(ctx->check->getStart(), "Can only case on Sum Types, not " + condType->toString());
@@ -939,14 +940,17 @@ const Type *SemanticVisitor::visitCtx(WPLParser::ReturnStatementContext *ctx)
     /*
      * Lookup the @RETURN symbol which can ONLY be defined by entering FUNC/PROC
      */
-    std::optional<Symbol *> sym = stmgr->lookup("@RETURN");
+    std::optional<Symbol *> symOpt = stmgr->lookup("@RETURN");
 
     // If we don't have the symbol, we're not in a place that we can return from.
-    if (!sym)
+    if (!symOpt)
     {
         errorHandler.addSemanticError(ctx->getStart(), "Cannot use return outside of FUNC or PROC");
         return Types::UNDEFINED;
     }
+
+    Symbol * sym = symOpt.value(); 
+    bindings->bind(ctx, sym); 
 
     // If the return statement has an expression...
     if (ctx->expression())
@@ -955,7 +959,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::ReturnStatementContext *ctx)
         const Type *valType = any2Type(ctx->expression()->accept(this));
 
         // If the type of the return symbol is a BOT, then we must be in a PROC and, thus, we cannot return anything
-        if (const TypeBot *b = dynamic_cast<const TypeBot *>(sym.value()->type))
+        if (const TypeBot *b = dynamic_cast<const TypeBot *>(sym->type))
         {
             errorHandler.addSemanticError(ctx->getStart(), "PROC cannot return value, yet it was given a " + valType->toString() + " to return!");
             return Types::UNDEFINED;
@@ -963,9 +967,9 @@ const Type *SemanticVisitor::visitCtx(WPLParser::ReturnStatementContext *ctx)
 
         // As the return type is not a BOT, we have to make sure that it is the correct type to return
 
-        if (valType->isNotSubtype(sym.value()->type))
+        if (valType->isNotSubtype(sym->type))
         {
-            errorHandler.addSemanticError(ctx->getStart(), "Expected return type of " + sym.value()->type->toString() + " but got " + valType->toString());
+            errorHandler.addSemanticError(ctx->getStart(), "Expected return type of " + sym->type->toString() + " but got " + valType->toString());
             return Types::UNDEFINED;
         }
 
@@ -975,12 +979,12 @@ const Type *SemanticVisitor::visitCtx(WPLParser::ReturnStatementContext *ctx)
     else
     {
         // We do not have an expression to return, so make sure that the return type is also a BOT.
-        if (const TypeBot *b = dynamic_cast<const TypeBot *>(sym.value()->type))
+        if (const TypeBot *b = dynamic_cast<const TypeBot *>(sym->type))
         {
             return Types::UNDEFINED;
         }
 
-        errorHandler.addSemanticError(ctx->getStart(), "Expected to return a " + sym.value()->type->toString() + " but recieved nothing.");
+        errorHandler.addSemanticError(ctx->getStart(), "Expected to return a " + sym->type->toString() + " but recieved nothing.");
         return Types::UNDEFINED;
     }
 
@@ -1040,7 +1044,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::LambdaConstExprContext *ctx)
     safeExitScope(ctx);
 
     Symbol *funcSymbol = new Symbol("@LAMBDA", funcType, false, false);
-    bindings->bind(ctx, funcSymbol);                                    
+    bindings->bind(ctx, funcSymbol);
 
     return funcType;
 }
@@ -1143,7 +1147,7 @@ const Type *SemanticVisitor::visitCtx(WPLParser::DefineStructContext *ctx)
     }
 
     const TypeStruct *product = new TypeStruct(el, id);
-    Symbol *prodSym = new Symbol(id, product, true, true); 
+    Symbol *prodSym = new Symbol(id, product, true, true);
     stmgr->addSymbol(prodSym);
     bindings->bind(ctx, prodSym);
 
@@ -1162,8 +1166,8 @@ const Type *SemanticVisitor::visitCtx(WPLParser::CustomTypeContext *ctx)
     std::optional<Symbol *> opt = stmgr->lookup(name);
     if (!opt)
     {
-        errorHandler.addSemanticError(ctx->getStart(), "Undefined type: " + name); // TODO: address inefficiency in var decl where this is called multiple times 
-        return Types::UNDEFINED;                                                   
+        errorHandler.addSemanticError(ctx->getStart(), "Undefined type: " + name); // TODO: address inefficiency in var decl where this is called multiple times
+        return Types::UNDEFINED;
     }
 
     Symbol *sym = opt.value();
@@ -1178,6 +1182,22 @@ const Type *SemanticVisitor::visitCtx(WPLParser::CustomTypeContext *ctx)
     return sym->type;
 }
 
+const Type *SemanticVisitor::visitCtx(WPLParser::ArrayTypeContext *ctx)
+{
+    const Type *subType = any2Type(ctx->ty->accept(this));
+
+    // Undefined type errors handled below
+
+    int len = std::stoi(ctx->len->getText());
+
+    if (len < 1)
+    {
+        errorHandler.addSemanticError(ctx->getStart(), "Cannot initialize array with a size of less than 1!");
+    }
+
+    const Type *arr = new TypeArray(subType, len);
+    return arr;
+}
 const Type *SemanticVisitor::visitCtx(WPLParser::BaseTypeContext *ctx)
 {
 
@@ -1204,20 +1224,6 @@ const Type *SemanticVisitor::visitCtx(WPLParser::BaseTypeContext *ctx)
     {
         errorHandler.addSemanticError(ctx->getStart(), "Unknown type: " + ctx->getText());
         return Types::UNDEFINED;
-    }
-
-    if (ctx->len)
-    {
-        int len = std::stoi(ctx->len->getText());
-
-        if (len < 1)
-        {
-            errorHandler.addSemanticError(ctx->getStart(), "Cannot initialize array with a size of less than 1!");
-        }
-
-        const Type *arr = new TypeArray(
-            ty, len);
-        return arr;
     }
 
     return ty;

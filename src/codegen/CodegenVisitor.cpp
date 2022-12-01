@@ -243,7 +243,7 @@ std::optional<Value *> CodegenVisitor::TvisitInvocation(WPLParser::InvocationCon
 
             if (args.size() < paramTypes.size())
             {
-                //TODO: METHODIZE!
+                // TODO: METHODIZE!
                 if (const TypeSum *sum = dynamic_cast<const TypeSum *>(paramTypes.at(args.size())))
                 {
                     unsigned int index = sum->getIndex(module, val->getType());
@@ -1436,13 +1436,37 @@ std::optional<Value *> CodegenVisitor::TvisitReturnStatement(WPLParser::ReturnSt
                 return {};
             }
 
-            Value* inner = innerOpt.value(); 
+            Value *inner = innerOpt.value();
 
-            // if(const TypeSum* sum = dynamic_cast<const TypeSum*>())
-            // {
+            std::optional<Symbol *> symOpt = props->getBinding(ctx);
+            if (!symOpt)
+            {
+                errorHandler.addCodegenError(ctx->getStart(), "Unable to find binding for return");
+                return {};
+            }
 
-            // }
+            Symbol *varSym = symOpt.value();
 
+            // TODO: METHODIZE
+            if (const TypeSum *sum = dynamic_cast<const TypeSum *>(varSym->type))
+            {
+                unsigned int index = sum->getIndex(module, inner->getType());
+
+                if (index != 0)
+                {
+                    llvm::Type *sumTy = sum->getLLVMType(module);
+                    llvm::AllocaInst *alloc = builder->CreateAlloca(sumTy, 0, "");
+
+                    Value *tagPtr = builder->CreateGEP(alloc, {Int32Zero, Int32Zero});
+                    builder->CreateStore(ConstantInt::get(Int32Ty, index, true), tagPtr);
+                    Value *valuePtr = builder->CreateGEP(alloc, {Int32Zero, Int32One});
+                    Value *corrected = builder->CreateBitCast(valuePtr, inner->getType()->getPointerTo());
+                    builder->CreateStore(inner, corrected);
+
+                    inner = builder->CreateLoad(sumTy, alloc);
+                }
+            }
+            
             // As the code was generated correctly, build the return statement; we ensure no following code due to how block visitors work in semantic analysis.
             Value *v = builder->CreateRet(inner);
 

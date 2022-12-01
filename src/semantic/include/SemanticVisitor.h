@@ -77,6 +77,7 @@ public:
 
     const Type *visitCtx(WPLParser::LambdaTypeContext *ctx);
     const Type *visitCtx(WPLParser::BaseTypeContext *ctx);
+    const Type *visitCtx(WPLParser::ArrayTypeContext *ctx);
 
     const Type *visitCtx(WPLParser::LambdaConstExprContext *ctx);
 
@@ -130,6 +131,7 @@ public:
 
     std::any visitLambdaType(WPLParser::LambdaTypeContext *ctx) override { return visitCtx(ctx); }
     std::any visitBaseType(WPLParser::BaseTypeContext *ctx) override { return visitCtx(ctx); }
+    std::any visitArrayType(WPLParser::ArrayTypeContext *ctx) override { return visitCtx(ctx); }
 
     std::any visitLambdaConstExpr(WPLParser::LambdaConstExprContext *ctx) override { return visitCtx(ctx); }
 

@@ -56,10 +56,10 @@ int func program() {
     return 0; 
 }
 
-# FIXME: ALLOW FOR ARRAYS OF CUSTOM TYPES
+# FIXME: CUSTOM TYPES AMBIGUOUS?
 Color[5] func getSampleColors(ColorHelper helper)
 {
-    Colors[5] ans; 
+    Color[5] ans; 
     
 
 
