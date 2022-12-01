@@ -1,0 +1,96 @@
+extern int func printf(str s, ...);
+
+# Defines a unit type (A type with no value)
+define struct Unit {}
+
+define struct RGBColor {
+  int red; 
+  int green; 
+  int blue; 
+}
+
+define struct HSVColor {
+  int hue; 
+  int sat; 
+  int value; 
+}
+
+define struct HexColor {
+  str representation; 
+}
+
+
+define enum Color {
+  RGBColor, 
+  HSVColor, 
+  HexColor
+}
+
+define struct ColorHelper {
+    int, int, int -> Color getRGB; 
+    int, int, int -> Color getHSV; 
+    str -> Color getHex; 
+}
+
+
+int func program() {
+    Color func getRGBColor(int red, int green, int blue) {
+        return RGBColor::init(red, green, blue); # FIXME: FIX AUTO CAST ERRORS
+    }
+
+    Color func getHSVColor(int h, int s, int v) {
+        return HSVColor::init(h, s, v);
+    }
+
+    Color func getHexColor(str s) {
+        return HexColor::init(s);
+    }
+
+    var helper <- ColorHelper::init(
+        getRGBColor, 
+        getHSVColor, 
+        getHexColor
+    );
+
+
+    return 0; 
+}
+
+# FIXME: ALLOW FOR ARRAYS OF CUSTOM TYPES
+# Color[5] func getSampleColors(ColorHelper helper)
+# {
+#     Colors[5] ans; 
+#     
+# 
+# 
+#     return ans; 
+# }
+
+
+
+(*
+ * Foo cannot access local variables; however, it can access 
+ * any function definition in the global scope as well as 
+ * any function definitions prior to it in the local scope
+ *)
+Unit func printPrimitive((int + boolean + str) toPrint) {
+  match toPrint {
+    int i => printf("int: %u\n", i);
+    str s => {
+      # Like a select statement, any statement is allowed to act as 
+      # a case in a match 
+      printf("string: %s\n", s); 
+    }
+    boolean b => printf("boolean: %s\n", 
+      # Here we define anonymous function and invoke it
+      (boolean bool) : str { 
+        if bool then {
+          return "true";
+        }
+        return "false"; 
+      } (b) # Function invoked with parameter b
+    );
+  }
+
+  return Unit::init(); 
+}
