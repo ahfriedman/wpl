@@ -3,6 +3,7 @@ extern int func printf(str s, ...);
 # Defines a unit type (A type with no value)
 define struct Unit {}
 
+# Define structs for various color representations
 define struct RGBColor {
   int red; 
   int green; 
@@ -19,23 +20,22 @@ define struct HexColor {
   str representation; 
 }
 
-
+# Define an enum to act as a wrapper
 define enum Color {
   RGBColor, 
   HSVColor, 
   HexColor
 }
 
+# Helper struct to demonstrate storing functions
 define struct ColorHelper {
     int, int, int -> Color getRGB; 
     int, int, int -> Color getHSV; 
     str -> Color getHex; 
 }
 
-
-
-
 int func program() {
+    # Define three helper functions which we then use to create a ColorHelper
     Color func getRGBColor(int red, int green, int blue) {
         return RGBColor::init(red, green, blue); 
     }
@@ -54,20 +54,19 @@ int func program() {
         getHexColor
     );
 
+    # Get an array of sample colors
     var samples <- getSampleColors(helper);
 
-    int i <- 0; 
-
+    # Print out each of the colors 
+    int i <- 0;
     while i < samples.length do {
         toString(samples[i]);
         i <- i + 1; 
     }
 
-
     return 0; 
 }
 
-# FIXME: CUSTOM TYPES AMBIGUOUS?
 Color[3] func getSampleColors(ColorHelper helper)
 {
     Color[3] ans; 
