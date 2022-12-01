@@ -2587,8 +2587,6 @@ TEST_CASE("Bad Enum pass", "[semantic][program][lambda][enum]")
       R""""(
 extern int func printf(str s, ...);
 
-# FIXME: ENUM PASSING IS BROKEN!!!!
-
 proc test ((int + boolean + (str + boolean)) sum)
 {
     match sum {

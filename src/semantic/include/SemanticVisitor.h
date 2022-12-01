@@ -77,6 +77,7 @@ public:
 
     const Type *visitCtx(WPLParser::LambdaTypeContext *ctx);
     const Type *visitCtx(WPLParser::BaseTypeContext *ctx);
+    const Type *visitCtx(WPLParser::ArrayTypeContext *ctx);
 
     const Type *visitCtx(WPLParser::LambdaConstExprContext *ctx);
 
@@ -130,6 +131,7 @@ public:
 
     std::any visitLambdaType(WPLParser::LambdaTypeContext *ctx) override { return visitCtx(ctx); }
     std::any visitBaseType(WPLParser::BaseTypeContext *ctx) override { return visitCtx(ctx); }
+    std::any visitArrayType(WPLParser::ArrayTypeContext *ctx) override { return visitCtx(ctx); }
 
     std::any visitLambdaConstExpr(WPLParser::LambdaConstExprContext *ctx) override { return visitCtx(ctx); }
 
@@ -331,7 +333,6 @@ private:
 
     std::optional<const TypeInvoke *> invokableHelper2(antlr4::ParserRuleContext *ctx, std::string funcId, WPLParser::ParameterListContext *paramList, WPLParser::TypeContext *ty)
     {
-        // std::optional<Symbol *> optSym = bindings->getBinding(ctx);
         std::optional<Symbol *> opt = stmgr->lookupInCurrentScope(funcId); //FIXME: VERIFY?
 
         if (opt)

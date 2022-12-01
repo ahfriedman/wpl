@@ -1585,6 +1585,37 @@ TEST_CASE("Out of order function", "[codegen][program]")
 
     REQUIRE(llvmIrToSHA256(cv->getModule()) == "c226659bfe066e66d2491aa77e5073a4d512f3ddb376a29a8355cfe7b7022e18");
 }
+//FIXME: TRY REDECL OF ENUM IE. SETTING IT AGAIN
+TEST_CASE("programs/example", "[codegen][program]")
+{
+    std::fstream *inStream = new std::fstream("/home/shared/programs/example.wpl");
+    antlr4::ANTLRInputStream *input = new antlr4::ANTLRInputStream(*inStream);
+
+    WPLLexer lexer(input);
+    // lexer.removeErrorListeners();
+    // lexer.addErrorListener(new TestErrorListener());
+    antlr4::CommonTokenStream tokens(&lexer);
+    WPLParser parser(&tokens);
+    parser.removeErrorListeners();
+    //   parser.addErrorListener(new TestErrorListener()); //FIXME: SHOULD WE TEST THESE HERE?
+
+    WPLParser::CompilationUnitContext *tree = NULL;
+    REQUIRE_NOTHROW(tree = parser.compilationUnit());
+    REQUIRE(tree != NULL);
+    REQUIRE(tree->getText() != "");
+
+    STManager *stmgr = new STManager();
+    PropertyManager *pm = new PropertyManager();
+    SemanticVisitor *sv = new SemanticVisitor(stmgr, pm);
+
+    sv->visitCompilationUnit(tree);
+    REQUIRE_FALSE(sv->hasErrors(ERROR));
+    CodegenVisitor *cv = new CodegenVisitor(pm, "WPLC.ll", 0);
+    cv->visitCompilationUnit(tree);
+    REQUIRE_FALSE(cv->hasErrors(0));
+
+    REQUIRE(llvmIrToSHA256(cv->getModule()) == "468c29659808773d4cf880d99d88374e1d02640e6bc970c12215db998af32a8c");
+}
 
 /************************************
  * Example C-Level Tests

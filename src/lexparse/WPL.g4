@@ -168,7 +168,8 @@ ELLIPSIS  :     '...'   ;
 typeOrVar       : type | 'var'  ;
 
 //Allows us to have a type of ints, bools, or strings with the option for them to become 1d arrays. 
-type            :    ty=(TYPE_INT | TYPE_BOOL | TYPE_STR) (LBRC len=INTEGER RBRC)?  # BaseType
+type            :    ty=type LBRC len=INTEGER RBRC                                  # ArrayType
+                |    ty=(TYPE_INT | TYPE_BOOL | TYPE_STR)                           # BaseType
                 |    paramTypes+=type (',' paramTypes+=type)* '->' returnType=type  # LambdaType
                 |    LPAR type ('+' type)+ RPAR                                     # SumType 
                 |    VARIABLE                                                       # CustomType
