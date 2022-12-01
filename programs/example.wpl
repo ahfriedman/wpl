@@ -33,9 +33,11 @@ define struct ColorHelper {
 }
 
 
+
+
 int func program() {
     Color func getRGBColor(int red, int green, int blue) {
-        return RGBColor::init(red, green, blue); # FIXME: FIX AUTO CAST ERRORS
+        return RGBColor::init(red, green, blue); 
     }
 
     Color func getHSVColor(int h, int s, int v) {
@@ -52,15 +54,27 @@ int func program() {
         getHexColor
     );
 
+    var samples <- getSampleColors(helper);
+
+    int i <- 0; 
+
+    while i < samples.length do {
+        toString(samples[i]);
+        i <- i + 1; 
+    }
+
 
     return 0; 
 }
 
 # FIXME: CUSTOM TYPES AMBIGUOUS?
-Color[5] func getSampleColors(ColorHelper helper)
+Color[3] func getSampleColors(ColorHelper helper)
 {
-    Color[5] ans; 
-    
+    Color[3] ans; 
+
+    ans[0] <- helper.getRGB(255, 255, 255);
+    ans[1] <- helper.getHSV(128, 128, 128);
+    ans[2] <- helper.getHex("FFFFFF");
 
 
     return ans; 
@@ -73,13 +87,13 @@ Color[5] func getSampleColors(ColorHelper helper)
  *)
 Unit func printPrimitive((int + boolean + str) toPrint) {
   match toPrint {
-    int i => printf("int: %u\n", i);
+    int i => printf("int: %u", i);
     str s => {
       # Like a select statement, any statement is allowed to act as 
       # a case in a match 
-      printf("string: %s\n", s); 
+      printf("string: %s", s); 
     }
-    boolean b => printf("boolean: %s\n", 
+    boolean b => printf("boolean: %s", 
       # Here we define anonymous function and invoke it
       (boolean bool) : str { 
         if bool then {
@@ -91,4 +105,41 @@ Unit func printPrimitive((int + boolean + str) toPrint) {
   }
 
   return Unit::init(); 
+}
+
+Unit func toString((Color + int + boolean + str) obj) {
+    match obj {
+        int i => printPrimitive(i); 
+        boolean b => printPrimitive(b);
+        str s => printPrimitive(s);
+        Color c => {
+            match c {
+                  RGBColor rgb => {
+                    printf("[Color type=RGB, red=");
+                    printPrimitive(rgb.red);
+                    printf(", green=");
+                    printPrimitive(rgb.green);
+                    printf(", blue="); 
+                    printPrimitive(rgb.blue);
+                    printf("]\n");
+                  }
+                  HSVColor hsv => {
+                    printf("[Color type=HSV, hue=");
+                    printPrimitive(hsv.hue);
+                    printf(", sat=");
+                    printPrimitive(hsv.sat);
+                    printf(", value="); 
+                    printPrimitive(hsv.value);
+                    printf("]\n");
+                  }
+                  HexColor hex => {
+                    printf("[Color type=HEX, value=");
+                    printPrimitive(hex.representation);
+                    printf("]\n");
+                  }
+            }
+        }  
+    }
+
+    return Unit::init(); 
 }
