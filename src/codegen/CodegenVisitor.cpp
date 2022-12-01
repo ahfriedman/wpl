@@ -1428,16 +1428,23 @@ std::optional<Value *> CodegenVisitor::TvisitReturnStatement(WPLParser::ReturnSt
         std::any anyInner = ctx->expression()->accept(this);
 
         // Perform some checks to make sure that code was generated
-        if (std::optional<Value *> inner = any2Value(anyInner))
+        if (std::optional<Value *> innerOpt = any2Value(anyInner))
         {
-            if (!inner)
+            if (!innerOpt)
             {
                 errorHandler.addCodegenError(ctx->getStart(), "Failed to generate code for: " + ctx->getText());
                 return {};
             }
 
+            Value* inner = innerOpt.value(); 
+
+            // if(const TypeSum* sum = dynamic_cast<const TypeSum*>())
+            // {
+
+            // }
+
             // As the code was generated correctly, build the return statement; we ensure no following code due to how block visitors work in semantic analysis.
-            Value *v = builder->CreateRet(inner.value());
+            Value *v = builder->CreateRet(inner);
 
             return v;
         }
