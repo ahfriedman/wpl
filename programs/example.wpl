@@ -79,11 +79,6 @@ Color[3] func getSampleColors(ColorHelper helper)
     return ans; 
 }
 
-(*
- * Foo cannot access local variables; however, it can access 
- * any function definition in the global scope as well as 
- * any function definitions prior to it in the local scope
- *)
 Unit func printPrimitive((int + boolean + str) toPrint) {
   match toPrint {
     int i => printf("int: %u", i);

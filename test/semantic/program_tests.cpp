@@ -2634,6 +2634,76 @@ int func program()
   // REQUIRE(cv->hasErrors(0));
 }
 
+TEST_CASE("Recursive Enums", "[semantic][program][enum]")
+{
+  antlr4::ANTLRInputStream input(
+      R""""(
+define enum Inner {
+    int, 
+    boolean, 
+    Inner
+}
+    )"""");
+  WPLLexer lexer(&input);
+  // lexer.removeErrorListeners();
+  // lexer.addErrorListener(new TestErrorListener());
+  antlr4::CommonTokenStream tokens(&lexer);
+  WPLParser parser(&tokens);
+  parser.removeErrorListeners();
+  parser.addErrorListener(new TestErrorListener());
+
+  WPLParser::CompilationUnitContext *tree = NULL;
+  REQUIRE_NOTHROW(tree = parser.compilationUnit());
+  REQUIRE(tree != NULL);
+  REQUIRE(tree->getText() != "");
+
+  STManager *stmgr = new STManager();
+  PropertyManager *pm = new PropertyManager();
+
+  SemanticVisitor *sv = new SemanticVisitor(stmgr, pm);
+
+  sv->visitCompilationUnit(tree);
+  REQUIRE(sv->hasErrors(ERROR));
+  // CodegenVisitor *cv = new CodegenVisitor(pm, "test", CompilerFlags::NO_RUNTIME);
+  // cv->visitCompilationUnit(tree);
+  // REQUIRE(cv->hasErrors(0));
+}
+
+TEST_CASE("Recursive Product", "[semantic][program][product]")
+{
+  antlr4::ANTLRInputStream input(
+      R""""(
+define struct Inner {
+    int i; 
+    boolean b; 
+    Inner in; 
+}
+    )"""");
+  WPLLexer lexer(&input);
+  // lexer.removeErrorListeners();
+  // lexer.addErrorListener(new TestErrorListener());
+  antlr4::CommonTokenStream tokens(&lexer);
+  WPLParser parser(&tokens);
+  parser.removeErrorListeners();
+  parser.addErrorListener(new TestErrorListener());
+
+  WPLParser::CompilationUnitContext *tree = NULL;
+  REQUIRE_NOTHROW(tree = parser.compilationUnit());
+  REQUIRE(tree != NULL);
+  REQUIRE(tree->getText() != "");
+
+  STManager *stmgr = new STManager();
+  PropertyManager *pm = new PropertyManager();
+
+  SemanticVisitor *sv = new SemanticVisitor(stmgr, pm);
+
+  sv->visitCompilationUnit(tree);
+  REQUIRE(sv->hasErrors(ERROR));
+  // CodegenVisitor *cv = new CodegenVisitor(pm, "test", CompilerFlags::NO_RUNTIME);
+  // cv->visitCompilationUnit(tree);
+  // REQUIRE(cv->hasErrors(0));
+}
+
 /*********************************
  * C-Level Example tests
  *********************************/

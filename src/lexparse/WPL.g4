@@ -98,7 +98,7 @@ VariadicParam : ',' [ \t]* '...'; //For some reason, need to match the whitespac
  * value. This is used by the VarDeclStatement to help separate multiple 
  * assigments. Ie those of the form:   var a <- 1, b <- 2, ... 
  */
-assignment : v+=VARIABLE (',' v+=VARIABLE)* (ASSIGN ex=expression)? ;
+assignment : v+=VARIABLE (',' v+=VARIABLE)* (ASSIGN ex=expression)? ; //FIXME: NEEDS TO BE FIELD ACCESS?
 
 
 
