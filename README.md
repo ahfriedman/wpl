@@ -28,7 +28,7 @@ copy it into the `/antlr/lib` directory.
 If you made changes for your platform to any of the .cmake files or CMakeLists.txt files, you will probably need to make them in this project as well.
 
 ## Structure
-
+- `./Journal.md` - Contains a Journal of my work on the individual portion of the project up to November 23rd
 - `/antlr` - Contains the relevant ANTLR library.
 - `/build` - Automatically generated output files of the project.
 - `/cmake` - Contains the cmake files required to setup the project's depedencies. Each file corresponds to a separate part of the project.
